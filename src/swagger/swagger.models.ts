@@ -586,6 +586,30 @@ export class TourAdminTranslationResponseDto {
   })
   bookingReferenceId!: string | null;
 
+  @ApiPropertyOptional({
+    description: 'Localized highlight bullets in admin-defined order, or `null` when the translation is incomplete.',
+    type: [String],
+    example: ['Gothic Quarter landmarks', 'Roman walls'],
+    nullable: true,
+  })
+  highlights!: string[] | null;
+
+  @ApiPropertyOptional({
+    description: 'Localized inclusions list in admin-defined order, or `null` when the translation is incomplete.',
+    type: [String],
+    example: ['Local guide', 'City map'],
+    nullable: true,
+  })
+  included!: string[] | null;
+
+  @ApiPropertyOptional({
+    description: 'Localized exclusions list in admin-defined order, or `null` when the translation is incomplete.',
+    type: [String],
+    example: ['Hotel pickup', 'Food and drinks'],
+    nullable: true,
+  })
+  notIncluded!: string[] | null;
+
   @ApiProperty({
     description: 'Localized payload validated against the shared content schema.',
     type: 'object',
@@ -620,6 +644,13 @@ export class TourTranslationAvailabilityResponseDto {
   isHidden!: boolean;
 
   @ApiProperty({
+    description: 'Required localized list fields that are missing or malformed.',
+    type: [String],
+    example: [],
+  })
+  missingRequiredLists!: string[];
+
+  @ApiProperty({
     description: 'Shared stop identifiers that still lack localized title/description pairs.',
     type: [String],
     example: [],
@@ -651,6 +682,27 @@ export class PublicTourTranslationResponseDto {
     nullable: true,
   })
   bookingReferenceId!: string | null;
+
+  @ApiProperty({
+    description: 'Localized highlight bullets in display order.',
+    type: [String],
+    example: ['Gothic Quarter landmarks', 'Roman walls'],
+  })
+  highlights!: string[];
+
+  @ApiProperty({
+    description: 'Localized inclusions list in display order.',
+    type: [String],
+    example: ['Local guide', 'City map'],
+  })
+  included!: string[];
+
+  @ApiProperty({
+    description: 'Localized exclusions list in display order.',
+    type: [String],
+    example: ['Hotel pickup', 'Food and drinks'],
+  })
+  notIncluded!: string[];
 
   @ApiProperty({
     description: 'Published localized payload for the requested locale.',

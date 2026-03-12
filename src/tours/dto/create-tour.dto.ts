@@ -210,6 +210,9 @@ export class CreateTourTranslationDto {
     additionalProperties: true,
     example: {
       title: 'Historic Center',
+      highlights: ['Gothic Quarter landmarks', 'Roman walls'],
+      included: ['Local guide', 'City map'],
+      notIncluded: ['Hotel pickup', 'Food and drinks'],
       startPoint: { label: 'Town Hall' },
       endPoint: { label: 'Cathedral' },
       itineraryDescription: 'Walk through the center.',

@@ -73,6 +73,9 @@ describe('ToursService', () => {
           languageCode: 'en',
           payload: {
             title: 'Historic Center',
+            highlights: ['Roman walls', 'Cathedral square'],
+            included: ['Guide'],
+            notIncluded: ['Food'],
             startPoint: { label: 'Town Hall' },
             endPoint: { label: 'Cathedral' },
             itineraryStops: {
@@ -114,11 +117,22 @@ describe('ToursService', () => {
           type: 'object',
           properties: {
             title: { type: 'string' },
+            highlights: { type: 'array', items: { type: 'string' } },
+            included: { type: 'array', items: { type: 'string' } },
+            notIncluded: { type: 'array', items: { type: 'string' } },
             startPoint: { type: 'object' },
             endPoint: { type: 'object' },
             itineraryStops: { type: 'object' },
           },
-          required: ['title', 'startPoint', 'endPoint', 'itineraryStops'],
+          required: [
+            'title',
+            'highlights',
+            'included',
+            'notIncluded',
+            'startPoint',
+            'endPoint',
+            'itineraryStops',
+          ],
         },
         price: {
           amount: 25,
@@ -159,6 +173,9 @@ describe('ToursService', () => {
             isHidden: false,
             payload: {
               title: 'Historic Center',
+              highlights: ['Roman walls', 'Cathedral square'],
+              included: ['Guide'],
+              notIncluded: ['Food'],
               startPoint: { label: 'Town Hall' },
               endPoint: { label: 'Cathedral' },
               itineraryStops: {
@@ -253,6 +270,7 @@ describe('ToursService', () => {
         translationAvailability: [
           expect.objectContaining({
             languageCode: 'en',
+            missingRequiredLists: [],
             missingStopTranslations: [],
             isSchemaValid: true,
             publiclyAvailable: true,
@@ -268,6 +286,9 @@ describe('ToursService', () => {
       languageCode: 'en',
       payload: {
         title: 'Historic Center',
+        highlights: ['Roman walls', 'Cathedral square'],
+        included: ['Guide'],
+        notIncluded: ['Food'],
         itineraryStops: {
           'stop-1': {
             title: 'City Hall',
@@ -332,6 +353,9 @@ describe('ToursService', () => {
           languageCode: 'en',
           payload: {
             title: 'Historic Center',
+            highlights: ['Gothic Quarter', 'Roman walls'],
+            included: ['Guide'],
+            notIncluded: ['Tickets'],
             itineraryStops: {
               'stop-2': {
                 title: 'Cathedral',
@@ -349,6 +373,9 @@ describe('ToursService', () => {
           languageCode: 'es',
           payload: {
             title: 'Centro Historico',
+            highlights: ['Barrio Gotico', 'Murallas romanas'],
+            included: ['Guia'],
+            notIncluded: ['Entradas'],
             itineraryStops: {
               'stop-2': {
                 title: 'Catedral',
@@ -407,6 +434,9 @@ describe('ToursService', () => {
             isHidden: false,
             payload: {
               title: 'Historic Center',
+              highlights: ['Gothic Quarter', 'Roman walls'],
+              included: ['Guide'],
+              notIncluded: ['Tickets'],
               itineraryStops: {
                 'stop-2': {
                   title: 'Cathedral',
@@ -426,6 +456,9 @@ describe('ToursService', () => {
             isHidden: false,
             payload: {
               title: 'Centro Historico',
+              highlights: ['Barrio Gotico', 'Murallas romanas'],
+              included: ['Guia'],
+              notIncluded: ['Entradas'],
               itineraryStops: {
                 'stop-2': {
                   title: 'Catedral',
@@ -534,10 +567,12 @@ describe('ToursService', () => {
         translationAvailability: expect.arrayContaining([
           expect.objectContaining({
             languageCode: 'en',
+            missingRequiredLists: [],
             publiclyAvailable: true,
           }),
           expect.objectContaining({
             languageCode: 'es',
+            missingRequiredLists: [],
             publiclyAvailable: true,
           }),
         ]),
@@ -558,6 +593,9 @@ describe('ToursService', () => {
           languageCode: 'en',
           payload: {
             title: 'Historic Center',
+            highlights: ['Roman walls', 'Old city lanes'],
+            included: ['Guide'],
+            notIncluded: ['Food'],
             itineraryDescription: 'Walk through the old city.',
           },
         }),
@@ -599,6 +637,7 @@ describe('ToursService', () => {
         translations: {
           en: expect.objectContaining({
             payload: expect.objectContaining({
+              highlights: ['Roman walls', 'Old city lanes'],
               itineraryDescription: 'Walk through the old city.',
             }),
           }),
@@ -617,10 +656,12 @@ describe('ToursService', () => {
         translationAvailability: expect.arrayContaining([
           expect.objectContaining({
             languageCode: 'en',
+            missingRequiredLists: [],
             isSchemaValid: true,
           }),
           expect.objectContaining({
             languageCode: 'es',
+            missingRequiredLists: ['highlights', 'included', 'notIncluded'],
             isSchemaValid: true,
             publiclyAvailable: false,
           }),
@@ -666,6 +707,54 @@ describe('ToursService', () => {
         createAdmin(),
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects published translations that are missing required localized lists', async () => {
+    toursRepository.findOne.mockResolvedValue(null);
+    languagesRepository.findBy.mockResolvedValue([
+      createLanguageEntity({ code: 'en' }),
+    ] as LanguageEntity[]);
+
+    await expect(
+      service.create(
+        {
+          slug: 'historic-center',
+          publicationStatus: 'draft',
+          isHidden: false,
+          contentSchema: { type: 'object' },
+          price: {
+            amount: 20,
+            currency: 'EUR',
+          },
+          rating: 4.5,
+          reviewCount: 10,
+          tourType: 'group',
+          cancellationType: '24h_free_cancellation',
+          durationMinutes: 90,
+          startPoint: {},
+          endPoint: {},
+          itinerary: {
+            variant: 'description',
+          },
+          tagKeys: [],
+          translations: [
+            {
+              languageCode: 'en',
+              translationStatus: 'ready',
+              publicationStatus: 'published',
+              isHidden: false,
+              payload: {
+                title: 'Historic Center',
+                itineraryDescription: 'Walk through the center.',
+              },
+            },
+          ],
+        },
+        createAdmin(),
+      ),
+    ).rejects.toThrow(
+      'Translation "en" is missing required localized lists: highlights, included, notIncluded',
+    );
   });
 
   it('rejects duplicate tour slugs on update', async () => {
@@ -725,6 +814,9 @@ function createTourEntity(overrides: Partial<TourEntity> = {}): TourEntity {
         languageCode: 'en',
         payload: {
           title: 'Historic Center',
+          highlights: ['Roman walls', 'Old city lanes'],
+          included: ['Guide'],
+          notIncluded: ['Food'],
           startPoint: { label: 'Town Hall' },
           endPoint: { label: 'Canal' },
           itineraryDescription: 'Walk through the center.',
@@ -754,6 +846,9 @@ function createTranslationEntity(
     bookingReferenceId: null,
     payload: {
       title: 'Historic Center',
+      highlights: ['Roman walls', 'Old city lanes'],
+      included: ['Guide'],
+      notIncluded: ['Food'],
       itineraryDescription: 'Walk through the center.',
     },
     createdAt: new Date('2026-03-12T08:00:00.000Z'),

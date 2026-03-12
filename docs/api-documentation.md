@@ -14,6 +14,7 @@ The generated specification currently documents:
 - request body schemas for admin create/update endpoints
 - public query and path parameters
 - nested response schemas for admin and public read endpoints
+- explicit localized tour list fields for `highlights`, `included`, and `notIncluded` in admin and public translation responses
 - newsletter subscribe, confirm, unsubscribe, list, detail, and export contracts
 - direct-link GET confirmation and unsubscribe routes used by provider-delivered emails
 - enum values, field descriptions, nullable fields, and dynamic locale-keyed objects

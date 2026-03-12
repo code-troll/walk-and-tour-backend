@@ -78,6 +78,9 @@ describe('PublicToursService', () => {
         translation: {
           locale: 'en',
           bookingReferenceId: null,
+          highlights: ['Roman walls', 'Gothic Quarter lanes'],
+          included: ['Guide'],
+          notIncluded: ['Food'],
           payload: expect.objectContaining({
             title: 'Historic Center',
             itineraryDescription: 'Walk through the old city.',
@@ -126,6 +129,9 @@ describe('PublicToursService', () => {
             languageCode: 'en',
             payload: {
               title: 'Historic Center',
+              highlights: ['Roman walls', 'Gothic Quarter lanes'],
+              included: ['Guide'],
+              notIncluded: ['Food'],
               startPoint: { label: 'Town Hall' },
               endPoint: { label: 'Canal' },
               itineraryStops: {
@@ -170,6 +176,9 @@ describe('PublicToursService', () => {
         },
         translation: expect.objectContaining({
           locale: 'en',
+          highlights: ['Roman walls', 'Gothic Quarter lanes'],
+          included: ['Guide'],
+          notIncluded: ['Food'],
         }),
       }),
     );
@@ -183,6 +192,31 @@ describe('PublicToursService', () => {
     payloadValidationService.validateOrThrow.mockImplementation(() => {
       throw new Error('invalid');
     });
+
+    await expect(service.findOneBySlug('historic-center', 'en')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('rejects published tours whose localized lists are missing', async () => {
+    languagesRepository.findOne.mockResolvedValue(
+      createLanguageEntity({ code: 'en', isEnabled: true }),
+    );
+    toursRepository.findOne.mockResolvedValue(
+      createPublicTour({
+        translations: [
+          createTranslationEntity({
+            languageCode: 'en',
+            payload: {
+              title: 'Historic Center',
+              itineraryDescription: 'Walk through the old city.',
+              startPoint: { label: 'Town Hall' },
+              endPoint: { label: 'Canal' },
+            },
+          }),
+        ],
+      }) as TourEntity,
+    );
 
     await expect(service.findOneBySlug('historic-center', 'en')).rejects.toBeInstanceOf(
       NotFoundException,
@@ -222,6 +256,9 @@ function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
         languageCode: 'en',
         payload: {
           title: 'Historic Center',
+          highlights: ['Roman walls', 'Gothic Quarter lanes'],
+          included: ['Guide'],
+          notIncluded: ['Food'],
           itineraryDescription: 'Walk through the old city.',
           startPoint: { label: 'Town Hall' },
           endPoint: { label: 'Canal' },
@@ -268,6 +305,9 @@ function createTranslationEntity(
     bookingReferenceId: null,
     payload: {
       title: 'Historic Center',
+      highlights: ['Roman walls', 'Gothic Quarter lanes'],
+      included: ['Guide'],
+      notIncluded: ['Food'],
       itineraryDescription: 'Walk through the center.',
     },
     createdAt: new Date('2026-03-12T08:00:00.000Z'),

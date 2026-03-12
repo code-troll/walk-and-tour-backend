@@ -98,6 +98,9 @@
       "additionalProperties": false,
       "required": [
         "title",
+        "highlights",
+        "included",
+        "notIncluded",
         "startPoint",
         "endPoint",
         "itineraryDescription"
@@ -137,6 +140,9 @@
       "additionalProperties": false,
       "required": [
         "title",
+        "highlights",
+        "included",
+        "notIncluded",
         "startPoint",
         "endPoint",
         "itineraryStops"

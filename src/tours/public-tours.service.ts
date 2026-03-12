@@ -8,6 +8,12 @@ import { TourTranslationEntity } from './entities/tour-translation.entity';
 import { TourEntity } from './entities/tour.entity';
 import { TourPayloadValidationService } from './tour-payload-validation.service';
 
+const REQUIRED_LOCALIZED_LIST_FIELDS = [
+  'highlights',
+  'included',
+  'notIncluded',
+] as const;
+
 @Injectable()
 export class PublicToursService {
   constructor(
@@ -151,6 +157,9 @@ export class PublicToursService {
       translation: {
         locale,
         bookingReferenceId: translation.bookingReferenceId,
+        highlights: this.getStringListField(payload, 'highlights'),
+        included: this.getStringListField(payload, 'included'),
+        notIncluded: this.getStringListField(payload, 'notIncluded'),
         payload,
       },
       itinerary,
@@ -167,6 +176,10 @@ export class PublicToursService {
         tour.contentSchema,
         translation.payload,
       );
+
+      if (this.getMissingRequiredLocalizedLists(translation.payload).length > 0) {
+        return false;
+      }
 
       if (tour.itineraryVariant === 'stops') {
         const localizedStops = this.getLocalizedStops(translation.payload);
@@ -203,6 +216,14 @@ export class PublicToursService {
     return value as Record<string, { title?: string; description?: string }>;
   }
 
+  private getMissingRequiredLocalizedLists(payload: Record<string, unknown>): string[] {
+    return REQUIRED_LOCALIZED_LIST_FIELDS.filter((field) => {
+      const value = payload[field];
+
+      return !Array.isArray(value) || value.some((entry) => typeof entry !== 'string');
+    });
+  }
+
   private getObjectField(
     payload: Record<string, unknown>,
     key: string,
@@ -219,5 +240,18 @@ export class PublicToursService {
   private getStringField(payload: Record<string, unknown>, key: string): string | null {
     const value = payload[key];
     return typeof value === 'string' ? value : null;
+  }
+
+  private getStringListField(
+    payload: Record<string, unknown>,
+    key: (typeof REQUIRED_LOCALIZED_LIST_FIELDS)[number],
+  ): string[] | null {
+    const value = payload[key];
+
+    if (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string')) {
+      return null;
+    }
+
+    return [...value];
   }
 }

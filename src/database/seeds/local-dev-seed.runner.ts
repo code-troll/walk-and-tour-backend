@@ -81,6 +81,9 @@ const DESCRIPTION_TOUR_SCHEMA = {
   properties: {
     title: { type: 'string' },
     shortDescription: { type: 'string' },
+    highlights: { type: 'array', items: { type: 'string' } },
+    included: { type: 'array', items: { type: 'string' } },
+    notIncluded: { type: 'array', items: { type: 'string' } },
     startPoint: { type: 'object' },
     endPoint: { type: 'object' },
     itineraryDescription: { type: 'string' },
@@ -88,6 +91,9 @@ const DESCRIPTION_TOUR_SCHEMA = {
   required: [
     'title',
     'shortDescription',
+    'highlights',
+    'included',
+    'notIncluded',
     'startPoint',
     'endPoint',
     'itineraryDescription',
@@ -99,11 +105,23 @@ const STOPS_TOUR_SCHEMA = {
   properties: {
     title: { type: 'string' },
     shortDescription: { type: 'string' },
+    highlights: { type: 'array', items: { type: 'string' } },
+    included: { type: 'array', items: { type: 'string' } },
+    notIncluded: { type: 'array', items: { type: 'string' } },
     startPoint: { type: 'object' },
     endPoint: { type: 'object' },
     itineraryStops: { type: 'object' },
   },
-  required: ['title', 'shortDescription', 'startPoint', 'endPoint', 'itineraryStops'],
+  required: [
+    'title',
+    'shortDescription',
+    'highlights',
+    'included',
+    'notIncluded',
+    'startPoint',
+    'endPoint',
+    'itineraryStops',
+  ],
 };
 
 const SEEDED_TOURS = [
@@ -138,6 +156,12 @@ const SEEDED_TOURS = [
         payload: {
           title: 'Historic Center Highlights',
           shortDescription: 'A polished introduction to the old city.',
+          highlights: [
+            'Roman foundations and Gothic streets',
+            'Civic landmarks across the old city core',
+          ],
+          included: ['Licensed local guide', 'Curated route notes'],
+          notIncluded: ['Hotel pickup', 'Food and drinks'],
           startPoint: { label: 'Plaça de Catalunya' },
           endPoint: { label: 'Barcelona Cathedral' },
           itineraryDescription:
@@ -153,6 +177,12 @@ const SEEDED_TOURS = [
         payload: {
           title: 'Lo Mejor del Centro Historico',
           shortDescription: 'Una introduccion cuidada al casco antiguo.',
+          highlights: [
+            'Restos romanos y calles goticas',
+            'Grandes hitos civicos del centro historico',
+          ],
+          included: ['Guia local acreditado', 'Notas de ruta seleccionadas'],
+          notIncluded: ['Recogida en hotel', 'Comida y bebidas'],
           startPoint: { label: 'Plaça de Catalunya' },
           endPoint: { label: 'Catedral de Barcelona' },
           itineraryDescription:
@@ -168,6 +198,12 @@ const SEEDED_TOURS = [
         payload: {
           title: 'Il Meglio del Centro Storico',
           shortDescription: 'Una introduzione curata al centro antico.',
+          highlights: [
+            'Tracce romane e vie gotiche',
+            'Principali luoghi civici del centro storico',
+          ],
+          included: ['Guida locale autorizzata', 'Note di percorso curate'],
+          notIncluded: ['Prelievo in hotel', 'Cibo e bevande'],
           startPoint: { label: 'Plaça de Catalunya' },
           endPoint: { label: 'Cattedrale di Barcellona' },
           itineraryDescription:
@@ -225,6 +261,12 @@ const SEEDED_TOURS = [
         payload: {
           title: 'Gaudi and Modernisme Route',
           shortDescription: 'A stop-based tour across Barcelona modernist icons.',
+          highlights: [
+            'Gaudi facades and rooftop symbolism',
+            'A structured route through major modernist landmarks',
+          ],
+          included: ['Private guide', 'Route briefing'],
+          notIncluded: ['Entry tickets', 'Hotel pickup'],
           startPoint: { label: 'Casa Batllo' },
           endPoint: { label: 'Sagrada Familia' },
           itineraryStops: {
@@ -271,6 +313,12 @@ const SEEDED_TOURS = [
         payload: {
           title: 'Percorso Gaudi e Modernismo',
           shortDescription: 'Un itinerario a tappe tra i grandi simboli modernisti.',
+          highlights: [
+            'Facciate di Gaudi e simbolismo urbano',
+            'Percorso strutturato tra i principali capolavori modernisti',
+          ],
+          included: ['Guida privata', 'Briefing iniziale del percorso'],
+          notIncluded: ['Biglietti di ingresso', 'Prelievo in hotel'],
           startPoint: { label: 'Casa Batllo' },
           endPoint: { label: 'Sagrada Familia' },
           itineraryStops: {
@@ -319,6 +367,12 @@ const SEEDED_TOURS = [
         payload: {
           title: 'Born After Dark',
           shortDescription: 'A hidden tour for admin-only availability testing.',
+          highlights: [
+            'Late-night neighborhood atmosphere',
+            'Bars, plazas, and local routines after dark',
+          ],
+          included: ['Local host', 'Night route briefing'],
+          notIncluded: ['Drinks', 'Personal expenses'],
           startPoint: { label: 'Mercat del Born' },
           endPoint: { label: 'Passeig del Born' },
           itineraryDescription:

@@ -24,6 +24,12 @@ import { TourEntity } from './entities/tour.entity';
 import { TourPayloadValidationService } from './tour-payload-validation.service';
 import { TourSchemaPolicyService } from './tour-schema-policy.service';
 
+const REQUIRED_LOCALIZED_LIST_FIELDS = [
+  'highlights',
+  'included',
+  'notIncluded',
+] as const;
+
 interface TourAggregateInput {
   slug: string;
   category?: string;
@@ -408,6 +414,16 @@ export class ToursService {
         translation.payload,
       );
 
+      const missingRequiredLists = requiresFullValidation
+        ? this.getMissingRequiredLocalizedLists(translation.payload)
+        : [];
+
+      if (missingRequiredLists.length > 0) {
+        throw new BadRequestException(
+          `Translation "${translation.languageCode}" is missing required localized lists: ${missingRequiredLists.join(', ')}`,
+        );
+      }
+
       if (aggregate.itinerary.variant === 'stops') {
         const missingStops = this.getMissingLocalizedStops(aggregate, translation);
 
@@ -447,6 +463,14 @@ export class ToursService {
       const stop = entry as Record<string, unknown>;
 
       return typeof stop.title !== 'string' || typeof stop.description !== 'string';
+    });
+  }
+
+  private getMissingRequiredLocalizedLists(payload: Record<string, unknown>): string[] {
+    return REQUIRED_LOCALIZED_LIST_FIELDS.filter((field) => {
+      const value = payload[field];
+
+      return !Array.isArray(value) || value.some((entry) => typeof entry !== 'string');
     });
   }
 
@@ -636,12 +660,16 @@ export class ToursService {
           publicationStatus: translation.publicationStatus,
           isHidden: translation.isHidden,
           bookingReferenceId: translation.bookingReferenceId,
+          highlights: this.getStringListField(translation.payload, 'highlights'),
+          included: this.getStringListField(translation.payload, 'included'),
+          notIncluded: this.getStringListField(translation.payload, 'notIncluded'),
           payload: translation.payload,
         },
       ]),
     );
 
     const translationAvailability = tour.translations.map((translation) => {
+      const missingRequiredLists = this.getMissingRequiredLocalizedLists(translation.payload);
       const missingStopTranslations =
         tour.itineraryVariant === 'stops'
           ? this.getMissingLocalizedStops(
@@ -689,6 +717,7 @@ export class ToursService {
         translationStatus: translation.translationStatus,
         publicationStatus: translation.publicationStatus,
         isHidden: translation.isHidden,
+        missingRequiredLists,
         missingStopTranslations,
         isSchemaValid,
         publiclyAvailable:
@@ -697,6 +726,7 @@ export class ToursService {
           translation.translationStatus === 'ready' &&
           translation.publicationStatus === 'published' &&
           !translation.isHidden &&
+          missingRequiredLists.length === 0 &&
           isSchemaValid &&
           missingStopTranslations.length === 0,
       };
@@ -770,10 +800,32 @@ export class ToursService {
             >);
 
       this.payloadValidationService.validateOrThrow(schema, translation.payload);
+
+      if (
+        (translation.translationStatus === 'ready' ||
+          translation.publicationStatus === 'published') &&
+        this.getMissingRequiredLocalizedLists(translation.payload).length > 0
+      ) {
+        return false;
+      }
+
       return true;
     } catch {
       return false;
     }
+  }
+
+  private getStringListField(
+    payload: Record<string, unknown>,
+    key: (typeof REQUIRED_LOCALIZED_LIST_FIELDS)[number],
+  ): string[] | null {
+    const value = payload[key];
+
+    if (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string')) {
+      return null;
+    }
+
+    return [...value];
   }
 
   private toJsonPoint(point: JsonPoint): Record<string, unknown> {

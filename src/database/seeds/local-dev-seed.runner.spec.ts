@@ -106,7 +106,19 @@ describe('LocalDevSeedRunner', () => {
     await runner.run();
 
     expect(toursService.create).toHaveBeenCalledWith(
-      expect.objectContaining({ slug: 'historic-center-highlights' }),
+      expect.objectContaining({
+        slug: 'historic-center-highlights',
+        translations: expect.arrayContaining([
+          expect.objectContaining({
+            languageCode: 'en',
+            payload: expect.objectContaining({
+              highlights: expect.any(Array),
+              included: expect.any(Array),
+              notIncluded: expect.any(Array),
+            }),
+          }),
+        ]),
+      }),
       expect.objectContaining({
         id: '11111111-1111-1111-1111-111111111111',
         email: 'admin@example.com',
