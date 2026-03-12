@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TourContentTranslationPayload",
+  "description": "Canonical v1 schema for a single localized tour translation payload. This schema covers only translation-owned content and excludes shared tour properties, locale wrappers, and UI-resolved fields. It supports explicit descriptive-itinerary and stop-based-itinerary payload variants.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/DescriptiveTourTranslationPayload"
+    },
+    {
+      "$ref": "#/$defs/StopsTourTranslationPayload"
+    }
+  ],
+  "$defs": {
+    "Coordinates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lat",
+        "lng"
+      ],
+      "properties": {
+        "lat": {
+          "type": "number"
+        },
+        "lng": {
+          "type": "number"
+        }
+      }
+    },
+    "LocalizedPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "coordinates": {
+          "$ref": "#/$defs/Coordinates"
+        }
+      }
+    },
+    "BasePayloadProperties": {
+      "title": {
+        "type": "string"
+      },
+      "imageAlt": {
+        "type": "string"
+      },
+      "aboutTourDescription": {
+        "type": "string"
+      },
+      "highlights": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "included": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "notIncluded": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "startPoint": {
+        "$ref": "#/$defs/LocalizedPoint"
+      },
+      "endPoint": {
+        "$ref": "#/$defs/LocalizedPoint"
+      }
+    },
+    "LocalizedItineraryStop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "description"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "DescriptiveTourTranslationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "startPoint",
+        "endPoint",
+        "itineraryDescription"
+      ],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/BasePayloadProperties/title"
+        },
+        "imageAlt": {
+          "$ref": "#/$defs/BasePayloadProperties/imageAlt"
+        },
+        "aboutTourDescription": {
+          "$ref": "#/$defs/BasePayloadProperties/aboutTourDescription"
+        },
+        "highlights": {
+          "$ref": "#/$defs/BasePayloadProperties/highlights"
+        },
+        "included": {
+          "$ref": "#/$defs/BasePayloadProperties/included"
+        },
+        "notIncluded": {
+          "$ref": "#/$defs/BasePayloadProperties/notIncluded"
+        },
+        "startPoint": {
+          "$ref": "#/$defs/BasePayloadProperties/startPoint"
+        },
+        "endPoint": {
+          "$ref": "#/$defs/BasePayloadProperties/endPoint"
+        },
+        "itineraryDescription": {
+          "type": "string"
+        }
+      }
+    },
+    "StopsTourTranslationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "startPoint",
+        "endPoint",
+        "itineraryStops"
+      ],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/BasePayloadProperties/title"
+        },
+        "imageAlt": {
+          "$ref": "#/$defs/BasePayloadProperties/imageAlt"
+        },
+        "aboutTourDescription": {
+          "$ref": "#/$defs/BasePayloadProperties/aboutTourDescription"
+        },
+        "highlights": {
+          "$ref": "#/$defs/BasePayloadProperties/highlights"
+        },
+        "included": {
+          "$ref": "#/$defs/BasePayloadProperties/included"
+        },
+        "notIncluded": {
+          "$ref": "#/$defs/BasePayloadProperties/notIncluded"
+        },
+        "startPoint": {
+          "$ref": "#/$defs/BasePayloadProperties/startPoint"
+        },
+        "endPoint": {
+          "$ref": "#/$defs/BasePayloadProperties/endPoint"
+        },
+        "itineraryStops": {
+          "type": "object",
+          "description": "Localized stop copy keyed by the shared stop identity defined on the tour itinerary. Publication-time validation must require entries for all shared stops in the itinerary.",
+          "additionalProperties": {
+            "$ref": "#/$defs/LocalizedItineraryStop"
+          }
+        }
+      }
+    }
+  }
+}

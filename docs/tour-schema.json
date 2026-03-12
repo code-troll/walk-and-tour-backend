@@ -1,0 +1,333 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TourAggregate",
+  "description": "Canonical v1 schema for the full admin/persisted tour aggregate. This schema covers shared tour data, workflow metadata, itinerary structure, tag keys, and locale-keyed translations whose payloads conform to tour-content-schema.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "slug",
+    "publicationStatus",
+    "isHidden",
+    "rating",
+    "reviewCount",
+    "tourType",
+    "cancellationType",
+    "durationMinutes",
+    "startPoint",
+    "endPoint",
+    "itinerary",
+    "tagKeys",
+    "translations"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Canonical internal tour identifier."
+    },
+    "slug": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "coverMediaRef": {
+      "type": "string"
+    },
+    "galleryMediaRefs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "publicationStatus": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published"
+      ]
+    },
+    "isHidden": {
+      "type": "boolean"
+    },
+    "price": {
+      "$ref": "#/$defs/Price"
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "reviewCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "tourType": {
+      "type": "string",
+      "enum": [
+        "private",
+        "group",
+        "tip_based"
+      ]
+    },
+    "cancellationType": {
+      "type": "string",
+      "enum": [
+        "12h_free_cancellation",
+        "24h_free_cancellation",
+        "48h_free_cancellation",
+        "72h_free_cancellation"
+      ]
+    },
+    "durationMinutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "startPoint": {
+      "$ref": "#/$defs/Point"
+    },
+    "endPoint": {
+      "$ref": "#/$defs/Point"
+    },
+    "itinerary": {
+      "$ref": "#/$defs/Itinerary"
+    },
+    "tagKeys": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "References to Tag.key values managed by the tag dictionary. Membership is validated against stored tag records rather than fixed schema enums.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "translations": {
+      "type": "object",
+      "description": "Locale-keyed translations for this tour.",
+      "propertyNames": {
+        "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/TourTranslation"
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "publishedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "updatedBy": {
+      "type": "string"
+    },
+    "publishedBy": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "tourType": {
+            "const": "tip_based"
+          }
+        },
+        "required": [
+          "tourType"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "price"
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "price"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "Coordinates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lat",
+        "lng"
+      ],
+      "properties": {
+        "lat": {
+          "type": "number"
+        },
+        "lng": {
+          "type": "number"
+        }
+      }
+    },
+    "Point": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "coordinates": {
+          "$ref": "#/$defs/Coordinates"
+        }
+      }
+    },
+    "Price": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amount",
+        "currency"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currency": {
+          "type": "string"
+        }
+      }
+    },
+    "ItineraryConnection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commuteMode"
+      ],
+      "properties": {
+        "durationMinutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "commuteMode": {
+          "type": "string",
+          "enum": [
+            "walk",
+            "bike",
+            "bus",
+            "train",
+            "metro",
+            "tram",
+            "ferry",
+            "private-transport",
+            "boat",
+            "other"
+          ]
+        }
+      }
+    },
+    "ItineraryStop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "durationMinutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coordinates": {
+          "$ref": "#/$defs/Coordinates"
+        },
+        "nextConnection": {
+          "$ref": "#/$defs/ItineraryConnection"
+        }
+      }
+    },
+    "DescriptiveItinerary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "variant"
+      ],
+      "properties": {
+        "variant": {
+          "const": "description"
+        }
+      }
+    },
+    "StopBasedItinerary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "variant",
+        "stops"
+      ],
+      "properties": {
+        "variant": {
+          "const": "stops"
+        },
+        "stops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ItineraryStop"
+          }
+        }
+      }
+    },
+    "Itinerary": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/DescriptiveItinerary"
+        },
+        {
+          "$ref": "#/$defs/StopBasedItinerary"
+        }
+      ]
+    },
+    "TourTranslation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "translationStatus",
+        "publicationStatus",
+        "isHidden",
+        "payload"
+      ],
+      "properties": {
+        "translationStatus": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "ready"
+          ]
+        },
+        "publicationStatus": {
+          "type": "string",
+          "enum": [
+            "published",
+            "unpublished"
+          ]
+        },
+        "isHidden": {
+          "type": "boolean"
+        },
+        "bookingReferenceId": {
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "./tour-content-schema.json"
+        }
+      }
+    }
+  }
+}
