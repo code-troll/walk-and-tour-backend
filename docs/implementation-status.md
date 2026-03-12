@@ -13,33 +13,32 @@ The backend will be implemented in these layers:
 
 ## Current Layer
 
-### Layer 5: Newsletter subscriber lifecycle
+### Layer 6: Storage and provider integrations
 
 Completed in this step:
 
-- Added `NewsletterSubscriber` persistence plus a new migration for subscriber lifecycle data.
-- Implemented public subscribe, confirm, and unsubscribe endpoints with double opt-in state transitions and tokenized confirmation/unsubscribe handling.
-- Added protected admin subscriber list, detail, search, pagination, and CSV export operations for `super_admin` and `marketing`.
-- Preserved consent, confirmation, and unsubscribe audit timestamps in PostgreSQL together with optional preferred locale and source metadata.
-- Added Swagger documentation and unit coverage for newsletter DTOs, endpoints, and service flows.
+- Added application-level email-provider abstractions with `console` and Resend-backed implementations.
+- Wired newsletter subscribe flows to dispatch provider-backed confirmation emails containing direct confirmation and unsubscribe links.
+- Added application-level storage abstractions with local-filesystem and Supabase-backed implementations behind one shared contract.
+- Added direct-link GET confirmation and unsubscribe endpoints to support email-driven tokenized flows without changing subscriber persistence.
+- Added configuration, Swagger updates, and unit coverage for provider and storage adapters.
 
 This layer intentionally does **not** include:
 
-- Email provider integration or actual email dispatch
 - Campaign authoring or sending workflows
-- Storage abstractions for media or provider-backed outbound delivery
+- Media upload endpoints or file-management APIs
 - Booking or customer-account features
 
 ## Next Layer
 
-### Layer 6: Storage and provider integrations
+### No Further Layer In Current Plan
 
-The next step should implement the remaining infrastructure-focused slice:
+The six planned backend layers are now implemented. The next step, if requested, should be a post-plan slice such as:
 
-- Add application-level storage abstractions for local development and Supabase-backed production media storage.
-- Add email-provider integration so newsletter confirmation and unsubscribe links can be dispatched through a provider such as Resend.
-- Keep domain and persistence contracts stable while introducing provider-backed delivery implementations.
-- Extend test coverage to provider abstractions and integration-style behavior once those adapters exist.
+- provider integration hardening with real environment verification
+- media upload and retrieval APIs on top of the storage abstraction
+- higher-level integration tests against a real database and configured providers
+- new product capabilities beyond the current MVP scope
 
 ## Working Notes
 
@@ -50,4 +49,5 @@ The next step should implement the remaining infrastructure-focused slice:
 - Public content routes require an explicit `locale` query parameter and intentionally do not fall back to another locale when content is unavailable.
 - Before starting layer 5, the tour test suite now covers create/update flows, stop-based itinerary replacement, translation description updates, and admin/public response-shape assertions.
 - Swagger/OpenAPI documentation is exposed at `/api/docs` and `/api/docs-json`, with exhaustive request/response schema descriptions for the current API surface.
-- Newsletter subscriber email delivery itself is still deferred to the provider-integration layer; layer 5 persists and validates the token/state workflow but does not dispatch outbound mail yet.
+- Newsletter confirmation emails are now dispatched through the configured email provider abstraction; `console` is the safe default and Resend is available through environment configuration.
+- Storage provider selection is environment-driven: local filesystem for development defaults and Supabase-backed object storage for production-style configuration.

@@ -1,4 +1,4 @@
-export interface RepositoryMock<T> {
+export interface RepositoryMock<_T> {
   find: jest.Mock;
   findOne: jest.Mock;
   findBy: jest.Mock;

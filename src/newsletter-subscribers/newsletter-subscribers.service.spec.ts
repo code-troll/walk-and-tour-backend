@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { ILike } from 'typeorm';
 
+import { EmailProvider } from '../providers/email/email-provider.interface';
 import { createRepositoryMock, RepositoryMock } from '../../test/utils/repository.mock';
 import { NewsletterSubscriberEntity } from './newsletter-subscriber.entity';
 import { NewsletterSubscribersService } from './newsletter-subscribers.service';
@@ -13,22 +14,28 @@ describe('NewsletterSubscribersService', () => {
   let service: NewsletterSubscribersService;
   let subscribersRepository: RepositoryMock<NewsletterSubscriberEntity>;
   let tokenService: jest.Mocked<NewsletterTokenService>;
+  let emailProvider: jest.Mocked<EmailProvider>;
 
   beforeEach(() => {
+    process.env.APP_BASE_URL = 'https://backend.example.com';
     subscribersRepository = createRepositoryMock<NewsletterSubscriberEntity>();
     tokenService = {
       generateToken: jest
         .fn()
         .mockReturnValueOnce('confirmation-token')
         .mockReturnValueOnce('unsubscribe-token')
-        .mockReturnValueOnce('confirmation-token-2')
-        .mockReturnValueOnce('unsubscribe-token-2'),
+        .mockReturnValueOnce('confirmation-token')
+        .mockReturnValueOnce('unsubscribe-token'),
       hashToken: jest.fn((token: string) => `hash:${token}`),
     } as unknown as jest.Mocked<NewsletterTokenService>;
+    emailProvider = {
+      sendNewsletterConfirmation: jest.fn(),
+    };
 
     service = new NewsletterSubscribersService(
       subscribersRepository as never,
       tokenService,
+      emailProvider,
     );
   });
 
@@ -60,6 +67,14 @@ describe('NewsletterSubscribersService', () => {
         unsubscribeTokenHash: 'hash:unsubscribe-token',
       }),
     );
+    expect(emailProvider.sendNewsletterConfirmation).toHaveBeenCalledWith({
+      recipientEmail: 'subscriber@example.com',
+      confirmationUrl:
+        'https://backend.example.com/api/public/newsletter/subscribers/confirm?token=confirmation-token',
+      unsubscribeUrl:
+        'https://backend.example.com/api/public/newsletter/subscribers/unsubscribe?token=unsubscribe-token',
+      preferredLocale: 'en',
+    });
     expect(result).toEqual(
       expect.objectContaining({
         email: 'subscriber@example.com',
@@ -119,6 +134,14 @@ describe('NewsletterSubscribersService', () => {
         unsubscribeTokenHash: 'hash:unsubscribe-token',
       }),
     );
+    expect(emailProvider.sendNewsletterConfirmation).toHaveBeenCalledWith({
+      recipientEmail: 'subscriber@example.com',
+      confirmationUrl:
+        'https://backend.example.com/api/public/newsletter/subscribers/confirm?token=confirmation-token',
+      unsubscribeUrl:
+        'https://backend.example.com/api/public/newsletter/subscribers/unsubscribe?token=unsubscribe-token',
+      preferredLocale: 'es',
+    });
     expect(result).toEqual(
       expect.objectContaining({
         subscriptionStatus: 'pending_confirmation',

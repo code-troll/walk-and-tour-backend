@@ -4,6 +4,7 @@
 /build
 /tmp
 /coverage
+/.eslintcache
 
 # Logs
 logs

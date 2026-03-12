@@ -37,6 +37,7 @@ import {
 import { AdminExportNewsletterSubscribersDto } from './dto/admin-export-newsletter-subscribers.dto';
 import { AdminListNewsletterSubscribersDto } from './dto/admin-list-newsletter-subscribers.dto';
 import { NewsletterTokenDto } from './dto/newsletter-token.dto';
+import { NewsletterTokenQueryDto } from './dto/newsletter-token-query.dto';
 import { SubscribeNewsletterDto } from './dto/subscribe-newsletter.dto';
 import { NewsletterSubscribersService } from './newsletter-subscribers.service';
 
@@ -81,6 +82,28 @@ export class NewsletterSubscribersController {
 
   @ApiTags('Public Newsletter Subscribers')
   @ApiOperation({
+    summary: 'Confirm newsletter subscription via direct link',
+    description:
+      'Confirms a newsletter subscription using a token carried in a direct email link.',
+  })
+  @ApiQuery({
+    name: 'token',
+    description: 'Opaque newsletter confirmation token.',
+    example: '0123456789abcdef0123456789abcdef0123456789abcdef',
+  })
+  @ApiOkResponse({
+    description: 'Newsletter subscription confirmed.',
+    type: NewsletterSubscriptionConfirmedResponseDto,
+  })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @Get('public/newsletter/subscribers/confirm')
+  confirmByLink(@Query() query: NewsletterTokenQueryDto): Promise<unknown> {
+    return this.newsletterSubscribersService.confirm(query.token);
+  }
+
+  @ApiTags('Public Newsletter Subscribers')
+  @ApiOperation({
     summary: 'Unsubscribe from the newsletter',
     description:
       'Unsubscribes a subscriber using the tokenized unsubscribe link delivered through email.',
@@ -94,6 +117,28 @@ export class NewsletterSubscribersController {
   @Post('public/newsletter/subscribers/unsubscribe')
   unsubscribe(@Body() dto: NewsletterTokenDto): Promise<unknown> {
     return this.newsletterSubscribersService.unsubscribe(dto.token);
+  }
+
+  @ApiTags('Public Newsletter Subscribers')
+  @ApiOperation({
+    summary: 'Unsubscribe via direct link',
+    description:
+      'Unsubscribes a newsletter subscriber using a token carried in a direct email link.',
+  })
+  @ApiQuery({
+    name: 'token',
+    description: 'Opaque newsletter unsubscribe token.',
+    example: '0123456789abcdef0123456789abcdef0123456789abcdef',
+  })
+  @ApiOkResponse({
+    description: 'Newsletter subscriber unsubscribed.',
+    type: NewsletterUnsubscribedResponseDto,
+  })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @Get('public/newsletter/subscribers/unsubscribe')
+  unsubscribeByLink(@Query() query: NewsletterTokenQueryDto): Promise<unknown> {
+    return this.newsletterSubscribersService.unsubscribe(query.token);
   }
 
   @ApiTags('Admin Newsletter Subscribers')

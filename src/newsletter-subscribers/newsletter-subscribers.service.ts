@@ -1,11 +1,14 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
+import { EMAIL_PROVIDER, EmailProvider } from '../providers/email/email-provider.interface';
+import { getProviderConfig } from '../shared/config/provider.config';
 import { NEWSLETTER_SUBSCRIPTION_STATUSES } from '../shared/domain';
 import { AdminExportNewsletterSubscribersDto } from './dto/admin-export-newsletter-subscribers.dto';
 import { AdminListNewsletterSubscribersDto } from './dto/admin-list-newsletter-subscribers.dto';
@@ -29,6 +32,8 @@ export class NewsletterSubscribersService {
     @InjectRepository(NewsletterSubscriberEntity)
     private readonly subscribersRepository: Repository<NewsletterSubscriberEntity>,
     private readonly tokenService: NewsletterTokenService,
+    @Inject(EMAIL_PROVIDER)
+    private readonly emailProvider: EmailProvider,
   ) {}
 
   async subscribe(dto: SubscribeNewsletterDto): Promise<unknown> {
@@ -54,6 +59,12 @@ export class NewsletterSubscribersService {
       });
 
       const saved = await this.subscribersRepository.save(entity);
+      await this.sendConfirmationEmail(
+        saved.email,
+        confirmationToken,
+        unsubscribeToken,
+        saved.preferredLocale,
+      );
       return this.toSubscriptionRequestResponse(saved, false);
     }
 
@@ -74,6 +85,12 @@ export class NewsletterSubscribersService {
     existing.unsubscribeTokenHash = this.tokenService.hashToken(unsubscribeToken);
 
     const saved = await this.subscribersRepository.save(existing);
+    await this.sendConfirmationEmail(
+      saved.email,
+      confirmationToken,
+      unsubscribeToken,
+      saved.preferredLocale,
+    );
     return this.toSubscriptionRequestResponse(saved, false);
   }
 
@@ -282,6 +299,24 @@ export class NewsletterSubscribersService {
       createdAt: subscriber.createdAt,
       updatedAt: subscriber.updatedAt,
     };
+  }
+
+  private async sendConfirmationEmail(
+    recipientEmail: string,
+    confirmationToken: string,
+    unsubscribeToken: string,
+    preferredLocale: string | null,
+  ): Promise<void> {
+    const config = getProviderConfig();
+    const confirmationUrl = `${config.appBaseUrl.replace(/\/$/, '')}/api/public/newsletter/subscribers/confirm?token=${encodeURIComponent(confirmationToken)}`;
+    const unsubscribeUrl = `${config.appBaseUrl.replace(/\/$/, '')}/api/public/newsletter/subscribers/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+
+    await this.emailProvider.sendNewsletterConfirmation({
+      recipientEmail,
+      confirmationUrl,
+      unsubscribeUrl,
+      preferredLocale,
+    });
   }
 }
 

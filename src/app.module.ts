@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
 import { LanguagesModule } from './languages/languages.module';
 import { NewsletterSubscribersModule } from './newsletter-subscribers/newsletter-subscribers.module';
+import { StorageModule } from './storage/storage.module';
 import { TagsModule } from './tags/tags.module';
 import { ToursModule } from './tours/tours.module';
 
@@ -18,6 +19,7 @@ import { ToursModule } from './tours/tours.module';
     BlogPostsModule,
     LanguagesModule,
     NewsletterSubscribersModule,
+    StorageModule,
     TagsModule,
     ToursModule,
   ],

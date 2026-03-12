@@ -1,6 +1,6 @@
 # walk-and-tour-backend
 
-Layers 1 through 5 are in place: NestJS foundation, PostgreSQL/TypeORM setup, admin content modules, Auth0-backed admin authentication, public read APIs for tours and blog posts, and newsletter subscriber lifecycle APIs.
+Layers 1 through 6 are in place: NestJS foundation, PostgreSQL/TypeORM setup, admin content modules, Auth0-backed admin authentication, public read APIs for tours and blog posts, newsletter subscriber lifecycle APIs, and provider/storage abstractions.
 
 Implementation tracking lives in `docs/implementation-status.md`.
 
@@ -13,6 +13,8 @@ Swagger notes and scope live in `docs/api-documentation.md`.
 
 ## Testing
 
+- `npm run lint`: run ESLint across the repository
+- `npm run lint:fix`: apply safe ESLint fixes
 - `npm test`: run the Jest unit suite
 - `npm run test:cov`: run the suite with coverage reporting
 - `npm run build`: verify the application still compiles after test changes

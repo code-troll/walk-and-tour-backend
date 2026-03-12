@@ -34,8 +34,24 @@ describe('NewsletterSubscribersController', () => {
     );
   });
 
+  it('delegates public confirmation link requests', async () => {
+    await controller.confirmByLink({ token: 'confirmation-token' });
+
+    expect(newsletterSubscribersService.confirm).toHaveBeenCalledWith(
+      'confirmation-token',
+    );
+  });
+
   it('delegates public unsubscribe requests', async () => {
     await controller.unsubscribe({ token: 'unsubscribe-token' });
+
+    expect(newsletterSubscribersService.unsubscribe).toHaveBeenCalledWith(
+      'unsubscribe-token',
+    );
+  });
+
+  it('delegates public unsubscribe link requests', async () => {
+    await controller.unsubscribeByLink({ token: 'unsubscribe-token' });
 
     expect(newsletterSubscribersService.unsubscribe).toHaveBeenCalledWith(
       'unsubscribe-token',
