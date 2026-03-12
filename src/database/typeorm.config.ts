@@ -3,7 +3,10 @@ import { DataSourceOptions } from 'typeorm';
 
 import { AdminUserEntity } from '../admin-users/admin-user.entity';
 import { RoleEntity } from '../admin-users/role.entity';
+import { BlogPostTranslationEntity } from '../blog-posts/blog-post-translation.entity';
+import { BlogPostEntity } from '../blog-posts/blog-post.entity';
 import { LanguageEntity } from '../languages/language.entity';
+import { NewsletterSubscriberEntity } from '../newsletter-subscribers/newsletter-subscriber.entity';
 import { TagEntity } from '../tags/tag.entity';
 import { TourItineraryStopEntity } from '../tours/entities/tour-itinerary-stop.entity';
 import { TourTranslationEntity } from '../tours/entities/tour-translation.entity';
@@ -23,7 +26,10 @@ export function getTypeOrmOptions(): TypeOrmModuleOptions {
     entities: [
       RoleEntity,
       AdminUserEntity,
+      BlogPostEntity,
+      BlogPostTranslationEntity,
       LanguageEntity,
+      NewsletterSubscriberEntity,
       TagEntity,
       TourEntity,
       TourItineraryStopEntity,

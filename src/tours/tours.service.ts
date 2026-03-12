@@ -158,6 +158,16 @@ export class ToursService {
     actor: AuthenticatedAdmin,
   ): Promise<unknown> {
     const existing = await this.findEntityOrThrow(id);
+    if (dto.slug && dto.slug !== existing.slug) {
+      const slugCollision = await this.toursRepository.findOne({
+        where: { slug: dto.slug },
+      });
+
+      if (slugCollision) {
+        throw new ConflictException(`Tour slug "${dto.slug}" already exists.`);
+      }
+    }
+
     const previousPublicationStatus = existing.publicationStatus;
     const aggregate = await this.buildAggregate(dto, existing);
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);

@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { getAppConfig } from '../shared/config/app.config';
 import {
@@ -13,9 +14,20 @@ import {
   TOUR_TRANSLATION_STATUSES,
   TOUR_TYPES,
 } from '../shared/domain';
+import { HealthResponseDto } from '../swagger/swagger.models';
 
+@ApiTags('Health')
 @Controller('health')
 export class HealthController {
+  @ApiOperation({
+    summary: 'Get service health and foundation vocabulary',
+    description:
+      'Returns a simple liveness payload together with the shared enum vocabularies currently compiled into the backend.',
+  })
+  @ApiOkResponse({
+    description: 'Foundation health payload.',
+    type: HealthResponseDto,
+  })
   @Get()
   getHealth() {
     const config = getAppConfig();
