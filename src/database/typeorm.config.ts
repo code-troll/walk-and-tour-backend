@@ -1,6 +1,8 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { DataSourceOptions } from 'typeorm';
 
+import { AdminUserEntity } from '../admin-users/admin-user.entity';
+import { RoleEntity } from '../admin-users/role.entity';
 import { LanguageEntity } from '../languages/language.entity';
 import { TagEntity } from '../tags/tag.entity';
 import { TourItineraryStopEntity } from '../tours/entities/tour-itinerary-stop.entity';
@@ -19,6 +21,8 @@ export function getTypeOrmOptions(): TypeOrmModuleOptions {
     password: config.password,
     database: config.database,
     entities: [
+      RoleEntity,
+      AdminUserEntity,
       LanguageEntity,
       TagEntity,
       TourEntity,

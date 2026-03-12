@@ -114,12 +114,4 @@ export class UpdateTourDto {
   @Type(() => CreateTourTranslationDto)
   @IsOptional()
   translations?: CreateTourTranslationDto[];
-
-  @IsString()
-  @IsOptional()
-  updatedBy?: string;
-
-  @IsString()
-  @IsOptional()
-  publishedBy?: string | null;
 }

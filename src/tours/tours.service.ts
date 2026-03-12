@@ -15,6 +15,7 @@ import {
   TOUR_TYPES,
 } from '../shared/domain';
 import { TagEntity } from '../tags/tag.entity';
+import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface';
 import { CreateTourDto, CreateTourTranslationDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { TourItineraryStopEntity } from './entities/tour-itinerary-stop.entity';
@@ -50,9 +51,6 @@ interface TourAggregateInput {
   };
   tagKeys: string[];
   translations: CreateTourTranslationDto[];
-  createdBy?: string;
-  updatedBy?: string;
-  publishedBy?: string | null;
 }
 
 interface JsonCoordinates {
@@ -102,7 +100,10 @@ export class ToursService {
     return this.toAdminResponse(tour);
   }
 
-  async create(dto: CreateTourDto): Promise<unknown> {
+  async create(
+    dto: CreateTourDto,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
     const existing = await this.toursRepository.findOne({
       where: { slug: dto.slug },
     });
@@ -134,11 +135,11 @@ export class ToursService {
       endPoint: aggregate.endPoint,
       itineraryVariant: aggregate.itinerary.variant,
       tags,
-      createdBy: aggregate.createdBy ?? null,
-      updatedBy: aggregate.updatedBy ?? null,
+      createdBy: actor.id,
+      updatedBy: actor.id,
       publishedBy:
         aggregate.publicationStatus === 'published'
-          ? (aggregate.publishedBy ?? null)
+          ? actor.id
           : null,
       publishedAt:
         aggregate.publicationStatus === 'published' ? new Date() : null,
@@ -151,8 +152,13 @@ export class ToursService {
     return this.findOne(savedTour.id);
   }
 
-  async update(id: string, dto: UpdateTourDto): Promise<unknown> {
+  async update(
+    id: string,
+    dto: UpdateTourDto,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
     const existing = await this.findEntityOrThrow(id);
+    const previousPublicationStatus = existing.publicationStatus;
     const aggregate = await this.buildAggregate(dto, existing);
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);
     await this.validateTranslations(aggregate);
@@ -175,11 +181,17 @@ export class ToursService {
     existing.endPoint = aggregate.endPoint;
     existing.itineraryVariant = aggregate.itinerary.variant;
     existing.tags = tags;
-    existing.updatedBy = aggregate.updatedBy ?? existing.updatedBy;
+    existing.updatedBy = actor.id;
 
-    if (aggregate.publicationStatus === 'published') {
+    if (
+      aggregate.publicationStatus === 'published' &&
+      previousPublicationStatus !== 'published'
+    ) {
+      existing.publishedAt = new Date();
+      existing.publishedBy = actor.id;
+    } else if (aggregate.publicationStatus === 'published') {
       existing.publishedAt = existing.publishedAt ?? new Date();
-      existing.publishedBy = aggregate.publishedBy ?? existing.publishedBy;
+      existing.publishedBy = existing.publishedBy ?? actor.id;
     } else {
       existing.publishedAt = null;
       existing.publishedBy = null;
@@ -258,15 +270,6 @@ export class ToursService {
       itinerary,
       tagKeys: source.tagKeys ?? existing?.tags.map((tag) => tag.key) ?? [],
       translations: this.mergeTranslations(existing, source.translations),
-      createdBy:
-        source instanceof CreateTourDto
-          ? source.createdBy
-          : existing?.createdBy ?? undefined,
-      updatedBy: source.updatedBy ?? existing?.updatedBy ?? undefined,
-      publishedBy:
-        source.publishedBy === null
-          ? undefined
-          : source.publishedBy ?? existing?.publishedBy ?? undefined,
     };
 
     this.validateSharedRules(aggregate);

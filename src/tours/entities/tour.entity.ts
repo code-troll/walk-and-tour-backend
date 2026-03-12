@@ -95,13 +95,13 @@ export class TourEntity {
   })
   translations!: TourTranslationEntity[];
 
-  @Column({ name: 'created_by', type: 'varchar', length: 255, nullable: true })
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
   createdBy!: string | null;
 
-  @Column({ name: 'updated_by', type: 'varchar', length: 255, nullable: true })
+  @Column({ name: 'updated_by', type: 'uuid', nullable: true })
   updatedBy!: string | null;
 
-  @Column({ name: 'published_by', type: 'varchar', length: 255, nullable: true })
+  @Column({ name: 'published_by', type: 'uuid', nullable: true })
   publishedBy!: string | null;
 
   @CreateDateColumn({ name: 'created_at' })

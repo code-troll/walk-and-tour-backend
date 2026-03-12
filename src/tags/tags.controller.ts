@@ -1,10 +1,16 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+
+import { AdminRoles } from '../admin-auth/decorators/admin-roles.decorator';
+import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
 
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { TagsService } from './tags.service';
 
 @Controller('admin/tags')
+@UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+@AdminRoles('super_admin', 'editor')
 export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 
