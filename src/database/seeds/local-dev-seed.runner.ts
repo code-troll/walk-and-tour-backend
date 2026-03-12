@@ -134,7 +134,6 @@ const SEEDED_TOURS = [
       'tours/historic-center-highlights/gallery-2.jpg',
     ],
     publicationStatus: 'published',
-    isHidden: false,
     contentSchema: DESCRIPTION_TOUR_SCHEMA,
     price: { amount: 29, currency: 'EUR' },
     rating: 4.8,
@@ -151,7 +150,6 @@ const SEEDED_TOURS = [
         languageCode: 'en',
         translationStatus: 'ready',
         publicationStatus: 'published',
-        isHidden: false,
         bookingReferenceId: 'historic-center-en',
         payload: {
           title: 'Historic Center Highlights',
@@ -172,7 +170,6 @@ const SEEDED_TOURS = [
         languageCode: 'es',
         translationStatus: 'ready',
         publicationStatus: 'published',
-        isHidden: false,
         bookingReferenceId: 'historic-center-es',
         payload: {
           title: 'Lo Mejor del Centro Historico',
@@ -193,7 +190,6 @@ const SEEDED_TOURS = [
         languageCode: 'it',
         translationStatus: 'ready',
         publicationStatus: 'published',
-        isHidden: false,
         bookingReferenceId: 'historic-center-it',
         payload: {
           title: 'Il Meglio del Centro Storico',
@@ -218,7 +214,6 @@ const SEEDED_TOURS = [
     coverMediaRef: 'tours/gaudi-and-modernisme-route/cover.jpg',
     galleryMediaRefs: ['tours/gaudi-and-modernisme-route/gallery-1.jpg'],
     publicationStatus: 'published',
-    isHidden: false,
     contentSchema: STOPS_TOUR_SCHEMA,
     price: { amount: 34, currency: 'EUR' },
     rating: 4.9,
@@ -256,7 +251,6 @@ const SEEDED_TOURS = [
         languageCode: 'en',
         translationStatus: 'ready',
         publicationStatus: 'published',
-        isHidden: false,
         bookingReferenceId: 'gaudi-route-en',
         payload: {
           title: 'Gaudi and Modernisme Route',
@@ -289,7 +283,6 @@ const SEEDED_TOURS = [
         languageCode: 'es',
         translationStatus: 'draft',
         publicationStatus: 'unpublished',
-        isHidden: false,
         bookingReferenceId: 'gaudi-route-es',
         payload: {
           title: 'Ruta Gaudi y Modernismo',
@@ -308,7 +301,6 @@ const SEEDED_TOURS = [
         languageCode: 'it',
         translationStatus: 'ready',
         publicationStatus: 'published',
-        isHidden: false,
         bookingReferenceId: 'gaudi-route-it',
         payload: {
           title: 'Percorso Gaudi e Modernismo',
@@ -344,8 +336,7 @@ const SEEDED_TOURS = [
     category: 'nightlife',
     coverMediaRef: 'tours/born-after-dark/cover.jpg',
     galleryMediaRefs: ['tours/born-after-dark/gallery-1.jpg'],
-    publicationStatus: 'published',
-    isHidden: true,
+    publicationStatus: 'draft',
     contentSchema: DESCRIPTION_TOUR_SCHEMA,
     price: { amount: 22, currency: 'EUR' },
     rating: 4.6,
@@ -362,11 +353,10 @@ const SEEDED_TOURS = [
         languageCode: 'en',
         translationStatus: 'ready',
         publicationStatus: 'published',
-        isHidden: false,
         bookingReferenceId: 'born-after-dark-en',
         payload: {
           title: 'Born After Dark',
-          shortDescription: 'A hidden tour for admin-only availability testing.',
+          shortDescription: 'A draft tour for admin-only availability testing.',
           highlights: [
             'Late-night neighborhood atmosphere',
             'Bars, plazas, and local routines after dark',
@@ -387,7 +377,6 @@ const SEEDED_TOURS = [
     coverMediaRef: 'tours/barceloneta-sunset-tip-tour/cover.jpg',
     galleryMediaRefs: ['tours/barceloneta-sunset-tip-tour/gallery-1.jpg'],
     publicationStatus: 'draft',
-    isHidden: false,
     contentSchema: DESCRIPTION_TOUR_SCHEMA,
     rating: 4.7,
     reviewCount: 32,
@@ -403,7 +392,6 @@ const SEEDED_TOURS = [
         languageCode: 'en',
         translationStatus: 'draft',
         publicationStatus: 'unpublished',
-        isHidden: false,
         payload: {
           title: 'Barceloneta Sunset Tip Tour',
           startPoint: { label: 'Barceloneta Beach' },

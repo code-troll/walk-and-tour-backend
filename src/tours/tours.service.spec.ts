@@ -112,7 +112,6 @@ describe('ToursService', () => {
       {
         slug: 'historic-center',
         publicationStatus: 'published',
-        isHidden: false,
         contentSchema: {
           type: 'object',
           properties: {
@@ -170,7 +169,6 @@ describe('ToursService', () => {
             languageCode: 'en',
             translationStatus: 'ready',
             publicationStatus: 'published',
-            isHidden: false,
             payload: {
               title: 'Historic Center',
               highlights: ['Roman walls', 'Cathedral square'],
@@ -431,7 +429,6 @@ describe('ToursService', () => {
             languageCode: 'en',
             translationStatus: 'ready',
             publicationStatus: 'published',
-            isHidden: false,
             payload: {
               title: 'Historic Center',
               highlights: ['Gothic Quarter', 'Roman walls'],
@@ -453,7 +450,6 @@ describe('ToursService', () => {
             languageCode: 'es',
             translationStatus: 'ready',
             publicationStatus: 'published',
-            isHidden: false,
             payload: {
               title: 'Centro Historico',
               highlights: ['Barrio Gotico', 'Murallas romanas'],
@@ -686,7 +682,6 @@ describe('ToursService', () => {
         {
           slug: 'tip-tour',
           publicationStatus: 'draft',
-          isHidden: false,
           contentSchema: { type: 'object' },
           price: {
             amount: 20,
@@ -720,7 +715,6 @@ describe('ToursService', () => {
         {
           slug: 'historic-center',
           publicationStatus: 'draft',
-          isHidden: false,
           contentSchema: { type: 'object' },
           price: {
             amount: 20,
@@ -742,7 +736,6 @@ describe('ToursService', () => {
               languageCode: 'en',
               translationStatus: 'ready',
               publicationStatus: 'published',
-              isHidden: false,
               payload: {
                 title: 'Historic Center',
                 itineraryDescription: 'Walk through the center.',
@@ -790,7 +783,6 @@ function createTourEntity(overrides: Partial<TourEntity> = {}): TourEntity {
     coverMediaRef: null,
     galleryMediaRefs: [],
     publicationStatus: 'published',
-    isHidden: false,
     contentSchema: { type: 'object' },
     priceAmount: '25.00',
     priceCurrency: 'EUR',
@@ -842,7 +834,6 @@ function createTranslationEntity(
     languageCode: 'en',
     translationStatus: 'ready',
     publicationStatus: 'published',
-    isHidden: false,
     bookingReferenceId: null,
     payload: {
       title: 'Historic Center',

@@ -117,7 +117,7 @@ What gets seeded:
 
 - one active local admin user
 - multilingual tag dictionary entries
-- several tours covering published, hidden, draft, paid, tip-based, descriptive, and stop-based cases
+- several tours covering published, unpublished, draft, paid, tip-based, descriptive, and stop-based cases
 - several blog posts covering published and draft cases
 - newsletter subscribers across `pending_confirmation`, `subscribed`, and `unsubscribed`
 
@@ -231,7 +231,7 @@ Testing notes and the current coverage scope live in `docs/testing.md`.
 ## Technical Notes
 
 - Tour localized content is schema-driven. Each tour stores a JSON Schema that validates localized translation payloads.
-- Public tour visibility is strict: no locale fallback, no hidden content, no unpublished translations, and no invalid localized payloads.
+- Public tour visibility is strict: no locale fallback, no unpublished tours, no unpublished translations, and no invalid localized payloads.
 - Blog posts use shared metadata plus per-locale HTML translations.
 - Newsletter subscribers use double opt-in. Confirmation and unsubscribe links are tokenized.
 - Provider integrations are behind application-level abstractions so email/storage backends can change without rewriting domain modules.

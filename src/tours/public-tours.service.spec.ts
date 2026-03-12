@@ -36,8 +36,8 @@ describe('PublicToursService', () => {
     toursRepository.find.mockResolvedValue([
       createPublicTour(),
       createPublicTour({
-        slug: 'hidden-tour',
-        isHidden: true,
+        slug: 'draft-tour',
+        publicationStatus: 'draft',
       }),
       createPublicTour({
         slug: 'draft-translation-tour',
@@ -232,7 +232,6 @@ function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
     coverMediaRef: 'cover.jpg',
     galleryMediaRefs: ['1.jpg'],
     publicationStatus: 'published',
-    isHidden: false,
     contentSchema: { type: 'object' },
     priceAmount: '25.00',
     priceCurrency: 'EUR',
@@ -301,7 +300,6 @@ function createTranslationEntity(
     languageCode: 'en',
     translationStatus: 'ready',
     publicationStatus: 'published',
-    isHidden: false,
     bookingReferenceId: null,
     payload: {
       title: 'Historic Center',

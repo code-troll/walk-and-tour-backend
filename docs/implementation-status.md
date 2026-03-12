@@ -53,3 +53,4 @@ The six planned backend layers are now implemented. The next step, if requested,
 - Storage provider selection is environment-driven: local filesystem for development defaults and Supabase-backed object storage for production-style configuration.
 - Local development now has a reset-and-reseed command that recreates a predictable demo dataset for admin, content, and newsletter testing without adding a new product layer.
 - Tour translations now surface and validate localized `highlights`, `included`, and `notIncluded` lists in admin/public responses and seeded demo content.
+- Tour and tour-translation visibility now relies on `publicationStatus` only; the former `isHidden` flags were removed from the model and schema.

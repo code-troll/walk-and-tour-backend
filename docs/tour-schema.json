@@ -8,7 +8,6 @@
     "id",
     "slug",
     "publicationStatus",
-    "isHidden",
     "rating",
     "reviewCount",
     "tourType",
@@ -47,9 +46,6 @@
         "draft",
         "published"
       ]
-    },
-    "isHidden": {
-      "type": "boolean"
     },
     "price": {
       "$ref": "#/$defs/Price"
@@ -300,7 +296,6 @@
       "required": [
         "translationStatus",
         "publicationStatus",
-        "isHidden",
         "payload"
       ],
       "properties": {
@@ -317,9 +312,6 @@
             "published",
             "unpublished"
           ]
-        },
-        "isHidden": {
-          "type": "boolean"
         },
         "bookingReferenceId": {
           "type": "string"

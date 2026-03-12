@@ -573,12 +573,6 @@ export class TourAdminTranslationResponseDto {
   })
   publicationStatus!: (typeof TOUR_TRANSLATION_PUBLICATION_STATUSES)[number];
 
-  @ApiProperty({
-    description: 'Whether this localized translation is hidden from public APIs.',
-    example: false,
-  })
-  isHidden!: boolean;
-
   @ApiPropertyOptional({
     description: 'External booking reference for the locale, if any.',
     nullable: true,
@@ -636,12 +630,6 @@ export class TourTranslationAvailabilityResponseDto {
     enum: TOUR_TRANSLATION_PUBLICATION_STATUSES,
   })
   publicationStatus!: (typeof TOUR_TRANSLATION_PUBLICATION_STATUSES)[number];
-
-  @ApiProperty({
-    description: 'Whether the translation is hidden from public APIs.',
-    example: false,
-  })
-  isHidden!: boolean;
 
   @ApiProperty({
     description: 'Required localized list fields that are missing or malformed.',
@@ -751,12 +739,6 @@ export class TourAdminResponseDto {
     enum: TOUR_PUBLICATION_STATUSES,
   })
   publicationStatus!: (typeof TOUR_PUBLICATION_STATUSES)[number];
-
-  @ApiProperty({
-    description: 'Whether the tour is hidden from public APIs.',
-    example: false,
-  })
-  isHidden!: boolean;
 
   @ApiProperty({
     description: 'Shared JSON Schema that localized translation payloads must satisfy.',

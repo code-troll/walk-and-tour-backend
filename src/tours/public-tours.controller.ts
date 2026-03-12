@@ -20,7 +20,7 @@ export class PublicToursController {
 
   @ApiOperation({
     summary: 'List public tours by locale',
-    description: 'Returns only published, non-hidden tours that have a locale-specific published and schema-valid translation for the requested locale.',
+    description: 'Returns only published tours that have a locale-specific published and schema-valid translation for the requested locale.',
   })
   @ApiQuery({
     name: 'locale',
@@ -41,7 +41,7 @@ export class PublicToursController {
 
   @ApiOperation({
     summary: 'Get a public tour by slug and locale',
-    description: 'Returns a published tour only when the requested locale is enabled and has a published, ready, non-hidden, schema-valid translation.',
+    description: 'Returns a published tour only when the requested locale is enabled and has a published, ready, schema-valid translation.',
   })
   @ApiParam({
     name: 'slug',

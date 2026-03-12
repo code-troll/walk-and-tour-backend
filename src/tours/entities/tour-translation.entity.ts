@@ -42,9 +42,6 @@ export class TourTranslationEntity {
   @Column({ name: 'publication_status', type: 'varchar', length: 20 })
   publicationStatus!: string;
 
-  @Column({ name: 'is_hidden', type: 'boolean', default: false })
-  isHidden!: boolean;
-
   @Column({ name: 'booking_reference_id', type: 'varchar', length: 255, nullable: true })
   bookingReferenceId!: string | null;
 

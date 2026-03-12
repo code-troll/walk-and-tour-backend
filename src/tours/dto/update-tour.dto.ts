@@ -3,7 +3,6 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayUnique,
   IsArray,
-  IsBoolean,
   IsInt,
   IsNumber,
   IsObject,
@@ -76,14 +75,6 @@ export class UpdateTourDto {
   @IsString()
   @IsOptional()
   publicationStatus?: string;
-
-  @ApiPropertyOptional({
-    description: 'Whether the tour should be hidden from public APIs.',
-    example: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isHidden?: boolean;
 
   @ApiPropertyOptional({
     description: 'Updated shared JSON Schema for localized payload validation.',

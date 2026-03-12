@@ -3,7 +3,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayUnique,
   IsArray,
-  IsBoolean,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -190,13 +189,6 @@ export class CreateTourTranslationDto {
   publicationStatus!: string;
 
   @ApiProperty({
-    description: 'Whether the localized translation is hidden from public APIs.',
-    example: false,
-  })
-  @IsBoolean()
-  isHidden!: boolean;
-
-  @ApiPropertyOptional({
     description: 'Optional external booking reference for this locale.',
     example: 'booking-ref-123',
   })
@@ -272,13 +264,6 @@ export class CreateTourDto {
   @IsString()
   @IsIn(TOUR_PUBLICATION_STATUSES)
   publicationStatus!: string;
-
-  @ApiProperty({
-    description: 'Whether the tour is hidden from public APIs even when published.',
-    example: false,
-  })
-  @IsBoolean()
-  isHidden!: boolean;
 
   @ApiProperty({
     description: 'Shared JSON Schema that every translation payload must satisfy once it is `ready` or `published`.',

@@ -84,7 +84,7 @@ export class PublicToursService {
   }
 
   private toPublicResponse(tour: TourEntity, locale: string): unknown | null {
-    if (tour.publicationStatus !== 'published' || tour.isHidden) {
+    if (tour.publicationStatus !== 'published') {
       return null;
     }
 
@@ -92,8 +92,7 @@ export class PublicToursService {
       (entry) =>
         entry.languageCode === locale &&
         entry.translationStatus === 'ready' &&
-        entry.publicationStatus === 'published' &&
-        !entry.isHidden,
+        entry.publicationStatus === 'published',
     );
 
     if (!translation || !this.isTranslationPubliclyValid(tour, translation)) {

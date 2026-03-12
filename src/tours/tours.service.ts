@@ -36,7 +36,6 @@ interface TourAggregateInput {
   coverMediaRef?: string | null;
   galleryMediaRefs: string[];
   publicationStatus: string;
-  isHidden: boolean;
   contentSchema: Record<string, unknown>;
   price?: { amount: number; currency: string } | null;
   rating: number;
@@ -128,7 +127,6 @@ export class ToursService {
       coverMediaRef: aggregate.coverMediaRef ?? null,
       galleryMediaRefs: aggregate.galleryMediaRefs,
       publicationStatus: aggregate.publicationStatus,
-      isHidden: aggregate.isHidden,
       contentSchema: aggregate.contentSchema,
       priceAmount: aggregate.price ? aggregate.price.amount.toFixed(2) : null,
       priceCurrency: aggregate.price?.currency ?? null,
@@ -184,7 +182,6 @@ export class ToursService {
     existing.coverMediaRef = aggregate.coverMediaRef ?? null;
     existing.galleryMediaRefs = aggregate.galleryMediaRefs;
     existing.publicationStatus = aggregate.publicationStatus;
-    existing.isHidden = aggregate.isHidden;
     existing.contentSchema = aggregate.contentSchema;
     existing.priceAmount = aggregate.price ? aggregate.price.amount.toFixed(2) : null;
     existing.priceCurrency = aggregate.price?.currency ?? null;
@@ -263,7 +260,6 @@ export class ToursService {
       galleryMediaRefs: source.galleryMediaRefs ?? existing?.galleryMediaRefs ?? [],
       publicationStatus:
         source.publicationStatus ?? existing?.publicationStatus ?? TOUR_PUBLICATION_STATUSES[0],
-      isHidden: source.isHidden ?? existing?.isHidden ?? false,
       contentSchema,
       price:
         source.price === null
@@ -527,7 +523,6 @@ export class ToursService {
         languageCode: translation.languageCode,
         translationStatus: translation.translationStatus,
         publicationStatus: translation.publicationStatus,
-        isHidden: translation.isHidden,
         bookingReferenceId: translation.bookingReferenceId ?? null,
         payload: translation.payload,
       }),
@@ -551,7 +546,6 @@ export class ToursService {
       if (existing) {
         existing.translationStatus = incoming.translationStatus;
         existing.publicationStatus = incoming.publicationStatus;
-        existing.isHidden = incoming.isHidden;
         existing.bookingReferenceId = incoming.bookingReferenceId ?? null;
         existing.payload = incoming.payload;
         await this.translationsRepository.save(existing);
@@ -562,7 +556,6 @@ export class ToursService {
             languageCode: incoming.languageCode,
             translationStatus: incoming.translationStatus,
             publicationStatus: incoming.publicationStatus,
-            isHidden: incoming.isHidden,
             bookingReferenceId: incoming.bookingReferenceId ?? null,
             payload: incoming.payload,
           }),
@@ -582,7 +575,6 @@ export class ToursService {
         languageCode: translation.languageCode,
         translationStatus: translation.translationStatus,
         publicationStatus: translation.publicationStatus,
-        isHidden: translation.isHidden,
         bookingReferenceId: translation.bookingReferenceId ?? undefined,
         payload: translation.payload,
       });
@@ -658,7 +650,6 @@ export class ToursService {
         {
           translationStatus: translation.translationStatus,
           publicationStatus: translation.publicationStatus,
-          isHidden: translation.isHidden,
           bookingReferenceId: translation.bookingReferenceId,
           highlights: this.getStringListField(translation.payload, 'highlights'),
           included: this.getStringListField(translation.payload, 'included'),
@@ -677,7 +668,6 @@ export class ToursService {
                 slug: tour.slug,
                 galleryMediaRefs: tour.galleryMediaRefs,
                 publicationStatus: tour.publicationStatus,
-                isHidden: tour.isHidden,
                 contentSchema: tour.contentSchema,
                 price: this.getExistingPrice(tour),
                 rating: Number(tour.rating),
@@ -703,7 +693,6 @@ export class ToursService {
                 languageCode: translation.languageCode,
                 translationStatus: translation.translationStatus,
                 publicationStatus: translation.publicationStatus,
-                isHidden: translation.isHidden,
                 bookingReferenceId: translation.bookingReferenceId ?? undefined,
                 payload: translation.payload,
               },
@@ -716,16 +705,13 @@ export class ToursService {
         languageCode: translation.languageCode,
         translationStatus: translation.translationStatus,
         publicationStatus: translation.publicationStatus,
-        isHidden: translation.isHidden,
         missingRequiredLists,
         missingStopTranslations,
         isSchemaValid,
         publiclyAvailable:
           tour.publicationStatus === 'published' &&
-          !tour.isHidden &&
           translation.translationStatus === 'ready' &&
           translation.publicationStatus === 'published' &&
-          !translation.isHidden &&
           missingRequiredLists.length === 0 &&
           isSchemaValid &&
           missingStopTranslations.length === 0,
@@ -739,7 +725,6 @@ export class ToursService {
       coverMediaRef: tour.coverMediaRef,
       galleryMediaRefs: tour.galleryMediaRefs,
       publicationStatus: tour.publicationStatus,
-      isHidden: tour.isHidden,
       contentSchema: tour.contentSchema,
       price:
         tour.priceAmount && tour.priceCurrency

@@ -81,7 +81,6 @@ This is a greenfield MVP specification. It defines required product behavior and
 - Tour content must support draft and published states.
 - Publishing must be a manual action.
 - A tour may be published even if only a subset of enabled languages is available.
-- A published tour may also be temporarily hidden from all public APIs when it is momentarily unavailable.
 - The admin interface contract should expose which languages are available for a tour and which are missing.
 - The tour-defined JSON Schema must be the source of truth for which localized fields exist, their types, and which of them are required.
 - The localized tour content schema must validate a single localized translation payload object rather than a locale-keyed wrapper or full tour aggregate.
@@ -90,8 +89,7 @@ This is a greenfield MVP specification. It defines required product behavior and
 - The documentation may also define a separate full tour aggregate schema for admin or persistence use, provided it remains distinct from the localized translation payload schema.
 - A tour translation must support `draft` and `ready` states.
 - A tour translation must support an explicit locale publication state with `published` and `unpublished`.
-- A tour translation may also be temporarily hidden from public APIs when that tour is momentarily unavailable in a specific language.
-- A tour translation may exist in an incomplete state, but a locale must be `ready`, `published`, not hidden, and satisfy all required fields in the tour schema before it is treated as available for public APIs.
+- A tour translation may exist in an incomplete state, but a locale must be `ready`, `published`, and satisfy all required fields in the tour schema before it is treated as available for public APIs.
 - A tour translation must include localized ordered string lists for `highlights`, `included`, and `notIncluded`.
 - A tour locale must not be publishable unless `highlights`, `included`, and `notIncluded` are present for that locale.
 - Every tour must include an itinerary.
@@ -191,7 +189,6 @@ The implementation may refine naming, but the following domain concepts are requ
 - Language reference
 - Translation status metadata with `draft` and `ready`
 - Translation publication state with `published` and `unpublished`
-- Translation-level hidden flag for temporary locale unavailability
 - Optional `bookingReferenceId` string as translation-level metadata
 - Ordered localized string lists for `highlights`, `included`, and `notIncluded`
 - Localized payload data that must conform to the tour's JSON Schema
@@ -257,7 +254,7 @@ Exact route names, DTO shapes, and module boundaries are implementation details.
 - List and detail endpoints that expose translation availability for each content entry.
 - Tour admin responses must include the tour schema and per-locale completeness or validation state against that schema.
 - Tour admin responses must include the shared tour properties and itinerary variant.
-- Tour admin responses must expose publication state, temporary visibility state, per-locale translation status, per-locale publication state, and per-locale hidden state separately.
+- Tour admin responses must expose publication state and per-locale translation status and publication state separately.
 - Tour admin responses may expose optional translation-level booking reference identifiers separately from the localized payload.
 - Tour admin responses may use a full aggregate shape that contains shared tour fields plus locale-keyed translation entries whose payloads conform to the localized tour content schema.
 - Tour admin responses must expose `highlights`, `included`, and `notIncluded` per locale and mark the locale incomplete when any of those required lists is missing.
@@ -284,11 +281,9 @@ Exact route names, DTO shapes, and module boundaries are implementation details.
 
 - Draft content must never appear in public APIs.
 - Unpublished content must never appear in public APIs.
-- Temporarily hidden tours must never appear in public APIs.
 - Unpublished translations must never appear in public APIs for their locale.
-- Hidden translations must never appear in public APIs for their locale.
 - Public content responses must only return localized fields for existing translations.
-- Public tour responses must only return locales whose translation status is `ready`, whose translation is `published`, whose translation is not hidden, and whose payload satisfies the tour schema.
+- Public tour responses must only return locales whose translation status is `ready`, whose translation is `published`, and whose payload satisfies the tour schema.
 - Public APIs must not fall back to another locale when the requested locale is missing or not publicly available.
 - Public blog responses must only return locales whose blog translation is `published`.
 - Public tour responses for descriptive itineraries must only return itinerary text for locales that satisfy the tour schema.
@@ -342,7 +337,7 @@ Exact route names, DTO shapes, and module boundaries are implementation details.
 - Tour aggregate validation must enforce that the canonical tour `id` is a UUID string.
 - Tour translation validation must enforce conformance between the localized payload and the tour-defined JSON Schema before a locale is exposed publicly.
 - Tour translation metadata validation must enforce that `bookingReferenceId`, when present, is a string.
-- Tour publication validation must require the tour to be published, not temporarily hidden, and the locale to be `ready`, `published`, not hidden, with all schema-required localized fields present and valid before that locale is publicly available.
+- Tour publication validation must require the tour to be published and the locale to be `ready`, `published`, with all schema-required localized fields present and valid before that locale is publicly available.
 - Locale publish operations must be rejected when required localized fields are missing or invalid.
 - Tour locale publication validation must require `highlights`, `included`, and `notIncluded` to be present as ordered string lists before that locale can be published.
 - Tour pricing validation must require a single amount and currency for paid tours, and must require `tip_based` tours to omit a fixed price amount.
@@ -380,13 +375,11 @@ The MVP requirements are met when the backend supports the following outcomes:
 - A tour translation with `highlights`, `included`, and `notIncluded` populated can be published when its other locale requirements are satisfied.
 - A paid tour can define a single fixed amount and currency, while a `tip_based` tour can be created without a fixed price amount.
 - A tour rating and review count can be managed by admins without requiring an external reviews integration.
-- A tour locale is only exposed publicly when its translation is `ready`, `published`, not hidden, and its payload satisfies the tour schema.
+- A tour locale is only exposed publicly when its translation is `ready`, `published`, and its payload satisfies the tour schema.
 - A tour locale cannot be published if any of `highlights`, `included`, or `notIncluded` is missing.
 - Public APIs do not fall back to another locale when the requested locale is unavailable.
 - Public tour responses return `highlights`, `included`, and `notIncluded` in stored order for the requested locale.
 - Missing optional localized fields do not block publication, but provided optional fields are still backend-validated.
-- A published tour can be temporarily hidden from all public APIs without being unpublished.
-- A translation can be `ready` and still be hidden from all public APIs for its locale.
 - A tour can be published while some locales remain unpublished.
 - A tour can use a descriptive itinerary with localized itinerary text.
 - A tour can use a stop-based itinerary with an ordered stop list, optional stop and connection durations, optional coordinates, and localized stop titles and descriptions.
