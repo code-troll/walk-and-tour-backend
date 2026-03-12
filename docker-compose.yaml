@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: walk-and-tour-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: walk_and_tour
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d walk_and_tour"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: walk-and-tour-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      APP_NAME: walk-and-tour-backend
+      APP_BASE_URL: http://localhost:3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: walk_and_tour
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      AUTH0_ISSUER_BASE_URL: https://your-tenant.us.auth0.com/
+      AUTH0_AUDIENCE: https://walk-and-tour-backend/api
+      AUTH_BOOTSTRAP_SUPER_ADMIN_EMAIL: admin@example.com
+      AUTH_BOOTSTRAP_SUPER_ADMIN_SUB: ""
+      EMAIL_PROVIDER: console
+      EMAIL_FROM: Walk and Tour <no-reply@example.com>
+      RESEND_API_KEY: ""
+      STORAGE_DRIVER: local
+      LOCAL_STORAGE_ROOT: /app/storage
+      LOCAL_STORAGE_PUBLIC_BASE_URL: http://localhost:3000/media
+      SUPABASE_URL: ""
+      SUPABASE_SERVICE_ROLE_KEY: ""
+      SUPABASE_BUCKET: media
+    ports:
+      - "3000:3000"
+    volumes:
+      - app_storage:/app/storage
+
+volumes:
+  postgres_data:
+  app_storage:

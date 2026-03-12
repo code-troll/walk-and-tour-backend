@@ -26,6 +26,7 @@ The current suite focuses on branch-heavy and contract-heavy logic:
 - blog public visibility and controller delegation
 - newsletter subscriber double opt-in, unsubscribe, admin search, and CSV export flows
 - provider-backed newsletter email delivery and storage adapter behavior
+- local development seed reset-and-reseed orchestration
 
 Shared test utilities live under `test/` so future layers can reuse repository mocks and module-level stubs instead of rebuilding test scaffolding.
 

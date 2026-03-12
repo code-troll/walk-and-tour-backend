@@ -51,3 +51,4 @@ The six planned backend layers are now implemented. The next step, if requested,
 - Swagger/OpenAPI documentation is exposed at `/api/docs` and `/api/docs-json`, with exhaustive request/response schema descriptions for the current API surface.
 - Newsletter confirmation emails are now dispatched through the configured email provider abstraction; `console` is the safe default and Resend is available through environment configuration.
 - Storage provider selection is environment-driven: local filesystem for development defaults and Supabase-backed object storage for production-style configuration.
+- Local development now has a reset-and-reseed command that recreates a predictable demo dataset for admin, content, and newsletter testing without adding a new product layer.
