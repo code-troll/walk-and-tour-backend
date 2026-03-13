@@ -1,27 +1,33 @@
 # API Documentation
 
-Swagger/OpenAPI documentation is now generated from the NestJS controllers and DTO/schema models.
+Swagger/OpenAPI is generated from the NestJS controllers, DTOs, and Swagger models.
 
 ## Endpoints
 
 - `GET /api/docs`: interactive Swagger UI
 - `GET /api/docs-json`: raw OpenAPI JSON document
 
-## Scope
+## Frontend Guide
 
-The generated specification currently documents:
+For human-oriented frontend documentation, use:
 
-- request body schemas for admin create/update endpoints
-- public query and path parameters
-- nested response schemas for admin and public read endpoints
-- explicit localized tour list fields for `highlights`, `included`, and `notIncluded` in admin and public translation responses
-- newsletter subscribe, confirm, unsubscribe, list, detail, and export contracts
-- direct-link GET confirmation and unsubscribe routes used by provider-delivered emails
-- enum values, field descriptions, nullable fields, and dynamic locale-keyed objects
-- bearer-token requirements for protected admin routes
+- `docs/admin-frontend-api.md`
+
+That guide adds:
+
+- the full route inventory divided into admin and public sections
+- the Auth0-to-local-admin authentication flow
+- the route role matrix
+- global validation behavior from the NestJS `ValidationPipe`
+- business-rule validation notes that are not obvious from OpenAPI alone
+- tour-specific schema and publication mechanics for admin UI workflows
+- explicit notes that tours and blog posts have a shared non-localized top-level `name` field in admin payloads/responses, and that translations do not include `name`
+- admin tag deletion semantics, including cascade-removal of tag associations before delete
 
 ## Current Notes
 
-- The Swagger models under `src/swagger/swagger.models.ts` describe outgoing response payloads without changing runtime service behavior.
-- Incoming schemas are documented directly on the DTO classes used by controllers.
-- The spec is intended to stay aligned with the current implemented API surface as the project moves beyond the six defined backend layers.
+- The Swagger models under `src/swagger/swagger.models.ts` describe outgoing response payloads.
+- Incoming request schemas are documented directly on controller DTOs.
+- Admin tour and blog schemas now include a shared top-level `name` field for internal identification.
+- Tour and blog translations continue to own localized titles/content, not the shared `name`.
+- Swagger remains the machine-readable contract; `docs/admin-frontend-api.md` is the curated frontend implementation guide.

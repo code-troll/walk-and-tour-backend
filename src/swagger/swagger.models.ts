@@ -708,6 +708,12 @@ export class TourAdminResponseDto {
   id!: string;
 
   @ApiProperty({
+    description: 'Non-localized admin-facing name for the tour.',
+    example: 'Barcelona Historic Center Main Tour',
+  })
+  name!: string;
+
+  @ApiProperty({
     description: 'Stable public slug.',
     example: 'historic-center',
   })
@@ -1013,6 +1019,12 @@ export class BlogAdminResponseDto {
     format: 'uuid',
   })
   id!: string;
+
+  @ApiProperty({
+    description: 'Non-localized admin-facing name for the blog post.',
+    example: 'Barcelona Historic Center SEO Article',
+  })
+  name!: string;
 
   @ApiProperty({
     description: 'Stable public slug.',

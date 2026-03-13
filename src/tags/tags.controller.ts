@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -83,5 +84,27 @@ export class TagsController {
   @Patch(':key')
   update(@Param('key') key: string, @Body() dto: UpdateTagDto) {
     return this.tagsService.update(key, dto);
+  }
+
+  @ApiOperation({
+    summary: 'Delete a tag',
+    description:
+      'Removes the tag from all tours and blog posts, then deletes the tag record itself.',
+  })
+  @ApiParam({
+    name: 'key',
+    description: 'Stable tag key.',
+    example: 'history',
+  })
+  @ApiNoContentResponse({
+    description: 'Tag deleted after all tour and blog associations were removed.',
+  })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Delete(':key')
+  @HttpCode(204)
+  async remove(@Param('key') key: string): Promise<void> {
+    await this.tagsService.remove(key);
   }
 }

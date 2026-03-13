@@ -29,7 +29,11 @@ describe('ToursController', () => {
   });
 
   it('delegates create requests with the authenticated admin', async () => {
-    const dto = { slug: 'historic-center', publicationStatus: 'draft' };
+    const dto = {
+      name: 'Historic Center Main Tour',
+      slug: 'historic-center',
+      publicationStatus: 'draft',
+    };
     const admin = { id: 'admin-1' };
 
     await controller.create(dto as never, admin as never);

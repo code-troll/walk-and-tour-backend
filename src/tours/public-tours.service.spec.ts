@@ -227,6 +227,7 @@ describe('PublicToursService', () => {
 function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
   return {
     id: 'tour-1',
+    name: 'Historic Center Main Tour',
     slug: 'historic-center',
     category: 'walking',
     coverMediaRef: 'cover.jpg',

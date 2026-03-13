@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { LanguageEntity } from '../languages/language.entity';
 import { CreateTagDto } from './dto/create-tag.dto';
@@ -19,6 +19,7 @@ export class TagsService {
     private readonly tagsRepository: Repository<TagEntity>,
     @InjectRepository(LanguageEntity)
     private readonly languagesRepository: Repository<LanguageEntity>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(): Promise<TagEntity[]> {
@@ -60,6 +61,34 @@ export class TagsService {
     }
 
     return this.tagsRepository.save(tag);
+  }
+
+  async remove(key: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const tag = await manager.findOne(TagEntity, {
+        where: { key },
+      });
+
+      if (!tag) {
+        throw new NotFoundException(`Tag "${key}" was not found.`);
+      }
+
+      await manager.query(
+        `
+          DELETE FROM "tour_tags"
+          WHERE "tag_key" = $1
+        `,
+        [key],
+      );
+      await manager.query(
+        `
+          DELETE FROM "blog_post_tags"
+          WHERE "tag_key" = $1
+        `,
+        [key],
+      );
+      await manager.delete(TagEntity, { key });
+    });
   }
 
   async findByKeys(keys: string[]): Promise<TagEntity[]> {

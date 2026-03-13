@@ -10,6 +10,7 @@ describe('TagsController', () => {
       findAll: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      remove: jest.fn(),
     } as unknown as jest.Mocked<TagsService>;
 
     controller = new TagsController(tagsService);
@@ -30,5 +31,10 @@ describe('TagsController', () => {
     const dto = { labels: { en: 'Updated' } };
     await controller.update('history', dto);
     expect(tagsService.update).toHaveBeenCalledWith('history', dto);
+  });
+
+  it('delegates delete requests', async () => {
+    await controller.remove('history');
+    expect(tagsService.remove).toHaveBeenCalledWith('history');
   });
 });

@@ -110,6 +110,7 @@ describe('ToursService', () => {
 
     const result = await service.create(
       {
+        name: 'Historic Center Main Tour',
         slug: 'historic-center',
         publicationStatus: 'published',
         contentSchema: {
@@ -230,6 +231,7 @@ describe('ToursService', () => {
     expect(result).toEqual(
       expect.objectContaining({
         id: 'tour-1',
+        name: 'Historic Center Main Tour',
         slug: 'historic-center',
         price: {
           amount: 25,
@@ -529,6 +531,7 @@ describe('ToursService', () => {
     expect(result).toEqual(
       expect.objectContaining({
         slug: 'historic-center',
+        name: 'Historic Center Main Tour',
         itinerary: {
           variant: 'stops',
           stops: [
@@ -680,6 +683,7 @@ describe('ToursService', () => {
     await expect(
       service.create(
         {
+          name: 'Tip Tour Main Entry',
           slug: 'tip-tour',
           publicationStatus: 'draft',
           contentSchema: { type: 'object' },
@@ -713,6 +717,7 @@ describe('ToursService', () => {
     await expect(
       service.create(
         {
+          name: 'Historic Center Main Tour',
           slug: 'historic-center',
           publicationStatus: 'draft',
           contentSchema: { type: 'object' },
@@ -778,6 +783,7 @@ function createAdmin(): AuthenticatedAdmin {
 function createTourEntity(overrides: Partial<TourEntity> = {}): TourEntity {
   return {
     id: 'tour-1',
+    name: 'Historic Center Main Tour',
     slug: 'historic-center',
     category: 'walking',
     coverMediaRef: null,

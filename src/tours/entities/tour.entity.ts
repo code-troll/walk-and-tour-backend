@@ -23,6 +23,9 @@ export class TourEntity {
   @Column({ type: 'varchar', length: 150 })
   slug!: string;
 
+  @Column({ type: 'varchar', length: 255 })
+  name!: string;
+
   @Column({ type: 'varchar', length: 100, nullable: true })
   category!: string | null;
 

@@ -4,6 +4,7 @@ import {
   ArrayUnique,
   IsArray,
   IsIn,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
@@ -94,6 +95,16 @@ export class CreateBlogPostTranslationDto {
 }
 
 export class CreateBlogPostDto {
+  @ApiProperty({
+    description: 'Non-localized admin-facing name used to identify the blog post.',
+    example: 'Barcelona Historic Center SEO Article',
+    maxLength: 255,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name!: string;
+
   @ApiProperty({
     description: 'Stable public slug for the blog post.',
     example: 'barcelona-historic-center-guide',

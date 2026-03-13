@@ -46,6 +46,7 @@ Important groups:
   - `NODE_ENV`
   - `APP_NAME`
   - `APP_BASE_URL`
+  - `CORS_ALLOWED_ORIGINS`
 - database:
   - `DB_HOST`
   - `DB_PORT`
@@ -74,6 +75,8 @@ Notes:
 - `EMAIL_PROVIDER=console` is the safe default for development. Newsletter confirmation emails are logged instead of being sent.
 - `STORAGE_DRIVER=local` is the safe default for development.
 - admin endpoints boot without valid Auth0 credentials, but protected admin requests will only work with a valid bearer token and local admin mapping.
+- `CORS_ALLOWED_ORIGINS` is a comma-separated list of browser origins allowed to call the backend, for example `http://admin.dev.walkandtour.dk:3001,http://localhost:3001`.
+- `AUTH_BOOTSTRAP_SUPER_ADMIN_EMAIL` and `AUTH_BOOTSTRAP_SUPER_ADMIN_SUB` can bootstrap the first admin on an empty database, and the latest admin migration can also sync an existing local super admin to those values when migrations are run.
 
 ## Run Locally
 
@@ -98,6 +101,138 @@ App URLs:
 - Swagger UI: `http://localhost:3000/api/docs`
 - OpenAPI JSON: `http://localhost:3000/api/docs-json`
 - Health: `http://localhost:3000/api/health`
+
+## Auth0 Setup
+
+This backend does not implement username/password login itself. Protected admin routes expect an Auth0-issued bearer token whose:
+
+- `iss` matches `AUTH0_ISSUER_BASE_URL`
+- `aud` matches `AUTH0_AUDIENCE`
+- `sub` can be mapped to a local `AdminUser`
+
+### 1. Create a Custom Auth0 API
+
+In Auth0 Dashboard:
+
+- Go to `Applications > APIs`
+- Create a custom API for this backend
+- Use a stable API Identifier, for example:
+  - `http://api.dev.walkandtour.dk/api`
+- Signing algorithm: `RS256`
+
+The API Identifier must exactly match:
+
+- backend `AUTH0_AUDIENCE`
+- frontend requested `audience`
+
+Example backend `.env` values:
+
+```env
+AUTH0_ISSUER_BASE_URL=https://your-tenant.us.auth0.com
+AUTH0_AUDIENCE=http://api.dev.walkandtour.dk/api
+```
+
+Important:
+
+- `AUTH0_AUDIENCE` is an Auth0 API identifier, not necessarily the literal runtime backend URL
+- do not use the built-in Auth0 Management API audience for this backend
+- keep the value exactly identical across Auth0, backend, and frontend
+
+### 2. Create or Configure the Frontend Application
+
+In Auth0 Dashboard:
+
+- Go to `Applications > Applications`
+- Create or configure the admin frontend as a `Single Page Application`
+
+For a local admin frontend running at `http://admin.dev.walkandtour.dk:3001`, typical Auth0 application settings are:
+
+- Allowed Callback URLs:
+  - `http://admin.dev.walkandtour.dk:3001/auth/callback`
+- Allowed Logout URLs:
+  - `http://admin.dev.walkandtour.dk:3001`
+- Allowed Web Origins:
+  - `http://admin.dev.walkandtour.dk:3001`
+
+If you also use another local frontend origin, add it explicitly. Callback URLs must match exactly, including:
+
+- scheme
+- host
+- port
+- path
+
+### 3. Authorize the Frontend Application To Call the API
+
+After creating the custom API, make sure the frontend application is allowed to request tokens for it.
+
+If Auth0 returns an error like:
+
+- `Client is not authorized to access resource server ...`
+
+then the SPA application has not been authorized for the custom API yet. Enable access for that application in the Auth0 API settings.
+
+### 4. Configure the Frontend To Request the Same Audience
+
+The frontend must request the same audience configured above, for example:
+
+```env
+AUTH0_AUDIENCE=http://api.dev.walkandtour.dk/api
+BACKEND_AUTH0_AUDIENCE=http://api.dev.walkandtour.dk/api
+BACKEND_API_BASE_URL=http://api.dev.walkandtour.dk:3000
+APP_BASE_URL=http://admin.dev.walkandtour.dk:3001
+```
+
+The backend runtime URL can include a port for local development, while the Auth0 audience remains the stable API Identifier.
+
+### 5. Map an Auth0 User To a Local Admin User
+
+Successfully authenticating with Auth0 is not enough by itself. The backend still requires a local `AdminUser`.
+
+Mapping logic:
+
+- first lookup by `auth0UserId` against the Auth0 token `sub`
+- fallback lookup by email when a local admin exists with the same email and `auth0UserId = null`
+- admin status must be `active`
+
+If no local admin is mapped, protected routes return:
+
+- `401 No local admin user is mapped to this Auth0 identity.`
+
+For local development, you can either:
+
+- log in with the same email as the seeded admin (`admin@example.com`) on first login, or
+- set the bootstrap env vars to your real Auth0 user
+
+Example:
+
+```env
+AUTH_BOOTSTRAP_SUPER_ADMIN_EMAIL=you@example.com
+AUTH_BOOTSTRAP_SUPER_ADMIN_SUB=google-oauth2|123456789012345678901
+```
+
+`AUTH_BOOTSTRAP_SUPER_ADMIN_SUB` must be the exact Auth0 user `sub` value, such as:
+
+- `auth0|...`
+- `google-oauth2|...`
+
+If your database already contains admin users, run migrations after setting these values so the bootstrap admin sync migration can reconcile the local super admin record.
+
+### 6. Common Failure Cases
+
+- `Callback URL mismatch`
+  - The frontend `redirect_uri` does not exactly match an Allowed Callback URL in Auth0.
+
+- `Service not found`
+  - The requested audience does not match any custom Auth0 API Identifier.
+
+- `Client is not authorized to access resource server`
+  - The frontend application is not authorized to request tokens for the custom API.
+
+- `401 No local admin user is mapped to this Auth0 identity`
+  - Auth0 login succeeded, but the backend could not map the token to a local admin record.
+
+- `403 Admin user has not activated access yet` or `Admin user is disabled`
+  - The local admin exists, but its status blocks access.
 
 ## Local Seed Data
 
@@ -144,6 +279,14 @@ Useful seeded newsletter tokens:
 
 This is the lowest-friction way to boot the backend with PostgreSQL.
 
+Docker Compose reads runtime values from the project `.env` file. Start by creating it if you have not already:
+
+```bash
+cp .env.example .env
+```
+
+The same `.env` file is used for host-side `npm run ...` commands and for the containers. Inside Docker Compose, the app service overrides only `DB_HOST=postgres` so the backend can connect to the database container while your host setup can still keep `DB_HOST=localhost`.
+
 ```bash
 docker compose up --build
 ```
@@ -161,12 +304,14 @@ Compose files:
 - `docker-compose.yaml`
 - `Dockerfile`
 
-Compose defaults:
+Compose defaults come from `.env.example`, including:
 
-- database user/password: `postgres` / `postgres`
-- database name: `walk_and_tour`
-- email provider: `console`
-- storage driver: `local`
+- `PORT=3000`
+- `DB_NAME=walk_and_tour`
+- `DB_USER=postgres`
+- `DB_PASSWORD=postgres`
+- `EMAIL_PROVIDER=console`
+- `STORAGE_DRIVER=local`
 
 If you also want the seeded demo catalog inside the running container:
 
@@ -215,6 +360,7 @@ Current domain persistence includes:
 - `GET /api/docs-json`: raw OpenAPI document
 
 Swagger notes and scope live in `docs/api-documentation.md`.
+Frontend-oriented API guidance lives in `docs/admin-frontend-api.md`.
 
 ## Quality Checks
 
@@ -231,6 +377,8 @@ Testing notes and the current coverage scope live in `docs/testing.md`.
 ## Technical Notes
 
 - Tour localized content is schema-driven. Each tour stores a JSON Schema that validates localized translation payloads.
+- Tours and blog posts also carry a shared non-localized `name` field for admin-side identification; localized public-facing titles remain on translations.
+- Tags can be deleted through the admin API; deletion removes the tag from tours and blog posts before deleting the shared tag record.
 - Public tour visibility is strict: no locale fallback, no unpublished tours, no unpublished translations, and no invalid localized payloads.
 - Blog posts use shared metadata plus per-locale HTML translations.
 - Newsletter subscribers use double opt-in. Confirmation and unsubscribe links are tokenized.

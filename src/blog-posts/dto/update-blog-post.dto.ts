@@ -16,6 +16,16 @@ const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export class UpdateBlogPostDto {
   @ApiPropertyOptional({
+    description: 'Updated non-localized admin-facing name.',
+    example: 'Barcelona Historic Center SEO Article',
+    maxLength: 255,
+  })
+  @IsString()
+  @MaxLength(255)
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({
     description: 'Updated public slug.',
     example: 'barcelona-historic-center-guide',
     pattern: SLUG_PATTERN.source,

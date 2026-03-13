@@ -31,6 +31,7 @@ const REQUIRED_LOCALIZED_LIST_FIELDS = [
 ] as const;
 
 interface TourAggregateInput {
+  name: string;
   slug: string;
   category?: string;
   coverMediaRef?: string | null;
@@ -122,6 +123,7 @@ export class ToursService {
     await this.validateTranslations(aggregate);
 
     const tour = this.toursRepository.create({
+      name: aggregate.name,
       slug: aggregate.slug,
       category: aggregate.category ?? null,
       coverMediaRef: aggregate.coverMediaRef ?? null,
@@ -177,6 +179,7 @@ export class ToursService {
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);
     await this.validateTranslations(aggregate);
 
+    existing.name = aggregate.name;
     existing.slug = aggregate.slug;
     existing.category = aggregate.category ?? null;
     existing.coverMediaRef = aggregate.coverMediaRef ?? null;
@@ -248,6 +251,7 @@ export class ToursService {
       : this.getExistingItinerary(existing);
 
     const aggregate: TourAggregateInput = {
+      name: source.name ?? existing?.name ?? '',
       slug: source.slug ?? existing?.slug ?? '',
       category:
         'category' in source
@@ -292,6 +296,10 @@ export class ToursService {
   private validateSharedRules(aggregate: TourAggregateInput): void {
     if (!aggregate.slug) {
       throw new BadRequestException('Tour slug is required.');
+    }
+
+    if (!aggregate.name || aggregate.name.trim().length === 0) {
+      throw new BadRequestException('Tour name is required.');
     }
 
     if (!aggregate.cancellationType) {
@@ -665,7 +673,10 @@ export class ToursService {
         tour.itineraryVariant === 'stops'
           ? this.getMissingLocalizedStops(
               {
+                name: tour.name,
                 slug: tour.slug,
+                category: tour.category ?? undefined,
+                coverMediaRef: tour.coverMediaRef,
                 galleryMediaRefs: tour.galleryMediaRefs,
                 publicationStatus: tour.publicationStatus,
                 contentSchema: tour.contentSchema,
@@ -720,6 +731,7 @@ export class ToursService {
 
     return {
       id: tour.id,
+      name: tour.name,
       slug: tour.slug,
       category: tour.category,
       coverMediaRef: tour.coverMediaRef,

@@ -79,6 +79,7 @@ describe('PublicBlogPostsService', () => {
 function createPublicBlogPost(overrides: Partial<BlogPostEntity> = {}): BlogPostEntity {
   return {
     id: 'blog-1',
+    name: 'Royal Copenhagen Article',
     slug: 'royal-copenhagen',
     heroMediaRef: 'hero.jpg',
     category: 'history',

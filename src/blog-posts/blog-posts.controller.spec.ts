@@ -23,7 +23,11 @@ describe('BlogPostsController', () => {
   });
 
   it('delegates admin create calls with the authenticated admin', async () => {
-    const dto = { slug: 'royal-copenhagen', publicationStatus: 'draft' };
+    const dto = {
+      name: 'Royal Copenhagen Article',
+      slug: 'royal-copenhagen',
+      publicationStatus: 'draft',
+    };
     const admin = { id: 'admin-1' };
 
     await controller.createAdmin(dto as never, admin as never);

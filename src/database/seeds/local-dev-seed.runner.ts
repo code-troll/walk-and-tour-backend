@@ -6,8 +6,9 @@ import type { NewsletterTokenService } from '../../newsletter-subscribers/newsle
 import type { TagsService } from '../../tags/tags.service';
 import type { ToursService } from '../../tours/tours.service';
 
-const SEEDED_ADMIN_ID = '11111111-1111-1111-1111-111111111111';
-const SEEDED_ADMIN_EMAIL = 'admin@example.com';
+const SEEDED_ADMIN_ID = 'ab2a0930-a58a-4864-b3e9-188db44dd73d';
+const SEEDED_ADMIN_AUTH0_USER_ID = 'google-oauth2|115126832227190392506';
+const SEEDED_ADMIN_EMAIL = 'francoca87@gmail.com';
 
 const PENDING_CONFIRMATION_TOKEN =
   '111111111111111111111111111111111111111111111111';
@@ -126,6 +127,7 @@ const STOPS_TOUR_SCHEMA = {
 
 const SEEDED_TOURS = [
   {
+    name: 'Historic Center Highlights Catalog Entry',
     slug: 'historic-center-highlights',
     category: 'walking',
     coverMediaRef: 'tours/historic-center-highlights/cover.jpg',
@@ -209,6 +211,7 @@ const SEEDED_TOURS = [
     ],
   },
   {
+    name: 'Gaudi and Modernisme Route Catalog Entry',
     slug: 'gaudi-and-modernisme-route',
     category: 'architecture',
     coverMediaRef: 'tours/gaudi-and-modernisme-route/cover.jpg',
@@ -332,6 +335,7 @@ const SEEDED_TOURS = [
     ],
   },
   {
+    name: 'Born After Dark Draft Tour',
     slug: 'born-after-dark',
     category: 'nightlife',
     coverMediaRef: 'tours/born-after-dark/cover.jpg',
@@ -372,6 +376,7 @@ const SEEDED_TOURS = [
     ],
   },
   {
+    name: 'Barceloneta Sunset Tip Tour Catalog Entry',
     slug: 'barceloneta-sunset-tip-tour',
     category: 'waterfront',
     coverMediaRef: 'tours/barceloneta-sunset-tip-tour/cover.jpg',
@@ -403,6 +408,7 @@ const SEEDED_TOURS = [
 
 const SEEDED_BLOG_POSTS = [
   {
+    name: 'Barcelona Historic Center Guide Article',
     slug: 'barcelona-historic-center-guide',
     heroMediaRef: 'blog/barcelona-historic-center-guide/hero.jpg',
     category: 'city-guides',
@@ -445,6 +451,7 @@ const SEEDED_BLOG_POSTS = [
     ],
   },
   {
+    name: 'Best Tapas After Your Tour Article',
     slug: 'best-tapas-after-your-tour',
     heroMediaRef: 'blog/best-tapas-after-your-tour/hero.jpg',
     category: 'food',
@@ -476,6 +483,7 @@ const SEEDED_BLOG_POSTS = [
     ],
   },
   {
+    name: 'Behind the Scenes Tour Planning Article',
     slug: 'behind-the-scenes-tour-planning',
     heroMediaRef: 'blog/behind-the-scenes-tour-planning/hero.jpg',
     category: 'editorial',
@@ -642,7 +650,7 @@ export class LocalDevSeedRunner {
       id: SEEDED_ADMIN_ID,
       email: SEEDED_ADMIN_EMAIL,
       roleName: 'super_admin',
-      auth0UserId: null,
+      auth0UserId: SEEDED_ADMIN_AUTH0_USER_ID,
       status: 'active',
       lastLoginAt: null,
     });

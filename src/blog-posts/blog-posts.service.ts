@@ -20,6 +20,7 @@ import { BlogPostTranslationEntity } from './blog-post-translation.entity';
 import { BlogPostEntity } from './blog-post.entity';
 
 interface BlogAggregateInput {
+  name: string;
   slug: string;
   heroMediaRef?: string | null;
   category?: string;
@@ -74,6 +75,7 @@ export class BlogPostsService {
     await this.validateTranslations(aggregate.translations);
 
     const blogPost = this.blogPostsRepository.create({
+      name: aggregate.name,
       slug: aggregate.slug,
       heroMediaRef: aggregate.heroMediaRef ?? null,
       category: aggregate.category ?? null,
@@ -112,6 +114,7 @@ export class BlogPostsService {
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);
     await this.validateTranslations(aggregate.translations);
 
+    existing.name = aggregate.name;
     existing.slug = aggregate.slug;
     existing.heroMediaRef = aggregate.heroMediaRef ?? null;
     existing.category = aggregate.category ?? null;
@@ -141,6 +144,7 @@ export class BlogPostsService {
     existing?: BlogPostEntity,
   ): Promise<BlogAggregateInput> {
     const aggregate: BlogAggregateInput = {
+      name: source.name ?? existing?.name ?? '',
       slug: source.slug ?? existing?.slug ?? '',
       heroMediaRef:
         'heroMediaRef' in source
@@ -158,6 +162,10 @@ export class BlogPostsService {
 
     if (!aggregate.slug) {
       throw new BadRequestException('Blog post slug is required.');
+    }
+
+    if (!aggregate.name || aggregate.name.trim().length === 0) {
+      throw new BadRequestException('Blog post name is required.');
     }
 
     if (
@@ -361,6 +369,7 @@ export class BlogPostsService {
 
     return {
       id: blogPost.id,
+      name: blogPost.name,
       slug: blogPost.slug,
       heroMediaRef: blogPost.heroMediaRef,
       category: blogPost.category,

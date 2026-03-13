@@ -6,7 +6,7 @@ describe('LocalDevSeedRunner', () => {
     const languagesRepository = { save: jest.fn() };
     const adminUsersRepository = {
       save: jest.fn().mockResolvedValue({
-        id: '11111111-1111-1111-1111-111111111111',
+        id: 'ab2a0930-a58a-4864-b3e9-188db44dd73d',
         email: 'admin@example.com',
         auth0UserId: null,
       }),
@@ -107,6 +107,7 @@ describe('LocalDevSeedRunner', () => {
 
     expect(toursService.create).toHaveBeenCalledWith(
       expect.objectContaining({
+        name: 'Historic Center Highlights Catalog Entry',
         slug: 'historic-center-highlights',
         translations: expect.arrayContaining([
           expect.objectContaining({
@@ -128,6 +129,7 @@ describe('LocalDevSeedRunner', () => {
     );
     expect(blogPostsService.create).toHaveBeenCalledWith(
       expect.objectContaining({
+        name: 'Barcelona Historic Center Guide Article',
         slug: 'barcelona-historic-center-guide',
       }),
       expect.objectContaining({

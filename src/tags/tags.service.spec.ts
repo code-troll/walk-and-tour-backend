@@ -13,13 +13,20 @@ describe('TagsService', () => {
   let service: TagsService;
   let tagsRepository: RepositoryMock<TagEntity>;
   let languagesRepository: RepositoryMock<LanguageEntity>;
+  let dataSource: {
+    transaction: jest.Mock;
+  };
 
   beforeEach(() => {
     tagsRepository = createRepositoryMock<TagEntity>();
     languagesRepository = createRepositoryMock<LanguageEntity>();
+    dataSource = {
+      transaction: jest.fn(),
+    };
     service = new TagsService(
       tagsRepository as never,
       languagesRepository as never,
+      dataSource as never,
     );
   });
 
@@ -78,5 +85,44 @@ describe('TagsService', () => {
     await expect(service.update('missing', { labels: { en: 'Missing' } })).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('removes tag associations from tours and blog posts before deleting the tag', async () => {
+    const manager = {
+      findOne: jest.fn().mockResolvedValue({ key: 'history' } as TagEntity),
+      query: jest.fn(),
+      delete: jest.fn(),
+    };
+    dataSource.transaction.mockImplementation(async (callback) => callback(manager));
+
+    await service.remove('history');
+
+    expect(manager.findOne).toHaveBeenCalledWith(TagEntity, {
+      where: { key: 'history' },
+    });
+    expect(manager.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('DELETE FROM "tour_tags"'),
+      ['history'],
+    );
+    expect(manager.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('DELETE FROM "blog_post_tags"'),
+      ['history'],
+    );
+    expect(manager.delete).toHaveBeenCalledWith(TagEntity, { key: 'history' });
+  });
+
+  it('rejects delete requests for missing tags', async () => {
+    const manager = {
+      findOne: jest.fn().mockResolvedValue(null),
+      query: jest.fn(),
+      delete: jest.fn(),
+    };
+    dataSource.transaction.mockImplementation(async (callback) => callback(manager));
+
+    await expect(service.remove('missing')).rejects.toBeInstanceOf(NotFoundException);
+    expect(manager.query).not.toHaveBeenCalled();
+    expect(manager.delete).not.toHaveBeenCalled();
   });
 });

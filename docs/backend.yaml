@@ -1,0 +1,1214 @@
+openapi: 3.1.0
+info:
+  title: Walk and Tour Backend API
+  version: 1.0.0
+servers:
+  - url: https://backend.example.com
+paths:
+  /api/admin/auth/me:
+    get:
+      operationId: getAdminAuthMe
+      responses:
+        "200":
+          description: Authenticated admin context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticatedAdmin"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/admin/auth/logout:
+    post:
+      operationId: postAdminLogout
+      responses:
+        "200":
+          description: Logout instructions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutInstruction"
+  /api/admin/users:
+    get:
+      operationId: listAdminUsers
+      responses:
+        "200":
+          description: Admin users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+    post:
+      operationId: createAdminUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserUpsert"
+      responses:
+        "201":
+          description: Created admin user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/admin/users/{id}:
+    patch:
+      operationId: updateAdminUser
+      parameters:
+        - $ref: "#/components/parameters/UuidPathId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserUpdate"
+      responses:
+        "200":
+          description: Updated admin user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/admin/roles:
+    get:
+      operationId: listAdminRoles
+      responses:
+        "200":
+          description: Roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Role"
+  /api/admin/languages:
+    get:
+      operationId: listLanguages
+      responses:
+        "200":
+          description: Languages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Language"
+    post:
+      operationId: createLanguage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LanguageUpsert"
+      responses:
+        "201":
+          description: Created language
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Language"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/admin/languages/{code}:
+    patch:
+      operationId: updateLanguage
+      parameters:
+        - $ref: "#/components/parameters/LanguageCodePath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LanguagePatch"
+      responses:
+        "200":
+          description: Updated language
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Language"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/admin/tags:
+    get:
+      operationId: listTags
+      responses:
+        "200":
+          description: Tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
+    post:
+      operationId: createTag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagUpsert"
+      responses:
+        "201":
+          description: Created tag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/admin/tags/{key}:
+    patch:
+      operationId: updateTag
+      parameters:
+        - $ref: "#/components/parameters/TagKeyPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagPatch"
+      responses:
+        "200":
+          description: Updated tag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteTag
+      parameters:
+        - $ref: "#/components/parameters/TagKeyPath"
+      responses:
+        "204":
+          description: Tag deleted after cascading association removal
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/admin/tours:
+    get:
+      operationId: listAdminTours
+      responses:
+        "200":
+          description: Tours
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminTour"
+    post:
+      operationId: createTour
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminTourUpsert"
+      responses:
+        "201":
+          description: Created tour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTour"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/admin/tours/{id}:
+    get:
+      operationId: getAdminTour
+      parameters:
+        - $ref: "#/components/parameters/UuidPathId"
+      responses:
+        "200":
+          description: Tour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTour"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+    patch:
+      operationId: updateTour
+      parameters:
+        - $ref: "#/components/parameters/UuidPathId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminTourPatch"
+      responses:
+        "200":
+          description: Updated tour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTour"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/admin/blog-posts:
+    get:
+      operationId: listAdminBlogPosts
+      responses:
+        "200":
+          description: Blog posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminBlogPost"
+    post:
+      operationId: createBlogPost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminBlogPostUpsert"
+      responses:
+        "201":
+          description: Created blog post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBlogPost"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/admin/blog-posts/{id}:
+    get:
+      operationId: getAdminBlogPost
+      parameters:
+        - $ref: "#/components/parameters/UuidPathId"
+      responses:
+        "200":
+          description: Blog post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBlogPost"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+    patch:
+      operationId: updateBlogPost
+      parameters:
+        - $ref: "#/components/parameters/UuidPathId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminBlogPostPatch"
+      responses:
+        "200":
+          description: Updated blog post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBlogPost"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/admin/newsletter/subscribers:
+    get:
+      operationId: listNewsletterSubscribers
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/NewsletterSubscriptionStatus"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        "200":
+          description: Paginated subscribers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedNewsletterSubscribers"
+  /api/admin/newsletter/subscribers/export:
+    get:
+      operationId: exportNewsletterSubscribers
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/NewsletterSubscriptionStatus"
+      responses:
+        "200":
+          description: CSV export
+          content:
+            text/csv:
+              schema:
+                type: string
+  /api/admin/newsletter/subscribers/{id}:
+    get:
+      operationId: getNewsletterSubscriber
+      parameters:
+        - $ref: "#/components/parameters/UuidPathId"
+      responses:
+        "200":
+          description: Subscriber detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsletterSubscriber"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/public/tours:
+    get:
+      operationId: listPublicTours
+      parameters:
+        - $ref: "#/components/parameters/LocaleQuery"
+      responses:
+        "200":
+          description: Public tours
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicTour"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/public/tours/{slug}:
+    get:
+      operationId: getPublicTour
+      parameters:
+        - $ref: "#/components/parameters/SlugPath"
+        - $ref: "#/components/parameters/LocaleQuery"
+      responses:
+        "200":
+          description: Public tour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicTour"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/public/blog-posts:
+    get:
+      operationId: listPublicBlogPosts
+      parameters:
+        - $ref: "#/components/parameters/LocaleQuery"
+      responses:
+        "200":
+          description: Public blog posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicBlogPost"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/public/blog-posts/{slug}:
+    get:
+      operationId: getPublicBlogPost
+      parameters:
+        - $ref: "#/components/parameters/SlugPath"
+        - $ref: "#/components/parameters/LocaleQuery"
+      responses:
+        "200":
+          description: Public blog post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicBlogPost"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/public/newsletter/subscribers/subscribe:
+    post:
+      operationId: subscribeToNewsletter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsletterSubscribeRequest"
+      responses:
+        "200":
+          description: Subscribe result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsletterSubscribeResponse"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/public/newsletter/subscribers/confirm:
+    post:
+      operationId: confirmNewsletterSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenRequest"
+      responses:
+        "200":
+          description: Confirm result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResult"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/public/newsletter/subscribers/unsubscribe:
+    post:
+      operationId: unsubscribeFromNewsletter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenRequest"
+      responses:
+        "200":
+          description: Unsubscribe result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResult"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+components:
+  parameters:
+    UuidPathId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LanguageCodePath:
+      name: code
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/LocaleCode"
+    TagKeyPath:
+      name: key
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    SlugPath:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    LocaleQuery:
+      name: locale
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/LocaleCode"
+  responses:
+    ErrorResponse:
+      description: Error payload
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    LocaleCode:
+      type: string
+      pattern: "^[a-z]{2}(?:-[A-Z]{2})?$"
+    AdminRoleName:
+      type: string
+      enum: [super_admin, editor, marketing]
+    AdminUserStatus:
+      type: string
+      enum: [invited, active, disabled]
+    PublicationStatus:
+      type: string
+      enum: [draft, published]
+    TranslationStatus:
+      type: string
+      enum: [draft, ready]
+    TranslationPublicationStatus:
+      type: string
+      enum: [published, unpublished]
+    TourType:
+      type: string
+      enum: [private, group, tip_based]
+    CancellationType:
+      type: string
+      enum:
+        - 12h_free_cancellation
+        - 24h_free_cancellation
+        - 48h_free_cancellation
+        - 72h_free_cancellation
+    NewsletterSubscriptionStatus:
+      type: string
+      enum: [pending_confirmation, subscribed, unsubscribed]
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        message:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        error:
+          type: string
+      required: [statusCode, message]
+    LogoutInstruction:
+      type: object
+      properties:
+        logoutStrategy:
+          type: string
+      required: [logoutStrategy]
+    AuthenticatedAdmin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        roleName:
+          $ref: "#/components/schemas/AdminRoleName"
+        status:
+          $ref: "#/components/schemas/AdminUserStatus"
+        auth0UserId:
+          type: string
+      required: [id, email, roleName, status, auth0UserId]
+    Role:
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/AdminRoleName"
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [name, description, permissions, createdAt, updatedAt]
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        auth0UserId:
+          type: [string, "null"]
+        email:
+          type: string
+          format: email
+        roleName:
+          $ref: "#/components/schemas/AdminRoleName"
+        role:
+          $ref: "#/components/schemas/Role"
+        status:
+          $ref: "#/components/schemas/AdminUserStatus"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        lastLoginAt:
+          type: [string, "null"]
+      required: [id, auth0UserId, email, roleName, role, status, createdAt, updatedAt, lastLoginAt]
+    AdminUserUpsert:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        roleName:
+          $ref: "#/components/schemas/AdminRoleName"
+        status:
+          $ref: "#/components/schemas/AdminUserStatus"
+        auth0UserId:
+          type: [string, "null"]
+      required: [email, roleName]
+    AdminUserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        roleName:
+          $ref: "#/components/schemas/AdminRoleName"
+        status:
+          $ref: "#/components/schemas/AdminUserStatus"
+        auth0UserId:
+          type: [string, "null"]
+    Language:
+      type: object
+      properties:
+        code:
+          $ref: "#/components/schemas/LocaleCode"
+        name:
+          type: string
+        isEnabled:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [code, name, isEnabled, sortOrder, createdAt, updatedAt]
+    LanguageUpsert:
+      type: object
+      properties:
+        code:
+          $ref: "#/components/schemas/LocaleCode"
+        name:
+          type: string
+        isEnabled:
+          type: boolean
+        sortOrder:
+          type: integer
+      required: [code, name, sortOrder]
+    LanguagePatch:
+      type: object
+      properties:
+        name:
+          type: string
+        isEnabled:
+          type: boolean
+        sortOrder:
+          type: integer
+    Tag:
+      type: object
+      properties:
+        key:
+          type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [key, labels, createdAt, updatedAt]
+    TagUpsert:
+      type: object
+      properties:
+        key:
+          type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+      required: [key, labels]
+    TagPatch:
+      type: object
+      properties:
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+      required: [labels]
+    AuditMetadata:
+      type: object
+      properties:
+        createdBy:
+          type: [string, "null"]
+        updatedBy:
+          type: [string, "null"]
+        publishedBy:
+          type: [string, "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        publishedAt:
+          type: [string, "null"]
+      required: [createdBy, updatedBy, publishedBy, createdAt, updatedAt, publishedAt]
+    TranslationAvailability:
+      type: object
+      properties:
+        languageCode:
+          $ref: "#/components/schemas/LocaleCode"
+        translationStatus:
+          $ref: "#/components/schemas/TranslationStatus"
+        publicationStatus:
+          $ref: "#/components/schemas/TranslationPublicationStatus"
+        missingRequiredLists:
+          type: array
+          items:
+            type: string
+        missingStopTranslations:
+          type: array
+          items:
+            type: string
+        isSchemaValid:
+          type: boolean
+        publiclyAvailable:
+          type: boolean
+      required:
+        - languageCode
+        - translationStatus
+        - publicationStatus
+        - missingRequiredLists
+        - missingStopTranslations
+        - isSchemaValid
+        - publiclyAvailable
+    AdminTranslation:
+      type: object
+      properties:
+        languageCode:
+          $ref: "#/components/schemas/LocaleCode"
+        translationStatus:
+          $ref: "#/components/schemas/TranslationStatus"
+        publicationStatus:
+          $ref: "#/components/schemas/TranslationPublicationStatus"
+        payload:
+          type: object
+          additionalProperties: true
+        bookingReferenceId:
+          type: [string, "null"]
+      required: [languageCode, translationStatus, publicationStatus, payload]
+    AdminTour:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        category:
+          type: [string, "null"]
+        publicationStatus:
+          $ref: "#/components/schemas/PublicationStatus"
+        tourType:
+          $ref: "#/components/schemas/TourType"
+        cancellationType:
+          $ref: "#/components/schemas/CancellationType"
+        durationMinutes:
+          type: integer
+        price:
+          type: [number, "null"]
+        rating:
+          type: number
+        reviewCount:
+          type: integer
+        tagKeys:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        translations:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AdminTranslation"
+        translationAvailability:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranslationAvailability"
+        audit:
+          $ref: "#/components/schemas/AuditMetadata"
+      required:
+        - id
+        - name
+        - slug
+        - category
+        - publicationStatus
+        - tourType
+        - cancellationType
+        - durationMinutes
+        - price
+        - rating
+        - reviewCount
+        - tagKeys
+        - tags
+        - translations
+        - translationAvailability
+        - audit
+    AdminTourUpsert:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        category:
+          type: [string, "null"]
+        publicationStatus:
+          $ref: "#/components/schemas/PublicationStatus"
+        contentSchema:
+          type: object
+          additionalProperties: true
+        price:
+          type: [number, "null"]
+        rating:
+          type: number
+        reviewCount:
+          type: integer
+        tourType:
+          $ref: "#/components/schemas/TourType"
+        cancellationType:
+          $ref: "#/components/schemas/CancellationType"
+        durationMinutes:
+          type: integer
+        itinerary:
+          type: object
+          additionalProperties: true
+        tagKeys:
+          type: array
+          items:
+            type: string
+        translations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTranslation"
+      required:
+        - name
+        - slug
+        - publicationStatus
+        - contentSchema
+        - rating
+        - reviewCount
+        - tourType
+        - cancellationType
+        - durationMinutes
+        - itinerary
+        - tagKeys
+    AdminTourPatch:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        category:
+          type: [string, "null"]
+        publicationStatus:
+          $ref: "#/components/schemas/PublicationStatus"
+        contentSchema:
+          type: object
+          additionalProperties: true
+        price:
+          type: [number, "null"]
+        rating:
+          type: number
+        reviewCount:
+          type: integer
+        tourType:
+          $ref: "#/components/schemas/TourType"
+        cancellationType:
+          $ref: "#/components/schemas/CancellationType"
+        durationMinutes:
+          type: integer
+        itinerary:
+          type: object
+          additionalProperties: true
+        tagKeys:
+          type: array
+          items:
+            type: string
+        translations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTranslation"
+    AdminBlogTranslation:
+      type: object
+      properties:
+        languageCode:
+          $ref: "#/components/schemas/LocaleCode"
+        publicationStatus:
+          $ref: "#/components/schemas/TranslationPublicationStatus"
+        title:
+          type: [string, "null"]
+        summary:
+          type: [string, "null"]
+        htmlContent:
+          type: [string, "null"]
+        seoTitle:
+          type: [string, "null"]
+        seoDescription:
+          type: [string, "null"]
+      required: [languageCode, publicationStatus, title, summary, htmlContent, seoTitle, seoDescription]
+    AdminBlogPost:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        heroMediaRef:
+          type: [string, "null"]
+        category:
+          type: [string, "null"]
+        publicationStatus:
+          $ref: "#/components/schemas/PublicationStatus"
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        translations:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AdminBlogTranslation"
+        translationAvailability:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranslationAvailability"
+        audit:
+          $ref: "#/components/schemas/AuditMetadata"
+      required:
+        - id
+        - name
+        - slug
+        - heroMediaRef
+        - category
+        - publicationStatus
+        - tags
+        - translations
+        - translationAvailability
+        - audit
+    AdminBlogPostUpsert:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        heroMediaRef:
+          type: [string, "null"]
+        category:
+          type: [string, "null"]
+        publicationStatus:
+          $ref: "#/components/schemas/PublicationStatus"
+        tagKeys:
+          type: array
+          items:
+            type: string
+        translations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminBlogTranslation"
+      required: [name, slug, publicationStatus]
+    AdminBlogPostPatch:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        heroMediaRef:
+          type: [string, "null"]
+        category:
+          type: [string, "null"]
+        publicationStatus:
+          $ref: "#/components/schemas/PublicationStatus"
+        tagKeys:
+          type: array
+          items:
+            type: string
+        translations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminBlogTranslation"
+    NewsletterSubscriber:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        subscriptionStatus:
+          $ref: "#/components/schemas/NewsletterSubscriptionStatus"
+        preferredLocale:
+          type: [string, "null"]
+        consentSource:
+          type: [string, "null"]
+        sourceMetadata:
+          type: [object, "null"]
+          additionalProperties: true
+        consentedAt:
+          type: [string, "null"]
+        confirmedAt:
+          type: [string, "null"]
+        unsubscribedAt:
+          type: [string, "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - email
+        - subscriptionStatus
+        - preferredLocale
+        - consentSource
+        - sourceMetadata
+        - consentedAt
+        - confirmedAt
+        - unsubscribedAt
+        - createdAt
+        - updatedAt
+    PaginatedNewsletterSubscribers:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewsletterSubscriber"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required: [items, total, page, limit]
+    PublicTour:
+      type: object
+      properties:
+        slug:
+          type: string
+        category:
+          type: [string, "null"]
+        publicationStatus:
+          $ref: "#/components/schemas/PublicationStatus"
+        translation:
+          type: object
+          additionalProperties: true
+        itinerary:
+          type: object
+          additionalProperties: true
+        publishedAt:
+          type: [string, "null"]
+      required: [slug, category, publicationStatus, translation, itinerary, publishedAt]
+    PublicBlogPost:
+      type: object
+      properties:
+        slug:
+          type: string
+        category:
+          type: [string, "null"]
+        translation:
+          type: object
+          additionalProperties: true
+        publishedAt:
+          type: [string, "null"]
+      required: [slug, category, translation, publishedAt]
+    NewsletterSubscribeRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        preferredLocale:
+          $ref: "#/components/schemas/LocaleCode"
+        consentSource:
+          type: string
+        sourceMetadata:
+          type: object
+          additionalProperties: true
+      required: [email]
+    NewsletterSubscribeResponse:
+      type: object
+      properties:
+        alreadySubscribed:
+          type: boolean
+        subscriptionStatus:
+          $ref: "#/components/schemas/NewsletterSubscriptionStatus"
+      required: [alreadySubscribed, subscriptionStatus]
+    TokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+      required: [token]
+    TokenResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        subscriptionStatus:
+          $ref: "#/components/schemas/NewsletterSubscriptionStatus"
+      required: [success, subscriptionStatus]

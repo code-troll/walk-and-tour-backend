@@ -26,6 +26,16 @@ const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export class UpdateTourDto {
   @ApiPropertyOptional({
+    description: 'Updated non-localized admin-facing name.',
+    example: 'Barcelona Historic Center Main Tour',
+    maxLength: 255,
+  })
+  @IsString()
+  @MaxLength(255)
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({
     description: 'Updated public slug.',
     example: 'historic-center',
     pattern: SLUG_PATTERN.source,

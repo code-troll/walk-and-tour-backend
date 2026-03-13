@@ -54,3 +54,7 @@ The six planned backend layers are now implemented. The next step, if requested,
 - Local development now has a reset-and-reseed command that recreates a predictable demo dataset for admin, content, and newsletter testing without adding a new product layer.
 - Tour translations now surface and validate localized `highlights`, `included`, and `notIncluded` lists in admin/public responses and seeded demo content.
 - Tour and tour-translation visibility now relies on `publicationStatus` only; the former `isHidden` flags were removed from the model and schema.
+- Browser clients can now be allowlisted for cross-origin access through the `CORS_ALLOWED_ORIGINS` env setting during app bootstrap.
+- The latest admin-user migration can reconcile an existing local super admin with `AUTH_BOOTSTRAP_SUPER_ADMIN_EMAIL` and `AUTH_BOOTSTRAP_SUPER_ADMIN_SUB` so local Auth0 setup does not require a fully empty database.
+- Tours and blog posts now persist a shared non-localized `name` field for admin-side identification in addition to slugs and localized translation titles.
+- Admin tag deletion now performs an application-level cascade by removing tag associations from tours and blog posts before deleting the tag record.

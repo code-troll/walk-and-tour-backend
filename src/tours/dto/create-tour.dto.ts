@@ -216,6 +216,16 @@ export class CreateTourTranslationDto {
 
 export class CreateTourDto {
   @ApiProperty({
+    description: 'Non-localized admin-facing name used to identify the tour.',
+    example: 'Barcelona Historic Center Main Tour',
+    maxLength: 255,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name!: string;
+
+  @ApiProperty({
     description: 'Stable public slug for the tour.',
     example: 'historic-center',
     pattern: SLUG_PATTERN.source,

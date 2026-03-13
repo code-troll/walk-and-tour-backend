@@ -1,5 +1,6 @@
 export interface AppConfig {
   appName: string;
+  corsAllowedOrigins: string[];
   nodeEnv: string;
   port: number;
 }
@@ -11,9 +12,21 @@ const DEFAULT_PORT = 3000;
 export function getAppConfig(): AppConfig {
   return {
     appName: process.env.APP_NAME ?? DEFAULT_APP_NAME,
+    corsAllowedOrigins: parseCorsAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS),
     nodeEnv: process.env.NODE_ENV ?? DEFAULT_NODE_ENV,
     port: parsePort(process.env.PORT),
   };
+}
+
+function parseCorsAllowedOrigins(value: string | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
 }
 
 function parsePort(value: string | undefined): number {

@@ -47,6 +47,7 @@ describe('BlogPostsService', () => {
 
     const result = await service.create(
       {
+        name: 'Royal Copenhagen Article',
         slug: 'royal-copenhagen',
         publicationStatus: 'published',
         tagKeys: ['history'],
@@ -70,6 +71,7 @@ describe('BlogPostsService', () => {
 
     expect(blogPostsRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
+        name: 'Royal Copenhagen Article',
         slug: 'royal-copenhagen',
         createdBy: 'admin-1',
         updatedBy: 'admin-1',
@@ -87,6 +89,7 @@ describe('BlogPostsService', () => {
     await expect(
       service.create(
         {
+          name: 'Royal Copenhagen Article',
           slug: 'royal-copenhagen',
           publicationStatus: 'draft',
         },
@@ -109,6 +112,7 @@ describe('BlogPostsService', () => {
     await expect(
       service.create(
         {
+          name: 'Royal Copenhagen Article',
           slug: 'royal-copenhagen',
           publicationStatus: 'draft',
           translations: [
@@ -154,6 +158,7 @@ describe('BlogPostsService', () => {
 function createBlogPostEntity(): BlogPostEntity {
   return {
     id: 'blog-1',
+    name: 'Royal Copenhagen Article',
     slug: 'royal-copenhagen',
     heroMediaRef: null,
     category: null,

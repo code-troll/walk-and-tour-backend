@@ -22,6 +22,9 @@ export class BlogPostEntity {
   @Column({ type: 'varchar', length: 150 })
   slug!: string;
 
+  @Column({ type: 'varchar', length: 255 })
+  name!: string;
+
   @Column({ name: 'hero_media_ref', type: 'varchar', length: 255, nullable: true })
   heroMediaRef!: string | null;
 

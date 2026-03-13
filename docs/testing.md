@@ -18,9 +18,11 @@ The current suite focuses on branch-heavy and contract-heavy logic:
 
 - admin authentication resolution and JWT guard behavior
 - language and tag service behavior
+- tag deletion with cascade-removal of tour/blog join-table associations
 - tour schema policy and payload validation
 - tour public visibility and controller delegation
 - tour service creation and update flows, including stop-based itinerary replacement, translation upserts, and required localized list validation for `highlights`, `included`, and `notIncluded`
+- shared non-localized `name` handling for tours and blog posts in admin create/update flows
 - admin and public tour response shapes for descriptive and stop-based itineraries
 - blog post admin service behavior
 - blog public visibility and controller delegation
