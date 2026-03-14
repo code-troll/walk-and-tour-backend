@@ -72,15 +72,13 @@ This is a greenfield MVP specification. It defines required product behavior and
 
 ### 3. Tour Management
 
-- Admin users with the correct permissions must be able to create, edit, publish, unpublish, list, and view tours.
+- Admin users with the correct permissions must be able to create, edit, list, and view tours, and to publish or unpublish tour translations independently.
 - A tour must support shared metadata, a JSON Schema definition for localized content, and language-specific translations that satisfy that schema.
 - A tour must also support shared operational properties that are independent from translations, including price, rating, number of reviews, type, cancellation type, duration, starting point, and end point.
 - The pricing model for paid tours must use a single amount plus currency.
 - `tip_based` tours must be treated as no-fixed-price tours, where payment depends on the tourist's discretion rather than a stored fixed amount.
 - Rating and number of reviews must be admin-managed values in v1.
-- Tour content must support draft and published states.
-- Publishing must be a manual action.
-- A tour may be published even if only a subset of enabled languages is available.
+- Shared tour data may remain incomplete until a published-ready translation needs to be exposed publicly.
 - The admin interface contract should expose which languages are available for a tour and which are missing.
 - The tour-defined JSON Schema must be the source of truth for which localized fields exist, their types, and which of them are required.
 - The localized tour content schema must validate a single localized translation payload object rather than a locale-keyed wrapper or full tour aggregate.
@@ -100,7 +98,7 @@ This is a greenfield MVP specification. It defines required product behavior and
 - Tours must define stable tag keys independently of translations.
 - Tag labels must be resolved through a global admin-managed tag dictionary with per-locale labels.
 - Tour tag assignments must reference stored `Tag.key` records; this relationship is modeled outside the localized payload schema.
-- Public APIs must return only published tours.
+- Public APIs must return only tours whose shared data is publicly valid and whose requested locale translation is published and ready.
 - Public APIs must support locale-aware responses for tour content.
 
 ### 4. Blog Post Management
@@ -159,7 +157,7 @@ The implementation may refine naming, but the following domain concepts are requ
 ### `Tour`
 
 - Unique identifier as a UUID string
-- Shared metadata such as slug, category, cover media reference, and status
+- Shared metadata such as slug, cover media asset metadata, and status
 - Temporary visibility control for hiding a published tour from public APIs
 - Price amount for paid tours
 - Currency for paid tours
@@ -248,13 +246,13 @@ Exact route names, DTO shapes, and module boundaries are implementation details.
 - Auth endpoints or equivalent flows for login, logout, and password bootstrap/reset.
 - CRUD-style endpoints for tours.
 - CRUD-style endpoints for blog posts.
-- Publish and unpublish operations for tours and blog posts.
-- Tour admin APIs must support publishing and unpublishing locales independently from publishing and unpublishing the tour.
+- Publish and unpublish operations for blog posts and for tour translations.
+- Tour admin APIs must support publishing and unpublishing locales independently, without a separate parent-tour publish state.
 - Blog admin APIs must support publishing and unpublishing blog translations independently from publishing and unpublishing the blog post.
 - List and detail endpoints that expose translation availability for each content entry.
 - Tour admin responses must include the tour schema and per-locale completeness or validation state against that schema.
 - Tour admin responses must include the shared tour properties and itinerary variant.
-- Tour admin responses must expose publication state and per-locale translation status and publication state separately.
+- Tour admin responses must expose per-locale translation readiness and publication state separately.
 - Tour admin responses may expose optional translation-level booking reference identifiers separately from the localized payload.
 - Tour admin responses may use a full aggregate shape that contains shared tour fields plus locale-keyed translation entries whose payloads conform to the localized tour content schema.
 - Tour admin responses must expose `highlights`, `included`, and `notIncluded` per locale and mark the locale incomplete when any of those required lists is missing.
@@ -337,7 +335,7 @@ Exact route names, DTO shapes, and module boundaries are implementation details.
 - Tour aggregate validation must enforce that the canonical tour `id` is a UUID string.
 - Tour translation validation must enforce conformance between the localized payload and the tour-defined JSON Schema before a locale is exposed publicly.
 - Tour translation metadata validation must enforce that `bookingReferenceId`, when present, is a string.
-- Tour publication validation must require the tour to be published and the locale to be `ready`, `published`, with all schema-required localized fields present and valid before that locale is publicly available.
+- Tour public-availability validation must require the shared tour data to be valid and the locale to be `ready`, `published`, with all schema-required localized fields present and valid before that locale is publicly available.
 - Locale publish operations must be rejected when required localized fields are missing or invalid.
 - Tour locale publication validation must require `highlights`, `included`, and `notIncluded` to be present as ordered string lists before that locale can be published.
 - Tour pricing validation must require a single amount and currency for paid tours, and must require `tip_based` tours to omit a fixed price amount.
@@ -368,7 +366,7 @@ The MVP requirements are met when the backend supports the following outcomes:
 - A tour can define its localized content requirements through a JSON Schema and can be created in English and later translated into Spanish and Italian.
 - The localized tour content schema validates a single localized translation payload rather than a locale-keyed wrapper or full tour aggregate.
 - The documentation can also define a separate full tour aggregate schema for admin or persistence use without changing the translation payload contract.
-- A published tour or blog post can exist with incomplete translations.
+- A blog post can exist published with incomplete translations. Tours rely on per-locale publication instead of a parent-tour publish state.
 - A tour can expose shared properties such as price, rating, reviews, type, cancellation type, duration, start point, end point, and itinerary independently of translations.
 - A tour can use a UUID as its canonical internal identifier while preserving human-readable slugs and any legacy source keys separately for import mapping.
 - A tour translation can optionally include a locale-specific `bookingReferenceId` without changing the localized payload contract.
@@ -380,7 +378,7 @@ The MVP requirements are met when the backend supports the following outcomes:
 - Public APIs do not fall back to another locale when the requested locale is unavailable.
 - Public tour responses return `highlights`, `included`, and `notIncluded` in stored order for the requested locale.
 - Missing optional localized fields do not block publication, but provided optional fields are still backend-validated.
-- A tour can be published while some locales remain unpublished.
+- A tour can be publicly available while some locales remain unpublished.
 - A tour can use a descriptive itinerary with localized itinerary text.
 - A tour can use a stop-based itinerary with an ordered stop list, optional stop and connection durations, optional coordinates, and localized stop titles and descriptions.
 - A stop-based itinerary locale can only be public when all shared stops have localized title and description entries for that locale.

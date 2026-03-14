@@ -7,11 +7,7 @@ import {
   BLOG_TRANSLATION_PUBLICATION_STATUSES,
   NEWSLETTER_SUBSCRIPTION_STATUSES,
   SUPPORTED_LANGUAGE_CODES,
-  TOUR_CANCELLATION_TYPES,
   TOUR_COMMUTE_MODES,
-  TOUR_PUBLICATION_STATUSES,
-  TOUR_TRANSLATION_PUBLICATION_STATUSES,
-  TOUR_TRANSLATION_STATUSES,
   TOUR_TYPES,
 } from '../shared/domain';
 
@@ -87,6 +83,36 @@ export class AuditMetadataDto {
   publishedAt!: string | null;
 }
 
+export class RecordAuditMetadataDto {
+  @ApiPropertyOptional({
+    description: 'UUID of the admin that originally created the record.',
+    format: 'uuid',
+    nullable: true,
+  })
+  createdBy!: string | null;
+
+  @ApiPropertyOptional({
+    description: 'UUID of the admin that most recently updated the record.',
+    format: 'uuid',
+    nullable: true,
+  })
+  updatedBy!: string | null;
+
+  @ApiProperty({
+    description: 'Creation timestamp.',
+    type: String,
+    format: 'date-time',
+  })
+  createdAt!: string;
+
+  @ApiProperty({
+    description: 'Last update timestamp.',
+    type: String,
+    format: 'date-time',
+  })
+  updatedAt!: string;
+}
+
 export class HealthFoundationDto {
   @ApiProperty({
     description: 'Configured admin roles available in the platform.',
@@ -103,39 +129,11 @@ export class HealthFoundationDto {
   supportedLanguageCodes!: (typeof SUPPORTED_LANGUAGE_CODES)[number][];
 
   @ApiProperty({
-    description: 'Top-level publication states available for tours.',
-    enum: TOUR_PUBLICATION_STATUSES,
-    isArray: true,
-  })
-  tourPublicationStatuses!: (typeof TOUR_PUBLICATION_STATUSES)[number][];
-
-  @ApiProperty({
-    description: 'Translation workflow states available for tour localized content.',
-    enum: TOUR_TRANSLATION_STATUSES,
-    isArray: true,
-  })
-  tourTranslationStatuses!: (typeof TOUR_TRANSLATION_STATUSES)[number][];
-
-  @ApiProperty({
-    description: 'Translation publication states available for tour localized content.',
-    enum: TOUR_TRANSLATION_PUBLICATION_STATUSES,
-    isArray: true,
-  })
-  tourTranslationPublicationStatuses!: (typeof TOUR_TRANSLATION_PUBLICATION_STATUSES)[number][];
-
-  @ApiProperty({
     description: 'Supported tour commercial models.',
     enum: TOUR_TYPES,
     isArray: true,
   })
   tourTypes!: (typeof TOUR_TYPES)[number][];
-
-  @ApiProperty({
-    description: 'Supported tour cancellation policies.',
-    enum: TOUR_CANCELLATION_TYPES,
-    isArray: true,
-  })
-  tourCancellationTypes!: (typeof TOUR_CANCELLATION_TYPES)[number][];
 
   @ApiProperty({
     description: 'Supported commute modes between itinerary stops.',
@@ -449,6 +447,48 @@ export class PublicPointResponseDto {
   localized!: Record<string, unknown> | null;
 }
 
+export class TourMediaAssetResponseDto {
+  @ApiProperty({
+    description: 'Media reference path.',
+    example: 'media/tours/historic-center/cover.jpg',
+  })
+  ref!: string;
+
+  @ApiPropertyOptional({
+    description: 'Optional localized alt text keyed by locale code.',
+    type: 'object',
+    additionalProperties: {
+      type: 'string',
+    },
+    nullable: true,
+    example: {
+      en: 'View of the cathedral facade',
+      es: 'Vista de la fachada de la catedral',
+    },
+  })
+  altText!: Record<string, string> | null;
+}
+
+export class UploadedMediaResponseDto extends TourMediaAssetResponseDto {
+  @ApiProperty({
+    description: 'Public URL resolved by the configured storage driver.',
+    example: 'http://api.dev.walkandtour.dk:3000/media/tours/historic-center/uuid-cover.jpg',
+  })
+  publicUrl!: string;
+
+  @ApiProperty({
+    description: 'Detected content type of the uploaded object.',
+    example: 'image/jpeg',
+  })
+  contentType!: string;
+
+  @ApiProperty({
+    description: 'Stored file size in bytes.',
+    example: 248193,
+  })
+  size!: number;
+}
+
 export class PriceResponseDto {
   @ApiProperty({
     description: 'Fixed price amount.',
@@ -562,16 +602,16 @@ export class PublicTourItineraryResponseDto {
 
 export class TourAdminTranslationResponseDto {
   @ApiProperty({
-    description: 'Translation workflow state.',
-    enum: TOUR_TRANSLATION_STATUSES,
+    description: 'Whether the translation currently satisfies all required completeness rules.',
+    example: true,
   })
-  translationStatus!: (typeof TOUR_TRANSLATION_STATUSES)[number];
+  isReady!: boolean;
 
   @ApiProperty({
-    description: 'Translation publication state.',
-    enum: TOUR_TRANSLATION_PUBLICATION_STATUSES,
+    description: 'Whether the translation is configured to be publicly exposed.',
+    example: true,
   })
-  publicationStatus!: (typeof TOUR_TRANSLATION_PUBLICATION_STATUSES)[number];
+  isPublished!: boolean;
 
   @ApiPropertyOptional({
     description: 'External booking reference for the locale, if any.',
@@ -579,6 +619,13 @@ export class TourAdminTranslationResponseDto {
     example: 'booking-ref-123',
   })
   bookingReferenceId!: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Localized cancellation policy text, or `null` when the translation is incomplete.',
+    example: 'Free cancellation up to 24 hours before the start time.',
+    nullable: true,
+  })
+  cancellationType!: string | null;
 
   @ApiPropertyOptional({
     description: 'Localized highlight bullets in admin-defined order, or `null` when the translation is incomplete.',
@@ -620,16 +667,16 @@ export class TourTranslationAvailabilityResponseDto {
   languageCode!: string;
 
   @ApiProperty({
-    description: 'Translation workflow state.',
-    enum: TOUR_TRANSLATION_STATUSES,
+    description: 'Whether the translation currently satisfies all required completeness rules.',
+    example: true,
   })
-  translationStatus!: (typeof TOUR_TRANSLATION_STATUSES)[number];
+  isReady!: boolean;
 
   @ApiProperty({
-    description: 'Translation publication state.',
-    enum: TOUR_TRANSLATION_PUBLICATION_STATUSES,
+    description: 'Whether the translation is configured to be publicly exposed.',
+    example: true,
   })
-  publicationStatus!: (typeof TOUR_TRANSLATION_PUBLICATION_STATUSES)[number];
+  isPublished!: boolean;
 
   @ApiProperty({
     description: 'Required localized list fields that are missing or malformed.',
@@ -670,6 +717,12 @@ export class PublicTourTranslationResponseDto {
     nullable: true,
   })
   bookingReferenceId!: string | null;
+
+  @ApiProperty({
+    description: 'Localized cancellation policy text.',
+    example: 'Free cancellation up to 24 hours before the start time.',
+  })
+  cancellationType!: string;
 
   @ApiProperty({
     description: 'Localized highlight bullets in display order.',
@@ -720,38 +773,25 @@ export class TourAdminResponseDto {
   slug!: string;
 
   @ApiPropertyOptional({
-    description: 'Optional business category.',
-    example: 'walking',
+    description: 'Optional cover media asset.',
+    type: () => TourMediaAssetResponseDto,
     nullable: true,
   })
-  category!: string | null;
+  coverMediaRef!: TourMediaAssetResponseDto | null;
+
+  @ApiProperty({
+    description: 'Additional gallery media assets.',
+    type: () => [TourMediaAssetResponseDto],
+  })
+  galleryMediaRefs!: TourMediaAssetResponseDto[];
 
   @ApiPropertyOptional({
-    description: 'Optional cover media reference.',
-    example: 'media/tours/historic-center/cover.jpg',
-    nullable: true,
-  })
-  coverMediaRef!: string | null;
-
-  @ApiProperty({
-    description: 'Additional gallery media references.',
-    type: [String],
-    example: ['media/tours/historic-center/1.jpg'],
-  })
-  galleryMediaRefs!: string[];
-
-  @ApiProperty({
-    description: 'Tour publication state.',
-    enum: TOUR_PUBLICATION_STATUSES,
-  })
-  publicationStatus!: (typeof TOUR_PUBLICATION_STATUSES)[number];
-
-  @ApiProperty({
     description: 'Shared JSON Schema that localized translation payloads must satisfy.',
     type: 'object',
     additionalProperties: true,
+    nullable: true,
   })
-  contentSchema!: Record<string, unknown>;
+  contentSchema!: Record<string, unknown> | null;
 
   @ApiPropertyOptional({
     description: 'Fixed price data. `null` for tip-based tours.',
@@ -760,17 +800,19 @@ export class TourAdminResponseDto {
   })
   price!: PriceResponseDto | null;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Average rating normalized to a numeric value.',
     example: 4.8,
+    nullable: true,
   })
-  rating!: number;
+  rating!: number | null;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Total review count.',
     example: 120,
+    nullable: true,
   })
-  reviewCount!: number;
+  reviewCount!: number | null;
 
   @ApiProperty({
     description: 'Tour commercial model.',
@@ -778,35 +820,33 @@ export class TourAdminResponseDto {
   })
   tourType!: (typeof TOUR_TYPES)[number];
 
-  @ApiProperty({
-    description: 'Tour cancellation policy.',
-    enum: TOUR_CANCELLATION_TYPES,
-  })
-  cancellationType!: (typeof TOUR_CANCELLATION_TYPES)[number];
-
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Total duration in minutes.',
     example: 120,
+    nullable: true,
   })
-  durationMinutes!: number;
+  durationMinutes!: number | null;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Shared start point object.',
     type: () => SharedPointResponseDto,
+    nullable: true,
   })
-  startPoint!: SharedPointResponseDto;
+  startPoint!: SharedPointResponseDto | null;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Shared end point object.',
     type: () => SharedPointResponseDto,
+    nullable: true,
   })
-  endPoint!: SharedPointResponseDto;
+  endPoint!: SharedPointResponseDto | null;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Shared itinerary structure.',
     type: () => TourAdminItineraryResponseDto,
+    nullable: true,
   })
-  itinerary!: TourAdminItineraryResponseDto;
+  itinerary!: TourAdminItineraryResponseDto | null;
 
   @ApiProperty({
     description: 'Ordered tag keys assigned to the tour.',
@@ -835,10 +875,10 @@ export class TourAdminResponseDto {
   translationAvailability!: TourTranslationAvailabilityResponseDto[];
 
   @ApiProperty({
-    description: 'Audit metadata for create, update, and publish operations.',
-    type: () => AuditMetadataDto,
+    description: 'Audit metadata for create and update operations.',
+    type: () => RecordAuditMetadataDto,
   })
-  audit!: AuditMetadataDto;
+  audit!: RecordAuditMetadataDto;
 }
 
 export class PublicTourResponseDto {
@@ -855,24 +895,17 @@ export class PublicTourResponseDto {
   slug!: string;
 
   @ApiPropertyOptional({
-    description: 'Optional public category.',
-    example: 'walking',
+    description: 'Optional cover media asset.',
+    type: () => TourMediaAssetResponseDto,
     nullable: true,
   })
-  category!: string | null;
-
-  @ApiPropertyOptional({
-    description: 'Optional cover media reference.',
-    example: 'media/tours/historic-center/cover.jpg',
-    nullable: true,
-  })
-  coverMediaRef!: string | null;
+  coverMediaRef!: TourMediaAssetResponseDto | null;
 
   @ApiProperty({
-    description: 'Public gallery media references.',
-    type: [String],
+    description: 'Public gallery media assets.',
+    type: () => [TourMediaAssetResponseDto],
   })
-  galleryMediaRefs!: string[];
+  galleryMediaRefs!: TourMediaAssetResponseDto[];
 
   @ApiPropertyOptional({
     description: 'Fixed price data. `null` for tip-based tours.',
@@ -898,12 +931,6 @@ export class PublicTourResponseDto {
     enum: TOUR_TYPES,
   })
   tourType!: (typeof TOUR_TYPES)[number];
-
-  @ApiProperty({
-    description: 'Tour cancellation policy.',
-    enum: TOUR_CANCELLATION_TYPES,
-  })
-  cancellationType!: (typeof TOUR_CANCELLATION_TYPES)[number];
 
   @ApiProperty({
     description: 'Total duration in minutes.',
@@ -941,12 +968,6 @@ export class PublicTourResponseDto {
   })
   itinerary!: PublicTourItineraryResponseDto;
 
-  @ApiProperty({
-    description: 'Publication timestamp of the parent tour.',
-    type: String,
-    format: 'date-time',
-  })
-  publishedAt!: string;
 }
 
 export class BlogAdminTranslationResponseDto {
@@ -1037,12 +1058,6 @@ export class BlogAdminResponseDto {
     nullable: true,
   })
   heroMediaRef!: string | null;
-
-  @ApiPropertyOptional({
-    description: 'Optional category.',
-    nullable: true,
-  })
-  category!: string | null;
 
   @ApiProperty({
     description: 'Blog post publication state.',
@@ -1143,12 +1158,6 @@ export class PublicBlogResponseDto {
     nullable: true,
   })
   heroMediaRef!: string | null;
-
-  @ApiPropertyOptional({
-    description: 'Optional category.',
-    nullable: true,
-  })
-  category!: string | null;
 
   @ApiProperty({
     description: 'Localized tag labels for the requested locale.',
@@ -1368,6 +1377,7 @@ export class NewsletterUnsubscribedResponseDto {
 export const SWAGGER_EXTRA_MODELS = [
   ErrorResponseDto,
   AuditMetadataDto,
+  RecordAuditMetadataDto,
   HealthFoundationDto,
   HealthResponseDto,
   LanguageResponseDto,
@@ -1380,6 +1390,8 @@ export const SWAGGER_EXTRA_MODELS = [
   GeoCoordinatesDto,
   SharedPointResponseDto,
   PublicPointResponseDto,
+  TourMediaAssetResponseDto,
+  UploadedMediaResponseDto,
   PriceResponseDto,
   TourNextConnectionResponseDto,
   TourAdminItineraryStopResponseDto,

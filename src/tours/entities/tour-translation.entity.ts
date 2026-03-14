@@ -36,11 +36,11 @@ export class TourTranslationEntity {
   @JoinColumn({ name: 'language_code', referencedColumnName: 'code' })
   language!: LanguageEntity;
 
-  @Column({ name: 'translation_status', type: 'varchar', length: 20 })
-  translationStatus!: string;
+  @Column({ name: 'is_ready', type: 'boolean', default: false })
+  isReady!: boolean;
 
-  @Column({ name: 'publication_status', type: 'varchar', length: 20 })
-  publicationStatus!: string;
+  @Column({ name: 'is_published', type: 'boolean', default: false })
+  isPublished!: boolean;
 
   @Column({ name: 'booking_reference_id', type: 'varchar', length: 255, nullable: true })
   bookingReferenceId!: string | null;

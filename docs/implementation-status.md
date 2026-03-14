@@ -20,13 +20,14 @@ Completed in this step:
 - Added application-level email-provider abstractions with `console` and Resend-backed implementations.
 - Wired newsletter subscribe flows to dispatch provider-backed confirmation emails containing direct confirmation and unsubscribe links.
 - Added application-level storage abstractions with local-filesystem and Supabase-backed implementations behind one shared contract.
+- Added an admin image upload endpoint backed by the shared storage abstraction for reusable tour media assets.
 - Added direct-link GET confirmation and unsubscribe endpoints to support email-driven tokenized flows without changing subscriber persistence.
 - Added configuration, Swagger updates, and unit coverage for provider and storage adapters.
 
 This layer intentionally does **not** include:
 
 - Campaign authoring or sending workflows
-- Media upload endpoints or file-management APIs
+- File-management delete APIs or richer media library management
 - Booking or customer-account features
 
 ## Next Layer
@@ -49,12 +50,19 @@ The six planned backend layers are now implemented. The next step, if requested,
 - Public content routes require an explicit `locale` query parameter and intentionally do not fall back to another locale when content is unavailable.
 - Before starting layer 5, the tour test suite now covers create/update flows, stop-based itinerary replacement, translation description updates, and admin/public response-shape assertions.
 - Swagger/OpenAPI documentation is exposed at `/api/docs` and `/api/docs-json`, with exhaustive request/response schema descriptions for the current API surface.
+- Tag labels are validated as non-empty locale-keyed strings with a maximum length of 100 characters.
 - Newsletter confirmation emails are now dispatched through the configured email provider abstraction; `console` is the safe default and Resend is available through environment configuration.
 - Storage provider selection is environment-driven: local filesystem for development defaults and Supabase-backed object storage for production-style configuration.
 - Local development now has a reset-and-reseed command that recreates a predictable demo dataset for admin, content, and newsletter testing without adding a new product layer.
 - Tour translations now surface and validate localized `highlights`, `included`, and `notIncluded` lists in admin/public responses and seeded demo content.
-- Tour and tour-translation visibility now relies on `publicationStatus` only; the former `isHidden` flags were removed from the model and schema.
+- Tour public visibility is now derived from shared tour completeness plus translation state; only `tour_translations.is_published` is stored, while `tour_translations.is_ready` is recalculated by the backend.
 - Browser clients can now be allowlisted for cross-origin access through the `CORS_ALLOWED_ORIGINS` env setting during app bootstrap.
-- The latest admin-user migration can reconcile an existing local super admin with `AUTH_BOOTSTRAP_SUPER_ADMIN_EMAIL` and `AUTH_BOOTSTRAP_SUPER_ADMIN_SUB` so local Auth0 setup does not require a fully empty database.
+- If the local admin table is empty, bootstrap env vars can seed the first super admin on startup without an extra migration step.
 - Tours and blog posts now persist a shared non-localized `name` field for admin-side identification in addition to slugs and localized translation titles.
+- Tours and blog posts no longer persist or expose a `category` field; the latest migration removes it from both tables and API contracts.
+- Tour `cancellationType` is now a localized free-text translation field, not a shared persisted tour column.
+- Tour media assets now support optional localized alt-text maps on the cover asset and each gallery asset.
+- Admin image uploads now return reusable media refs and preview metadata through `POST /api/admin/media/upload`.
 - Admin tag deletion now performs an application-level cascade by removing tag associations from tours and blog posts before deleting the tag record.
+- Tour writes are now split: shared tour data is saved through base-tour endpoints, translations are saved through nested translation endpoints, and translation publish/unpublish is only available through dedicated translation routes.
+- Tour translations can now be permanently removed through a dedicated nested delete endpoint.

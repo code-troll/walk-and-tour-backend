@@ -1,17 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "TourAggregate",
-  "description": "Canonical v1 schema for the full admin/persisted tour aggregate. This schema covers shared tour data, workflow metadata, itinerary structure, tag keys, and locale-keyed translations whose payloads conform to tour-content-schema.json.",
+  "description": "Canonical v1 schema for the full admin/persisted tour aggregate. This schema covers shared tour data, shared itinerary structure, tag keys, and locale-keyed translations whose payloads conform to tour-content-schema.json.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "id",
+    "name",
     "slug",
-    "publicationStatus",
     "rating",
     "reviewCount",
     "tourType",
-    "cancellationType",
     "durationMinutes",
     "startPoint",
     "endPoint",
@@ -25,27 +24,20 @@
       "format": "uuid",
       "description": "Canonical internal tour identifier."
     },
+    "name": {
+      "type": "string"
+    },
     "slug": {
       "type": "string"
     },
-    "category": {
-      "type": "string"
-    },
     "coverMediaRef": {
-      "type": "string"
+      "$ref": "#/$defs/MediaAsset"
     },
     "galleryMediaRefs": {
       "type": "array",
       "items": {
-        "type": "string"
+        "$ref": "#/$defs/MediaAsset"
       }
-    },
-    "publicationStatus": {
-      "type": "string",
-      "enum": [
-        "draft",
-        "published"
-      ]
     },
     "price": {
       "$ref": "#/$defs/Price"
@@ -65,15 +57,6 @@
         "private",
         "group",
         "tip_based"
-      ]
-    },
-    "cancellationType": {
-      "type": "string",
-      "enum": [
-        "12h_free_cancellation",
-        "24h_free_cancellation",
-        "48h_free_cancellation",
-        "72h_free_cancellation"
       ]
     },
     "durationMinutes": {
@@ -116,17 +99,10 @@
       "type": "string",
       "format": "date-time"
     },
-    "publishedAt": {
-      "type": "string",
-      "format": "date-time"
-    },
     "createdBy": {
       "type": "string"
     },
     "updatedBy": {
-      "type": "string"
-    },
-    "publishedBy": {
       "type": "string"
     }
   },
@@ -196,6 +172,29 @@
         },
         "currency": {
           "type": "string"
+        }
+      }
+    },
+    "MediaAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "altText": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 255
+          }
         }
       }
     },
@@ -294,24 +293,16 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "translationStatus",
-        "publicationStatus",
+        "isReady",
+        "isPublished",
         "payload"
       ],
       "properties": {
-        "translationStatus": {
-          "type": "string",
-          "enum": [
-            "draft",
-            "ready"
-          ]
+        "isReady": {
+          "type": "boolean"
         },
-        "publicationStatus": {
-          "type": "string",
-          "enum": [
-            "published",
-            "unpublished"
-          ]
+        "isPublished": {
+          "type": "boolean"
         },
         "bookingReferenceId": {
           "type": "string"

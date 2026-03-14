@@ -7,16 +7,19 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
-import { LanguageEntity } from '../languages/language.entity';
-import {
-  TOUR_PUBLICATION_STATUSES,
-  TOUR_TRANSLATION_PUBLICATION_STATUSES,
-  TOUR_TRANSLATION_STATUSES,
-  TOUR_TYPES,
-} from '../shared/domain';
-import { TagEntity } from '../tags/tag.entity';
 import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface';
-import { CreateTourDto, CreateTourTranslationDto } from './dto/create-tour.dto';
+import { LanguageEntity } from '../languages/language.entity';
+import { TOUR_TYPES } from '../shared/domain';
+import { TagEntity } from '../tags/tag.entity';
+import {
+  CreateTourDto,
+  TourMediaAssetDto,
+} from './dto/create-tour.dto';
+import {
+  CreateTourTranslationDto,
+  PublishTourTranslationDto,
+  UpdateTourTranslationDto,
+} from './dto/tour-translation.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { TourItineraryStopEntity } from './entities/tour-itinerary-stop.entity';
 import { TourTranslationEntity } from './entities/tour-translation.entity';
@@ -30,22 +33,19 @@ const REQUIRED_LOCALIZED_LIST_FIELDS = [
   'notIncluded',
 ] as const;
 
-interface TourAggregateInput {
+interface TourSharedInput {
   name: string;
   slug: string;
-  category?: string;
-  coverMediaRef?: string | null;
-  galleryMediaRefs: string[];
-  publicationStatus: string;
-  contentSchema: Record<string, unknown>;
-  price?: { amount: number; currency: string } | null;
-  rating: number;
-  reviewCount: number;
+  coverMediaRef: Record<string, unknown> | null;
+  galleryMediaRefs: Record<string, unknown>[];
+  contentSchema: Record<string, unknown> | null;
+  price: { amount: number; currency: string } | null;
+  rating: number | null;
+  reviewCount: number | null;
   tourType: string;
-  cancellationType: string;
-  durationMinutes: number;
-  startPoint: Record<string, unknown>;
-  endPoint: Record<string, unknown>;
+  durationMinutes: number | null;
+  startPoint: Record<string, unknown> | null;
+  endPoint: Record<string, unknown> | null;
   itinerary: {
     variant: 'description' | 'stops';
     stops?: Array<{
@@ -54,9 +54,8 @@ interface TourAggregateInput {
       coordinates?: Record<string, number>;
       nextConnection?: Record<string, unknown>;
     }>;
-  };
+  } | null;
   tagKeys: string[];
-  translations: CreateTourTranslationDto[];
 }
 
 interface JsonCoordinates {
@@ -66,6 +65,11 @@ interface JsonCoordinates {
 
 interface JsonPoint {
   coordinates?: JsonCoordinates;
+}
+
+interface JsonMediaAsset extends Record<string, unknown> {
+  ref: string;
+  altText?: Record<string, string>;
 }
 
 @Injectable()
@@ -110,6 +114,14 @@ export class ToursService {
     dto: CreateTourDto,
     actor: AuthenticatedAdmin,
   ): Promise<unknown> {
+    if (!dto.name || dto.name.trim().length === 0) {
+      throw new BadRequestException('Tour name is required.');
+    }
+
+    if (!TOUR_TYPES.includes(dto.tourType as (typeof TOUR_TYPES)[number])) {
+      throw new BadRequestException(`Tour type "${dto.tourType}" is invalid.`);
+    }
+
     const existing = await this.toursRepository.findOne({
       where: { slug: dto.slug },
     });
@@ -118,42 +130,27 @@ export class ToursService {
       throw new ConflictException(`Tour slug "${dto.slug}" already exists.`);
     }
 
-    const aggregate = await this.buildAggregate(dto);
-    const tags = await this.getTagsOrThrow(aggregate.tagKeys);
-    await this.validateTranslations(aggregate);
-
     const tour = this.toursRepository.create({
-      name: aggregate.name,
-      slug: aggregate.slug,
-      category: aggregate.category ?? null,
-      coverMediaRef: aggregate.coverMediaRef ?? null,
-      galleryMediaRefs: aggregate.galleryMediaRefs,
-      publicationStatus: aggregate.publicationStatus,
-      contentSchema: aggregate.contentSchema,
-      priceAmount: aggregate.price ? aggregate.price.amount.toFixed(2) : null,
-      priceCurrency: aggregate.price?.currency ?? null,
-      rating: aggregate.rating.toFixed(2),
-      reviewCount: aggregate.reviewCount,
-      tourType: aggregate.tourType,
-      cancellationType: aggregate.cancellationType,
-      durationMinutes: aggregate.durationMinutes,
-      startPoint: aggregate.startPoint,
-      endPoint: aggregate.endPoint,
-      itineraryVariant: aggregate.itinerary.variant,
-      tags,
+      name: dto.name.trim(),
+      slug: dto.slug,
+      coverMediaRef: null,
+      galleryMediaRefs: [],
+      contentSchema: null,
+      priceAmount: null,
+      priceCurrency: null,
+      rating: null,
+      reviewCount: null,
+      tourType: dto.tourType,
+      durationMinutes: null,
+      startPoint: null,
+      endPoint: null,
+      itineraryVariant: null,
+      tags: [],
       createdBy: actor.id,
       updatedBy: actor.id,
-      publishedBy:
-        aggregate.publicationStatus === 'published'
-          ? actor.id
-          : null,
-      publishedAt:
-        aggregate.publicationStatus === 'published' ? new Date() : null,
     });
 
     const savedTour = await this.toursRepository.save(tour);
-    await this.replaceStops(savedTour.id, aggregate);
-    await this.replaceTranslations(savedTour.id, aggregate.translations);
 
     return this.findOne(savedTour.id);
   }
@@ -164,6 +161,7 @@ export class ToursService {
     actor: AuthenticatedAdmin,
   ): Promise<unknown> {
     const existing = await this.findEntityOrThrow(id);
+
     if (dto.slug && dto.slug !== existing.slug) {
       const slugCollision = await this.toursRepository.findOne({
         where: { slug: dto.slug },
@@ -174,59 +172,170 @@ export class ToursService {
       }
     }
 
-    const previousPublicationStatus = existing.publicationStatus;
-    const aggregate = await this.buildAggregate(dto, existing);
+    const aggregate = await this.buildSharedAggregate(dto, existing);
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);
-    await this.validateTranslations(aggregate);
 
     existing.name = aggregate.name;
     existing.slug = aggregate.slug;
-    existing.category = aggregate.category ?? null;
-    existing.coverMediaRef = aggregate.coverMediaRef ?? null;
+    existing.coverMediaRef = aggregate.coverMediaRef;
     existing.galleryMediaRefs = aggregate.galleryMediaRefs;
-    existing.publicationStatus = aggregate.publicationStatus;
     existing.contentSchema = aggregate.contentSchema;
     existing.priceAmount = aggregate.price ? aggregate.price.amount.toFixed(2) : null;
     existing.priceCurrency = aggregate.price?.currency ?? null;
-    existing.rating = aggregate.rating.toFixed(2);
+    existing.rating = aggregate.rating !== null ? aggregate.rating.toFixed(2) : null;
     existing.reviewCount = aggregate.reviewCount;
     existing.tourType = aggregate.tourType;
-    existing.cancellationType = aggregate.cancellationType;
     existing.durationMinutes = aggregate.durationMinutes;
     existing.startPoint = aggregate.startPoint;
     existing.endPoint = aggregate.endPoint;
-    existing.itineraryVariant = aggregate.itinerary.variant;
+    existing.itineraryVariant = aggregate.itinerary?.variant ?? null;
     existing.tags = tags;
     existing.updatedBy = actor.id;
 
-    if (
-      aggregate.publicationStatus === 'published' &&
-      previousPublicationStatus !== 'published'
-    ) {
-      existing.publishedAt = new Date();
-      existing.publishedBy = actor.id;
-    } else if (aggregate.publicationStatus === 'published') {
-      existing.publishedAt = existing.publishedAt ?? new Date();
-      existing.publishedBy = existing.publishedBy ?? actor.id;
-    } else {
-      existing.publishedAt = null;
-      existing.publishedBy = null;
-    }
-
     await this.toursRepository.save(existing);
     await this.replaceStops(existing.id, aggregate);
-    await this.upsertTranslations(existing.id, existing.translations, aggregate.translations);
+
+    const refreshed = await this.findEntityOrThrow(existing.id);
+    await this.recalculateAndPersistTranslations(refreshed);
 
     return this.findOne(existing.id);
   }
 
-  private async buildAggregate(
-    source: CreateTourDto | UpdateTourDto,
-    existing?: TourEntity,
-  ): Promise<TourAggregateInput> {
-    const contentSchema = this.schemaPolicyService.validateOrThrow(
-      source.contentSchema ?? existing?.contentSchema,
+  async createTranslation(
+    id: string,
+    dto: CreateTourTranslationDto,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    const tour = await this.findEntityOrThrow(id);
+    await this.assertLanguageExists(dto.languageCode);
+
+    const existing = tour.translations.find(
+      (translation) => translation.languageCode === dto.languageCode,
     );
+
+    if (existing) {
+      throw new ConflictException(
+        `Tour translation "${dto.languageCode}" already exists for tour "${id}".`,
+      );
+    }
+
+    this.validateDraftPayloadAgainstSchema(tour, dto.payload);
+
+    const translation = this.translationsRepository.create({
+      tourId: id,
+      languageCode: dto.languageCode,
+      bookingReferenceId: dto.bookingReferenceId ?? null,
+      payload: dto.payload,
+      isReady: this.calculateTranslationReadiness(tour, dto.payload),
+      isPublished: false,
+    });
+
+    await this.translationsRepository.save(translation);
+    await this.touchTour(tour, actor);
+
+    return this.findOne(id);
+  }
+
+  async updateTranslation(
+    id: string,
+    languageCode: string,
+    dto: UpdateTourTranslationDto,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    const tour = await this.findEntityOrThrow(id);
+    await this.assertLanguageExists(languageCode);
+    const translation = this.findTranslationOrThrow(tour, languageCode);
+
+    const nextPayload = dto.payload ?? translation.payload;
+    this.validateDraftPayloadAgainstSchema(tour, nextPayload);
+
+    translation.payload = nextPayload;
+
+    if ('bookingReferenceId' in dto) {
+      translation.bookingReferenceId = dto.bookingReferenceId ?? null;
+    }
+
+    translation.isReady = this.calculateTranslationReadiness(tour, translation.payload);
+    if (!translation.isReady) {
+      translation.isPublished = false;
+    }
+
+    await this.translationsRepository.save(translation);
+    await this.touchTour(tour, actor);
+
+    return this.findOne(id);
+  }
+
+  async publishTranslation(
+    id: string,
+    languageCode: string,
+    dto: PublishTourTranslationDto,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    const tour = await this.findEntityOrThrow(id);
+    await this.assertLanguageExists(languageCode);
+    const translation = this.findTranslationOrThrow(tour, languageCode);
+
+    if ('bookingReferenceId' in dto) {
+      translation.bookingReferenceId = dto.bookingReferenceId ?? null;
+    }
+
+    translation.isReady = this.calculateTranslationReadiness(tour, translation.payload);
+
+    if (!translation.isReady) {
+      translation.isPublished = false;
+      await this.translationsRepository.save(translation);
+      throw new BadRequestException(
+        `Translation "${translation.languageCode}" cannot be published until it is ready.`,
+      );
+    }
+
+    translation.isPublished = true;
+
+    await this.translationsRepository.save(translation);
+    await this.touchTour(tour, actor);
+
+    return this.findOne(id);
+  }
+
+  async unpublishTranslation(
+    id: string,
+    languageCode: string,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    const tour = await this.findEntityOrThrow(id);
+    await this.assertLanguageExists(languageCode);
+    const translation = this.findTranslationOrThrow(tour, languageCode);
+
+    translation.isReady = this.calculateTranslationReadiness(tour, translation.payload);
+    translation.isPublished = false;
+
+    await this.translationsRepository.save(translation);
+    await this.touchTour(tour, actor);
+
+    return this.findOne(id);
+  }
+
+  async deleteTranslation(
+    id: string,
+    languageCode: string,
+    actor: AuthenticatedAdmin,
+  ): Promise<void> {
+    const tour = await this.findEntityOrThrow(id);
+    const translation = this.findTranslationOrThrow(tour, languageCode);
+
+    await this.translationsRepository.delete({ id: translation.id });
+    await this.touchTour(tour, actor);
+  }
+
+  private async buildSharedAggregate(
+    source: UpdateTourDto,
+    existing?: TourEntity,
+  ): Promise<TourSharedInput> {
+    const contentSchema =
+      source.contentSchema !== undefined
+        ? this.schemaPolicyService.validateOrThrow(source.contentSchema)
+        : (existing?.contentSchema ?? null);
 
     const itinerary = source.itinerary
       ? {
@@ -250,20 +359,16 @@ export class ToursService {
         }
       : this.getExistingItinerary(existing);
 
-    const aggregate: TourAggregateInput = {
+    const aggregate: TourSharedInput = {
       name: source.name ?? existing?.name ?? '',
       slug: source.slug ?? existing?.slug ?? '',
-      category:
-        'category' in source
-          ? (source.category ?? undefined)
-          : (existing?.category ?? undefined),
       coverMediaRef:
         'coverMediaRef' in source
-          ? (source.coverMediaRef ?? null)
+          ? (source.coverMediaRef ? this.toJsonMediaAsset(source.coverMediaRef) : null)
           : (existing?.coverMediaRef ?? null),
-      galleryMediaRefs: source.galleryMediaRefs ?? existing?.galleryMediaRefs ?? [],
-      publicationStatus:
-        source.publicationStatus ?? existing?.publicationStatus ?? TOUR_PUBLICATION_STATUSES[0],
+      galleryMediaRefs: source.galleryMediaRefs
+        ? source.galleryMediaRefs.map((asset) => this.toJsonMediaAsset(asset))
+        : (existing?.galleryMediaRefs ?? []),
       contentSchema,
       price:
         source.price === null
@@ -271,21 +376,25 @@ export class ToursService {
           : source.price
             ? source.price
             : this.getExistingPrice(existing),
-      rating: source.rating ?? Number(existing?.rating ?? 0),
-      reviewCount: source.reviewCount ?? existing?.reviewCount ?? 0,
+      rating:
+        source.rating !== undefined
+          ? source.rating
+          : (existing?.rating !== null && existing?.rating !== undefined
+              ? Number(existing.rating)
+              : null),
+      reviewCount: source.reviewCount ?? existing?.reviewCount ?? null,
       tourType: source.tourType ?? existing?.tourType ?? TOUR_TYPES[0],
-      cancellationType:
-        source.cancellationType ?? existing?.cancellationType ?? '',
-      durationMinutes: source.durationMinutes ?? existing?.durationMinutes ?? 0,
-      startPoint: source.startPoint
-        ? this.toJsonPoint(source.startPoint)
-        : (existing?.startPoint ?? {}),
-      endPoint: source.endPoint
-        ? this.toJsonPoint(source.endPoint)
-        : (existing?.endPoint ?? {}),
+      durationMinutes: source.durationMinutes ?? existing?.durationMinutes ?? null,
+      startPoint:
+        'startPoint' in source
+          ? (source.startPoint ? this.toJsonPoint(source.startPoint) : null)
+          : (existing?.startPoint ?? null),
+      endPoint:
+        'endPoint' in source
+          ? (source.endPoint ? this.toJsonPoint(source.endPoint) : null)
+          : (existing?.endPoint ?? null),
       itinerary,
       tagKeys: source.tagKeys ?? existing?.tags.map((tag) => tag.key) ?? [],
-      translations: this.mergeTranslations(existing, source.translations),
     };
 
     this.validateSharedRules(aggregate);
@@ -293,7 +402,7 @@ export class ToursService {
     return aggregate;
   }
 
-  private validateSharedRules(aggregate: TourAggregateInput): void {
+  private validateSharedRules(aggregate: TourSharedInput): void {
     if (!aggregate.slug) {
       throw new BadRequestException('Tour slug is required.');
     }
@@ -302,30 +411,28 @@ export class ToursService {
       throw new BadRequestException('Tour name is required.');
     }
 
-    if (!aggregate.cancellationType) {
-      throw new BadRequestException('Tour cancellationType is required.');
+    if (aggregate.coverMediaRef) {
+      this.validateMediaAsset(aggregate.coverMediaRef, 'coverMediaRef');
     }
+
+    aggregate.galleryMediaRefs.forEach((asset, index) => {
+      this.validateMediaAsset(asset, `galleryMediaRefs[${index}]`);
+    });
 
     if (!TOUR_TYPES.includes(aggregate.tourType as (typeof TOUR_TYPES)[number])) {
       throw new BadRequestException(`Tour type "${aggregate.tourType}" is invalid.`);
     }
 
-    if (
-      !TOUR_PUBLICATION_STATUSES.includes(
-        aggregate.publicationStatus as (typeof TOUR_PUBLICATION_STATUSES)[number],
-      )
-    ) {
-      throw new BadRequestException(
-        `Tour publicationStatus "${aggregate.publicationStatus}" is invalid.`,
-      );
+    if (aggregate.contentSchema) {
+      this.validateContentSchemaForLocalizedCancellationType(aggregate.contentSchema);
     }
 
-    if (aggregate.tourType === 'tip_based') {
-      if (aggregate.price) {
-        throw new BadRequestException('Tip-based tours cannot define a fixed price.');
-      }
-    } else if (!aggregate.price) {
-      throw new BadRequestException('Paid tours must define price amount and currency.');
+    if (aggregate.tourType === 'tip_based' && aggregate.price) {
+      throw new BadRequestException('Tip-based tours cannot define a fixed price.');
+    }
+
+    if (!aggregate.itinerary) {
+      return;
     }
 
     if (aggregate.itinerary.variant === 'stops') {
@@ -334,7 +441,6 @@ export class ToursService {
       }
 
       const stopIds = new Set<string>();
-
       const stops = aggregate.itinerary.stops;
 
       stops.forEach((stop, index) => {
@@ -357,95 +463,70 @@ export class ToursService {
     }
   }
 
-  private async validateTranslations(aggregate: TourAggregateInput): Promise<void> {
-    const languageCodes = aggregate.translations.map((translation) => translation.languageCode);
+  private async assertLanguageExists(languageCode: string): Promise<void> {
+    const language = await this.languagesRepository.findOne({
+      where: { code: languageCode },
+    });
 
-    if (languageCodes.length > 0) {
-      const languages = await this.languagesRepository.findBy({
-        code: In(languageCodes),
-      });
+    if (!language) {
+      throw new BadRequestException(
+        `Translations reference unknown language codes: ${languageCode}`,
+      );
+    }
+  }
 
-      if (languages.length !== new Set(languageCodes).size) {
-        const registered = new Set(languages.map((language) => language.code));
-        const missing = [...new Set(languageCodes)].filter((code) => !registered.has(code));
-        throw new BadRequestException(
-          `Translations reference unknown language codes: ${missing.join(', ')}`,
-        );
-      }
+  private validateDraftPayloadAgainstSchema(
+    tour: TourEntity,
+    payload: Record<string, unknown>,
+  ): void {
+    if (!tour.contentSchema) {
+      return;
     }
 
-    const draftSchema = this.schemaPolicyService.createDraftSchema(aggregate.contentSchema) as Record<
+    const draftSchema = this.schemaPolicyService.createDraftSchema(tour.contentSchema) as Record<
       string,
       unknown
     >;
 
-    for (const translation of aggregate.translations) {
-      if (
-        !TOUR_TRANSLATION_STATUSES.includes(
-          translation.translationStatus as (typeof TOUR_TRANSLATION_STATUSES)[number],
-        )
-      ) {
-        throw new BadRequestException(
-          `Translation status "${translation.translationStatus}" is invalid.`,
-        );
-      }
+    this.validateContentSchemaForLocalizedCancellationType(tour.contentSchema);
+    this.payloadValidationService.validateOrThrow(draftSchema, payload);
+  }
 
-      if (
-        !TOUR_TRANSLATION_PUBLICATION_STATUSES.includes(
-          translation.publicationStatus as (typeof TOUR_TRANSLATION_PUBLICATION_STATUSES)[number],
-        )
-      ) {
-        throw new BadRequestException(
-          `Translation publicationStatus "${translation.publicationStatus}" is invalid.`,
-        );
-      }
+  private calculateTranslationReadiness(
+    tour: TourEntity,
+    payload: Record<string, unknown>,
+  ): boolean {
+    if (!tour.contentSchema) {
+      return false;
+    }
 
-      if (
-        translation.publicationStatus === 'published' &&
-        translation.translationStatus !== 'ready'
-      ) {
-        throw new BadRequestException(
-          `Translation "${translation.languageCode}" cannot be published until it is ready.`,
-        );
-      }
+    try {
+      this.payloadValidationService.validateOrThrow(tour.contentSchema, payload);
+    } catch {
+      return false;
+    }
 
-      const requiresFullValidation =
-        translation.translationStatus === 'ready' ||
-        translation.publicationStatus === 'published';
+    if (this.getMissingRequiredLocalizedLists(payload).length > 0) {
+      return false;
+    }
 
-      this.payloadValidationService.validateOrThrow(
-        requiresFullValidation ? aggregate.contentSchema : draftSchema,
-        translation.payload,
-      );
+    if (tour.itineraryVariant === 'stops') {
+      const missingStops = this.getMissingLocalizedStops(tour, payload);
 
-      const missingRequiredLists = requiresFullValidation
-        ? this.getMissingRequiredLocalizedLists(translation.payload)
-        : [];
-
-      if (missingRequiredLists.length > 0) {
-        throw new BadRequestException(
-          `Translation "${translation.languageCode}" is missing required localized lists: ${missingRequiredLists.join(', ')}`,
-        );
-      }
-
-      if (aggregate.itinerary.variant === 'stops') {
-        const missingStops = this.getMissingLocalizedStops(aggregate, translation);
-
-        if (requiresFullValidation && missingStops.length > 0) {
-          throw new BadRequestException(
-            `Translation "${translation.languageCode}" is missing localized stops: ${missingStops.join(', ')}`,
-          );
-        }
+      if (missingStops.length > 0) {
+        return false;
       }
     }
+
+    return true;
   }
 
   private getMissingLocalizedStops(
-    aggregate: TourAggregateInput,
-    translation: CreateTourTranslationDto,
+    tour: Pick<TourEntity, 'itineraryVariant' | 'stops'>,
+    payload: Record<string, unknown>,
   ): string[] {
-    const sharedStopIds = new Set(aggregate.itinerary.stops?.map((stop) => stop.id) ?? []);
-    const itineraryStops = translation.payload.itineraryStops;
+    const sharedStopIds = new Set(tour.stops.map((stop) => stop.stopId));
+    const itineraryStops = payload.itineraryStops;
 
     if (
       typeof itineraryStops !== 'object' ||
@@ -478,6 +559,38 @@ export class ToursService {
     });
   }
 
+  private validateContentSchemaForLocalizedCancellationType(
+    schema: Record<string, unknown>,
+  ): void {
+    const properties = schema.properties;
+    const required = schema.required;
+
+    if (typeof properties !== 'object' || properties === null || Array.isArray(properties)) {
+      throw new BadRequestException(
+        'Tour contentSchema must define object properties, including localized cancellationType.',
+      );
+    }
+
+    const cancellationType = (properties as Record<string, unknown>).cancellationType;
+
+    if (
+      typeof cancellationType !== 'object' ||
+      cancellationType === null ||
+      Array.isArray(cancellationType) ||
+      (cancellationType as Record<string, unknown>).type !== 'string'
+    ) {
+      throw new BadRequestException(
+        'Tour contentSchema must declare a localized string property named cancellationType.',
+      );
+    }
+
+    if (!Array.isArray(required) || !required.includes('cancellationType')) {
+      throw new BadRequestException(
+        'Tour contentSchema must require the localized cancellationType field.',
+      );
+    }
+  }
+
   private async getTagsOrThrow(keys: string[]): Promise<TagEntity[]> {
     if (keys.length === 0) {
       return [];
@@ -496,10 +609,10 @@ export class ToursService {
     return keys.map((key) => tags.find((tag) => tag.key === key) as TagEntity);
   }
 
-  private async replaceStops(id: string, aggregate: TourAggregateInput): Promise<void> {
+  private async replaceStops(id: string, aggregate: TourSharedInput): Promise<void> {
     await this.stopsRepository.delete({ tourId: id });
 
-    if (aggregate.itinerary.variant !== 'stops' || !aggregate.itinerary.stops) {
+    if (!aggregate.itinerary || aggregate.itinerary.variant !== 'stops' || !aggregate.itinerary.stops) {
       return;
     }
 
@@ -517,87 +630,37 @@ export class ToursService {
     await this.stopsRepository.save(stops);
   }
 
-  private async replaceTranslations(
-    id: string,
-    translations: CreateTourTranslationDto[],
-  ): Promise<void> {
-    if (translations.length === 0) {
+  private async recalculateAndPersistTranslations(tour: TourEntity): Promise<void> {
+    if (tour.translations.length === 0) {
       return;
     }
 
-    const entities = translations.map((translation) =>
-      this.translationsRepository.create({
-        tourId: id,
-        languageCode: translation.languageCode,
-        translationStatus: translation.translationStatus,
-        publicationStatus: translation.publicationStatus,
-        bookingReferenceId: translation.bookingReferenceId ?? null,
-        payload: translation.payload,
-      }),
-    );
+    const updatedTranslations = tour.translations
+      .map((translation) => {
+        const isReady = this.calculateTranslationReadiness(tour, translation.payload);
+        const isPublished = isReady ? translation.isPublished : false;
 
-    await this.translationsRepository.save(entities);
-  }
+        if (translation.isReady === isReady && translation.isPublished === isPublished) {
+          return null;
+        }
 
-  private async upsertTranslations(
-    id: string,
-    existingTranslations: TourTranslationEntity[],
-    incomingTranslations: CreateTourTranslationDto[],
-  ): Promise<void> {
-    const existingByCode = new Map(
-      existingTranslations.map((translation) => [translation.languageCode, translation]),
-    );
+        translation.isReady = isReady;
+        translation.isPublished = isPublished;
 
-    for (const incoming of incomingTranslations) {
-      const existing = existingByCode.get(incoming.languageCode);
+        return translation;
+      })
+      .filter((translation): translation is TourTranslationEntity => translation !== null);
 
-      if (existing) {
-        existing.translationStatus = incoming.translationStatus;
-        existing.publicationStatus = incoming.publicationStatus;
-        existing.bookingReferenceId = incoming.bookingReferenceId ?? null;
-        existing.payload = incoming.payload;
-        await this.translationsRepository.save(existing);
-      } else {
-        await this.translationsRepository.save(
-          this.translationsRepository.create({
-            tourId: id,
-            languageCode: incoming.languageCode,
-            translationStatus: incoming.translationStatus,
-            publicationStatus: incoming.publicationStatus,
-            bookingReferenceId: incoming.bookingReferenceId ?? null,
-            payload: incoming.payload,
-          }),
-        );
-      }
-    }
-  }
-
-  private mergeTranslations(
-    existing: TourEntity | undefined,
-    incoming: CreateTourTranslationDto[] | undefined,
-  ): CreateTourTranslationDto[] {
-    const merged = new Map<string, CreateTourTranslationDto>();
-
-    for (const translation of existing?.translations ?? []) {
-      merged.set(translation.languageCode, {
-        languageCode: translation.languageCode,
-        translationStatus: translation.translationStatus,
-        publicationStatus: translation.publicationStatus,
-        bookingReferenceId: translation.bookingReferenceId ?? undefined,
-        payload: translation.payload,
-      });
+    if (updatedTranslations.length === 0) {
+      return;
     }
 
-    for (const translation of incoming ?? []) {
-      merged.set(translation.languageCode, translation);
-    }
-
-    return [...merged.values()];
+    await this.translationsRepository.save(updatedTranslations);
   }
 
-  private getExistingItinerary(existing: TourEntity | undefined): TourAggregateInput['itinerary'] {
-    if (!existing) {
-      return { variant: 'description' };
+  private getExistingItinerary(existing: TourEntity | undefined): TourSharedInput['itinerary'] {
+    if (!existing || !existing.itineraryVariant) {
+      return null;
     }
 
     if (existing.itineraryVariant === 'stops') {
@@ -649,6 +712,34 @@ export class ToursService {
     return tour;
   }
 
+  private findTranslationOrThrow(
+    tour: TourEntity,
+    languageCode: string,
+  ): TourTranslationEntity {
+    const translation = tour.translations.find(
+      (entry) => entry.languageCode === languageCode,
+    );
+
+    if (!translation) {
+      throw new NotFoundException(
+        `Tour translation "${languageCode}" was not found for tour "${tour.id}".`,
+      );
+    }
+
+    return translation;
+  }
+
+  private async touchTour(
+    tour: TourEntity,
+    actor: AuthenticatedAdmin,
+  ): Promise<void> {
+    tour.updatedBy = actor.id;
+    await this.toursRepository.update(
+      { id: tour.id },
+      { updatedBy: actor.id },
+    );
+  }
+
   private toAdminResponse(tour: TourEntity): unknown {
     const orderedStops = [...tour.stops].sort((left, right) => left.orderIndex - right.orderIndex);
 
@@ -656,9 +747,10 @@ export class ToursService {
       tour.translations.map((translation) => [
         translation.languageCode,
         {
-          translationStatus: translation.translationStatus,
-          publicationStatus: translation.publicationStatus,
+          isReady: translation.isReady,
+          isPublished: translation.isPublished,
           bookingReferenceId: translation.bookingReferenceId,
+          cancellationType: this.getStringField(translation.payload, 'cancellationType'),
           highlights: this.getStringListField(translation.payload, 'highlights'),
           included: this.getStringListField(translation.payload, 'included'),
           notIncluded: this.getStringListField(translation.payload, 'notIncluded'),
@@ -671,58 +763,22 @@ export class ToursService {
       const missingRequiredLists = this.getMissingRequiredLocalizedLists(translation.payload);
       const missingStopTranslations =
         tour.itineraryVariant === 'stops'
-          ? this.getMissingLocalizedStops(
-              {
-                name: tour.name,
-                slug: tour.slug,
-                category: tour.category ?? undefined,
-                coverMediaRef: tour.coverMediaRef,
-                galleryMediaRefs: tour.galleryMediaRefs,
-                publicationStatus: tour.publicationStatus,
-                contentSchema: tour.contentSchema,
-                price: this.getExistingPrice(tour),
-                rating: Number(tour.rating),
-                reviewCount: tour.reviewCount,
-                tourType: tour.tourType,
-                cancellationType: tour.cancellationType,
-                durationMinutes: tour.durationMinutes,
-                startPoint: tour.startPoint,
-                endPoint: tour.endPoint,
-                itinerary: {
-                  variant: 'stops',
-                  stops: orderedStops.map((stop) => ({
-                    id: stop.stopId,
-                    durationMinutes: stop.durationMinutes ?? undefined,
-                    coordinates: stop.coordinates ?? undefined,
-                    nextConnection: stop.nextConnection ?? undefined,
-                  })),
-                },
-                tagKeys: tour.tags.map((tag) => tag.key),
-                translations: [],
-              },
-              {
-                languageCode: translation.languageCode,
-                translationStatus: translation.translationStatus,
-                publicationStatus: translation.publicationStatus,
-                bookingReferenceId: translation.bookingReferenceId ?? undefined,
-                payload: translation.payload,
-              },
-            )
+          ? this.getMissingLocalizedStops(tour, translation.payload)
           : [];
 
       const isSchemaValid = this.isTranslationPayloadValid(tour, translation);
 
       return {
         languageCode: translation.languageCode,
-        translationStatus: translation.translationStatus,
-        publicationStatus: translation.publicationStatus,
+        isReady: translation.isReady,
+        isPublished: translation.isPublished,
         missingRequiredLists,
         missingStopTranslations,
         isSchemaValid,
         publiclyAvailable:
-          tour.publicationStatus === 'published' &&
-          translation.translationStatus === 'ready' &&
-          translation.publicationStatus === 'published' &&
+          this.isSharedTourPubliclyValid(tour) &&
+          translation.isReady &&
+          translation.isPublished &&
           missingRequiredLists.length === 0 &&
           isSchemaValid &&
           missingStopTranslations.length === 0,
@@ -733,10 +789,8 @@ export class ToursService {
       id: tour.id,
       name: tour.name,
       slug: tour.slug,
-      category: tour.category,
-      coverMediaRef: tour.coverMediaRef,
-      galleryMediaRefs: tour.galleryMediaRefs,
-      publicationStatus: tour.publicationStatus,
+      coverMediaRef: this.toResponseMediaAsset(tour.coverMediaRef),
+      galleryMediaRefs: tour.galleryMediaRefs.map((asset) => this.toResponseMediaAsset(asset)),
       contentSchema: tour.contentSchema,
       price:
         tour.priceAmount && tour.priceCurrency
@@ -745,25 +799,27 @@ export class ToursService {
               currency: tour.priceCurrency,
             }
           : null,
-      rating: Number(tour.rating),
+      rating: tour.rating !== null ? Number(tour.rating) : null,
       reviewCount: tour.reviewCount,
       tourType: tour.tourType,
-      cancellationType: tour.cancellationType,
       durationMinutes: tour.durationMinutes,
       startPoint: tour.startPoint,
       endPoint: tour.endPoint,
-      itinerary: {
-        variant: tour.itineraryVariant,
-        stops:
-          tour.itineraryVariant === 'stops'
-            ? orderedStops.map((stop) => ({
-                id: stop.stopId,
-                durationMinutes: stop.durationMinutes,
-                coordinates: stop.coordinates,
-                nextConnection: stop.nextConnection,
-              }))
-            : [],
-      },
+      itinerary:
+        tour.itineraryVariant !== null
+          ? {
+              variant: tour.itineraryVariant,
+              stops:
+                tour.itineraryVariant === 'stops'
+                  ? orderedStops.map((stop) => ({
+                      id: stop.stopId,
+                      durationMinutes: stop.durationMinutes,
+                      coordinates: stop.coordinates,
+                      nextConnection: stop.nextConnection,
+                    }))
+                  : [],
+            }
+          : null,
       tagKeys: tour.tags.map((tag) => tag.key),
       tags: tour.tags.map((tag) => ({
         key: tag.key,
@@ -774,10 +830,8 @@ export class ToursService {
       audit: {
         createdBy: tour.createdBy,
         updatedBy: tour.updatedBy,
-        publishedBy: tour.publishedBy,
         createdAt: tour.createdAt,
         updatedAt: tour.updatedAt,
-        publishedAt: tour.publishedAt,
       },
     };
   }
@@ -787,9 +841,12 @@ export class ToursService {
     translation: TourTranslationEntity,
   ): boolean {
     try {
+      if (!tour.contentSchema) {
+        return false;
+      }
+
       const schema =
-        translation.translationStatus === 'ready' ||
-        translation.publicationStatus === 'published'
+        translation.isReady
           ? tour.contentSchema
           : (this.schemaPolicyService.createDraftSchema(tour.contentSchema) as Record<
               string,
@@ -798,11 +855,7 @@ export class ToursService {
 
       this.payloadValidationService.validateOrThrow(schema, translation.payload);
 
-      if (
-        (translation.translationStatus === 'ready' ||
-          translation.publicationStatus === 'published') &&
-        this.getMissingRequiredLocalizedLists(translation.payload).length > 0
-      ) {
+      if (translation.isReady && this.getMissingRequiredLocalizedLists(translation.payload).length > 0) {
         return false;
       }
 
@@ -810,6 +863,34 @@ export class ToursService {
     } catch {
       return false;
     }
+  }
+
+  private isSharedTourPubliclyValid(tour: TourEntity): boolean {
+    if (!tour.contentSchema) {
+      return false;
+    }
+
+    if (tour.rating === null || tour.reviewCount === null || tour.durationMinutes === null) {
+      return false;
+    }
+
+    if (!tour.startPoint || !tour.endPoint || !tour.itineraryVariant) {
+      return false;
+    }
+
+    if (tour.tourType !== 'tip_based' && (!tour.priceAmount || !tour.priceCurrency)) {
+      return false;
+    }
+
+    if (tour.tourType === 'tip_based' && (tour.priceAmount || tour.priceCurrency)) {
+      return false;
+    }
+
+    if (tour.itineraryVariant === 'stops' && tour.stops.length === 0) {
+      return false;
+    }
+
+    return true;
   }
 
   private getStringListField(
@@ -825,6 +906,64 @@ export class ToursService {
     return [...value];
   }
 
+  private toJsonMediaAsset(asset: TourMediaAssetDto): Record<string, unknown> {
+    const normalized: JsonMediaAsset = {
+      ref: asset.ref,
+    };
+
+    if (asset.altText) {
+      normalized.altText = asset.altText;
+    }
+
+    return normalized;
+  }
+
+  private validateMediaAsset(asset: Record<string, unknown>, path: string): void {
+    const ref = asset.ref;
+
+    if (typeof ref !== 'string' || ref.trim().length === 0) {
+      throw new BadRequestException(`Tour ${path}.ref is required.`);
+    }
+
+    if (ref.length > 255) {
+      throw new BadRequestException(`Tour ${path}.ref must be at most 255 characters long.`);
+    }
+
+    const altText = asset.altText;
+
+    if (altText === undefined) {
+      return;
+    }
+
+    if (typeof altText !== 'object' || altText === null || Array.isArray(altText)) {
+      throw new BadRequestException(`Tour ${path}.altText must be a locale-to-string object.`);
+    }
+
+    for (const [locale, value] of Object.entries(altText)) {
+      if (!/^[a-z]{2}(?:-[A-Z]{2})?$/.test(locale)) {
+        throw new BadRequestException(`Tour ${path}.altText locale "${locale}" is invalid.`);
+      }
+
+      if (typeof value !== 'string' || value.trim().length === 0) {
+        throw new BadRequestException(
+          `Tour ${path}.altText["${locale}"] must be a non-empty string.`,
+        );
+      }
+
+      if (value.length > 255) {
+        throw new BadRequestException(
+          `Tour ${path}.altText["${locale}"] must be at most 255 characters long.`,
+        );
+      }
+    }
+  }
+
+  private getStringField(payload: Record<string, unknown>, key: string): string | null {
+    const value = payload[key];
+
+    return typeof value === 'string' ? value : null;
+  }
+
   private toJsonPoint(point: JsonPoint): Record<string, unknown> {
     if (!point.coordinates) {
       return {};
@@ -835,6 +974,19 @@ export class ToursService {
         lat: point.coordinates.lat,
         lng: point.coordinates.lng,
       },
+    };
+  }
+
+  private toResponseMediaAsset(
+    asset: Record<string, unknown> | null,
+  ): { ref: string; altText: Record<string, string> | null } | null {
+    if (!asset) {
+      return null;
+    }
+
+    return {
+      ref: asset.ref as string,
+      altText: (asset.altText as Record<string, string> | undefined) ?? null,
     };
   }
 }

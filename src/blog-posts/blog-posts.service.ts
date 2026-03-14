@@ -23,7 +23,6 @@ interface BlogAggregateInput {
   name: string;
   slug: string;
   heroMediaRef?: string | null;
-  category?: string;
   publicationStatus: string;
   tagKeys: string[];
   translations: CreateBlogPostTranslationDto[];
@@ -78,7 +77,6 @@ export class BlogPostsService {
       name: aggregate.name,
       slug: aggregate.slug,
       heroMediaRef: aggregate.heroMediaRef ?? null,
-      category: aggregate.category ?? null,
       publicationStatus: aggregate.publicationStatus,
       tags,
       createdBy: actor.id,
@@ -117,7 +115,6 @@ export class BlogPostsService {
     existing.name = aggregate.name;
     existing.slug = aggregate.slug;
     existing.heroMediaRef = aggregate.heroMediaRef ?? null;
-    existing.category = aggregate.category ?? null;
     existing.publicationStatus = aggregate.publicationStatus;
     existing.tags = tags;
     existing.updatedBy = actor.id;
@@ -150,8 +147,6 @@ export class BlogPostsService {
         'heroMediaRef' in source
           ? (source.heroMediaRef ?? null)
           : (existing?.heroMediaRef ?? null),
-      category:
-        'category' in source ? source.category ?? undefined : existing?.category ?? undefined,
       publicationStatus:
         source.publicationStatus ??
         existing?.publicationStatus ??
@@ -372,7 +367,6 @@ export class BlogPostsService {
       name: blogPost.name,
       slug: blogPost.slug,
       heroMediaRef: blogPost.heroMediaRef,
-      category: blogPost.category,
       publicationStatus: blogPost.publicationStatus,
       tagKeys: blogPost.tags.map((tag) => tag.key),
       tags: blogPost.tags.map((tag) => ({

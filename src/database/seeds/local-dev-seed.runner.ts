@@ -38,6 +38,8 @@ const SEEDED_LANGUAGES = [
   { code: 'it', name: 'Italian', isEnabled: true, sortOrder: 3 },
 ];
 
+const localizedAltText = (value: Record<string, string>): Record<string, string> => value;
+
 const SEEDED_TAGS = [
   {
     key: 'history',
@@ -82,6 +84,7 @@ const DESCRIPTION_TOUR_SCHEMA = {
   properties: {
     title: { type: 'string' },
     shortDescription: { type: 'string' },
+    cancellationType: { type: 'string' },
     highlights: { type: 'array', items: { type: 'string' } },
     included: { type: 'array', items: { type: 'string' } },
     notIncluded: { type: 'array', items: { type: 'string' } },
@@ -92,6 +95,7 @@ const DESCRIPTION_TOUR_SCHEMA = {
   required: [
     'title',
     'shortDescription',
+    'cancellationType',
     'highlights',
     'included',
     'notIncluded',
@@ -106,6 +110,7 @@ const STOPS_TOUR_SCHEMA = {
   properties: {
     title: { type: 'string' },
     shortDescription: { type: 'string' },
+    cancellationType: { type: 'string' },
     highlights: { type: 'array', items: { type: 'string' } },
     included: { type: 'array', items: { type: 'string' } },
     notIncluded: { type: 'array', items: { type: 'string' } },
@@ -116,6 +121,7 @@ const STOPS_TOUR_SCHEMA = {
   required: [
     'title',
     'shortDescription',
+    'cancellationType',
     'highlights',
     'included',
     'notIncluded',
@@ -129,19 +135,30 @@ const SEEDED_TOURS = [
   {
     name: 'Historic Center Highlights Catalog Entry',
     slug: 'historic-center-highlights',
-    category: 'walking',
-    coverMediaRef: 'tours/historic-center-highlights/cover.jpg',
+    coverMediaRef: {
+      ref: 'tours/historic-center-highlights/cover.jpg',
+      altText: localizedAltText({
+        en: 'Panoramic view over the historic center',
+        es: 'Vista panoramica del centro historico',
+        it: 'Vista panoramica del centro storico',
+      }),
+    },
     galleryMediaRefs: [
-      'tours/historic-center-highlights/gallery-1.jpg',
-      'tours/historic-center-highlights/gallery-2.jpg',
+      {
+        ref: 'tours/historic-center-highlights/gallery-1.jpg',
+        altText: localizedAltText({
+          en: 'Roman wall details along the route',
+        }),
+      },
+      {
+        ref: 'tours/historic-center-highlights/gallery-2.jpg',
+      },
     ],
-    publicationStatus: 'published',
     contentSchema: DESCRIPTION_TOUR_SCHEMA,
     price: { amount: 29, currency: 'EUR' },
     rating: 4.8,
     reviewCount: 186,
     tourType: 'group',
-    cancellationType: '24h_free_cancellation',
     durationMinutes: 150,
     startPoint: { coordinates: { lat: 41.3874, lng: 2.1686 } },
     endPoint: { coordinates: { lat: 41.3811, lng: 2.1764 } },
@@ -150,12 +167,12 @@ const SEEDED_TOURS = [
     translations: [
       {
         languageCode: 'en',
-        translationStatus: 'ready',
-        publicationStatus: 'published',
+        isPublished: true,
         bookingReferenceId: 'historic-center-en',
         payload: {
           title: 'Historic Center Highlights',
           shortDescription: 'A polished introduction to the old city.',
+          cancellationType: 'Free cancellation up to 24 hours before the start time.',
           highlights: [
             'Roman foundations and Gothic streets',
             'Civic landmarks across the old city core',
@@ -170,12 +187,12 @@ const SEEDED_TOURS = [
       },
       {
         languageCode: 'es',
-        translationStatus: 'ready',
-        publicationStatus: 'published',
+        isPublished: true,
         bookingReferenceId: 'historic-center-es',
         payload: {
           title: 'Lo Mejor del Centro Historico',
           shortDescription: 'Una introduccion cuidada al casco antiguo.',
+          cancellationType: 'Cancelacion gratuita hasta 24 horas antes de la salida.',
           highlights: [
             'Restos romanos y calles goticas',
             'Grandes hitos civicos del centro historico',
@@ -190,12 +207,12 @@ const SEEDED_TOURS = [
       },
       {
         languageCode: 'it',
-        translationStatus: 'ready',
-        publicationStatus: 'published',
+        isPublished: true,
         bookingReferenceId: 'historic-center-it',
         payload: {
           title: 'Il Meglio del Centro Storico',
           shortDescription: 'Una introduzione curata al centro antico.',
+          cancellationType: 'Cancellazione gratuita fino a 24 ore prima della partenza.',
           highlights: [
             'Tracce romane e vie gotiche',
             'Principali luoghi civici del centro storico',
@@ -213,16 +230,19 @@ const SEEDED_TOURS = [
   {
     name: 'Gaudi and Modernisme Route Catalog Entry',
     slug: 'gaudi-and-modernisme-route',
-    category: 'architecture',
-    coverMediaRef: 'tours/gaudi-and-modernisme-route/cover.jpg',
-    galleryMediaRefs: ['tours/gaudi-and-modernisme-route/gallery-1.jpg'],
-    publicationStatus: 'published',
+    coverMediaRef: {
+      ref: 'tours/gaudi-and-modernisme-route/cover.jpg',
+      altText: localizedAltText({
+        en: 'Modernist facade on Passeig de Gracia',
+        it: 'Facciata modernista sul Passeig de Gracia',
+      }),
+    },
+    galleryMediaRefs: [{ ref: 'tours/gaudi-and-modernisme-route/gallery-1.jpg' }],
     contentSchema: STOPS_TOUR_SCHEMA,
     price: { amount: 34, currency: 'EUR' },
     rating: 4.9,
     reviewCount: 241,
     tourType: 'private',
-    cancellationType: '48h_free_cancellation',
     durationMinutes: 180,
     startPoint: { coordinates: { lat: 41.3917, lng: 2.1649 } },
     endPoint: { coordinates: { lat: 41.4036, lng: 2.1744 } },
@@ -252,12 +272,12 @@ const SEEDED_TOURS = [
     translations: [
       {
         languageCode: 'en',
-        translationStatus: 'ready',
-        publicationStatus: 'published',
+        isPublished: true,
         bookingReferenceId: 'gaudi-route-en',
         payload: {
           title: 'Gaudi and Modernisme Route',
           shortDescription: 'A stop-based tour across Barcelona modernist icons.',
+          cancellationType: 'Free cancellation up to 48 hours before the start time.',
           highlights: [
             'Gaudi facades and rooftop symbolism',
             'A structured route through major modernist landmarks',
@@ -284,12 +304,12 @@ const SEEDED_TOURS = [
       },
       {
         languageCode: 'es',
-        translationStatus: 'draft',
-        publicationStatus: 'unpublished',
+        isPublished: false,
         bookingReferenceId: 'gaudi-route-es',
         payload: {
           title: 'Ruta Gaudi y Modernismo',
           shortDescription: 'Un recorrido por los iconos modernistas.',
+          cancellationType: 'Cancelacion gratuita hasta 48 horas antes de la salida.',
           startPoint: { label: 'Casa Batllo' },
           endPoint: { label: 'Sagrada Familia' },
           itineraryStops: {
@@ -302,12 +322,12 @@ const SEEDED_TOURS = [
       },
       {
         languageCode: 'it',
-        translationStatus: 'ready',
-        publicationStatus: 'published',
+        isPublished: true,
         bookingReferenceId: 'gaudi-route-it',
         payload: {
           title: 'Percorso Gaudi e Modernismo',
           shortDescription: 'Un itinerario a tappe tra i grandi simboli modernisti.',
+          cancellationType: 'Cancellazione gratuita fino a 48 ore prima della partenza.',
           highlights: [
             'Facciate di Gaudi e simbolismo urbano',
             'Percorso strutturato tra i principali capolavori modernisti',
@@ -337,16 +357,13 @@ const SEEDED_TOURS = [
   {
     name: 'Born After Dark Draft Tour',
     slug: 'born-after-dark',
-    category: 'nightlife',
-    coverMediaRef: 'tours/born-after-dark/cover.jpg',
-    galleryMediaRefs: ['tours/born-after-dark/gallery-1.jpg'],
-    publicationStatus: 'draft',
+    coverMediaRef: { ref: 'tours/born-after-dark/cover.jpg' },
+    galleryMediaRefs: [{ ref: 'tours/born-after-dark/gallery-1.jpg' }],
     contentSchema: DESCRIPTION_TOUR_SCHEMA,
     price: { amount: 22, currency: 'EUR' },
     rating: 4.6,
     reviewCount: 59,
     tourType: 'group',
-    cancellationType: '12h_free_cancellation',
     durationMinutes: 120,
     startPoint: { coordinates: { lat: 41.3857, lng: 2.1827 } },
     endPoint: { coordinates: { lat: 41.3842, lng: 2.1813 } },
@@ -355,12 +372,12 @@ const SEEDED_TOURS = [
     translations: [
       {
         languageCode: 'en',
-        translationStatus: 'ready',
-        publicationStatus: 'published',
+        isPublished: true,
         bookingReferenceId: 'born-after-dark-en',
         payload: {
           title: 'Born After Dark',
           shortDescription: 'A draft tour for admin-only availability testing.',
+          cancellationType: 'Free cancellation up to 12 hours before the start time.',
           highlights: [
             'Late-night neighborhood atmosphere',
             'Bars, plazas, and local routines after dark',
@@ -378,15 +395,12 @@ const SEEDED_TOURS = [
   {
     name: 'Barceloneta Sunset Tip Tour Catalog Entry',
     slug: 'barceloneta-sunset-tip-tour',
-    category: 'waterfront',
-    coverMediaRef: 'tours/barceloneta-sunset-tip-tour/cover.jpg',
-    galleryMediaRefs: ['tours/barceloneta-sunset-tip-tour/gallery-1.jpg'],
-    publicationStatus: 'draft',
+    coverMediaRef: { ref: 'tours/barceloneta-sunset-tip-tour/cover.jpg' },
+    galleryMediaRefs: [{ ref: 'tours/barceloneta-sunset-tip-tour/gallery-1.jpg' }],
     contentSchema: DESCRIPTION_TOUR_SCHEMA,
     rating: 4.7,
     reviewCount: 32,
     tourType: 'tip_based',
-    cancellationType: '24h_free_cancellation',
     durationMinutes: 90,
     startPoint: { coordinates: { lat: 41.375, lng: 2.1906 } },
     endPoint: { coordinates: { lat: 41.3792, lng: 2.1948 } },
@@ -395,10 +409,10 @@ const SEEDED_TOURS = [
     translations: [
       {
         languageCode: 'en',
-        translationStatus: 'draft',
-        publicationStatus: 'unpublished',
+        isPublished: false,
         payload: {
           title: 'Barceloneta Sunset Tip Tour',
+          cancellationType: 'Free cancellation up to 24 hours before the start time.',
           startPoint: { label: 'Barceloneta Beach' },
         },
       },
@@ -411,7 +425,6 @@ const SEEDED_BLOG_POSTS = [
     name: 'Barcelona Historic Center Guide Article',
     slug: 'barcelona-historic-center-guide',
     heroMediaRef: 'blog/barcelona-historic-center-guide/hero.jpg',
-    category: 'city-guides',
     publicationStatus: 'published',
     tagKeys: ['history', 'architecture', 'family-friendly'],
     translations: [
@@ -454,7 +467,6 @@ const SEEDED_BLOG_POSTS = [
     name: 'Best Tapas After Your Tour Article',
     slug: 'best-tapas-after-your-tour',
     heroMediaRef: 'blog/best-tapas-after-your-tour/hero.jpg',
-    category: 'food',
     publicationStatus: 'published',
     tagKeys: ['food', 'local-life'],
     translations: [
@@ -486,7 +498,6 @@ const SEEDED_BLOG_POSTS = [
     name: 'Behind the Scenes Tour Planning Article',
     slug: 'behind-the-scenes-tour-planning',
     heroMediaRef: 'blog/behind-the-scenes-tour-planning/hero.jpg',
-    category: 'editorial',
     publicationStatus: 'draft',
     tagKeys: ['local-life'],
     translations: [
@@ -599,7 +610,10 @@ export interface LocalDevSeedDependencies {
     ) => Promise<NewsletterSubscriberEntity[] | NewsletterSubscriberEntity>;
   };
   tagsService: Pick<TagsService, 'create'>;
-  toursService: Pick<ToursService, 'create'>;
+  toursService: Pick<
+    ToursService,
+    'create' | 'update' | 'createTranslation' | 'publishTranslation'
+  >;
   blogPostsService: Pick<BlogPostsService, 'create'>;
   newsletterTokenService: Pick<NewsletterTokenService, 'hashToken'>;
 }
@@ -664,7 +678,48 @@ export class LocalDevSeedRunner {
 
   private async seedTours(actor: SeedActor): Promise<void> {
     for (const tour of SEEDED_TOURS) {
-      await this.deps.toursService.create(tour, actor);
+      const created = await this.deps.toursService.create(
+        {
+          name: tour.name,
+          slug: tour.slug,
+          tourType: tour.tourType,
+        },
+        actor,
+      ) as { id: string };
+
+      const {
+        name: _name,
+        slug: _slug,
+        tourType: _tourType,
+        translations,
+        ...updateDto
+      } = tour;
+
+      await this.deps.toursService.update(created.id, updateDto, actor);
+
+      for (const translation of translations) {
+        await this.deps.toursService.createTranslation(
+          created.id,
+          {
+            languageCode: translation.languageCode,
+            bookingReferenceId:
+              'bookingReferenceId' in translation
+                ? translation.bookingReferenceId
+                : undefined,
+            payload: translation.payload,
+          },
+          actor,
+        );
+
+        if (translation.isPublished) {
+          await this.deps.toursService.publishTranslation(
+            created.id,
+            translation.languageCode,
+            {},
+            actor,
+          );
+        }
+      }
     }
   }
 

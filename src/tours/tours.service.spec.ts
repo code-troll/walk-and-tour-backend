@@ -1,17 +1,18 @@
 import {
   BadRequestException,
   ConflictException,
+  NotFoundException,
 } from '@nestjs/common';
 
+import { createRepositoryMock, RepositoryMock } from '../../test/utils/repository.mock';
 import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface';
 import { LanguageEntity } from '../languages/language.entity';
 import { TagEntity } from '../tags/tag.entity';
-import { createRepositoryMock, RepositoryMock } from '../../test/utils/repository.mock';
+import { TourPayloadValidationService } from './tour-payload-validation.service';
+import { TourSchemaPolicyService } from './tour-schema-policy.service';
 import { TourItineraryStopEntity } from './entities/tour-itinerary-stop.entity';
 import { TourTranslationEntity } from './entities/tour-translation.entity';
 import { TourEntity } from './entities/tour.entity';
-import { TourPayloadValidationService } from './tour-payload-validation.service';
-import { TourSchemaPolicyService } from './tour-schema-policy.service';
 import { ToursService } from './tours.service';
 
 describe('ToursService', () => {
@@ -49,343 +50,236 @@ describe('ToursService', () => {
     );
   });
 
-  it('creates a stop-based published tour with localized stops and returns the admin response shape', async () => {
+  it('creates a minimal tour shell without translations or publish state', async () => {
     const persistedTour = createTourEntity({
-      itineraryVariant: 'stops',
-      stops: [
-        createStopEntity({
-          stopId: 'stop-1',
-          orderIndex: 0,
-          durationMinutes: 10,
-          coordinates: { lat: 41.1, lng: 2.1 },
-          nextConnection: { commuteMode: 'walk', durationMinutes: 5 },
-        }),
-        createStopEntity({
-          stopId: 'stop-2',
-          orderIndex: 1,
-          durationMinutes: 20,
-          coordinates: { lat: 41.2, lng: 2.2 },
-          nextConnection: null,
-        }),
-      ],
-      translations: [
-        createTranslationEntity({
-          languageCode: 'en',
-          payload: {
-            title: 'Historic Center',
-            highlights: ['Roman walls', 'Cathedral square'],
-            included: ['Guide'],
-            notIncluded: ['Food'],
-            startPoint: { label: 'Town Hall' },
-            endPoint: { label: 'Cathedral' },
-            itineraryStops: {
-              'stop-1': {
-                title: 'City Hall',
-                description: 'Meet at the main square.',
-              },
-              'stop-2': {
-                title: 'Cathedral',
-                description: 'Finish at the cathedral.',
-              },
-            },
-          },
-        }),
-      ],
+      contentSchema: null,
+      priceAmount: null,
+      priceCurrency: null,
+      rating: null,
+      reviewCount: null,
+      durationMinutes: null,
+      startPoint: null,
+      endPoint: null,
+      itineraryVariant: null,
+      tags: [],
+      translations: [],
     });
 
     toursRepository.findOne
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(persistedTour);
-    toursRepository.create.mockImplementation((value) => value);
     toursRepository.save.mockImplementation(async (value) => ({
       id: 'tour-1',
       ...value,
     }));
-    tagsRepository.findBy.mockResolvedValue([
-      createTagEntity({ key: 'history', labels: { en: 'History' } }),
-    ] as TagEntity[]);
-    languagesRepository.findBy.mockResolvedValue([
-      createLanguageEntity({ code: 'en' }),
-    ] as LanguageEntity[]);
 
     const result = await service.create(
       {
         name: 'Historic Center Main Tour',
         slug: 'historic-center',
-        publicationStatus: 'published',
-        contentSchema: {
-          type: 'object',
-          properties: {
-            title: { type: 'string' },
-            highlights: { type: 'array', items: { type: 'string' } },
-            included: { type: 'array', items: { type: 'string' } },
-            notIncluded: { type: 'array', items: { type: 'string' } },
-            startPoint: { type: 'object' },
-            endPoint: { type: 'object' },
-            itineraryStops: { type: 'object' },
-          },
-          required: [
-            'title',
-            'highlights',
-            'included',
-            'notIncluded',
-            'startPoint',
-            'endPoint',
-            'itineraryStops',
-          ],
-        },
-        price: {
-          amount: 25,
-          currency: 'EUR',
-        },
-        rating: 4.8,
-        reviewCount: 100,
         tourType: 'group',
-        cancellationType: '24h_free_cancellation',
-        durationMinutes: 120,
-        startPoint: { coordinates: { lat: 41.1, lng: 2.1 } },
-        endPoint: { coordinates: { lat: 41.2, lng: 2.2 } },
-        itinerary: {
-          variant: 'stops',
-          stops: [
-            {
-              id: 'stop-1',
-              durationMinutes: 10,
-              coordinates: { lat: 41.1, lng: 2.1 },
-              nextConnection: {
-                commuteMode: 'walk',
-                durationMinutes: 5,
-              },
-            },
-            {
-              id: 'stop-2',
-              durationMinutes: 20,
-              coordinates: { lat: 41.2, lng: 2.2 },
-            },
-          ],
-        },
-        tagKeys: ['history'],
-        translations: [
-          {
-            languageCode: 'en',
-            translationStatus: 'ready',
-            publicationStatus: 'published',
-            payload: {
-              title: 'Historic Center',
-              highlights: ['Roman walls', 'Cathedral square'],
-              included: ['Guide'],
-              notIncluded: ['Food'],
-              startPoint: { label: 'Town Hall' },
-              endPoint: { label: 'Cathedral' },
-              itineraryStops: {
-                'stop-1': {
-                  title: 'City Hall',
-                  description: 'Meet at the main square.',
-                },
-                'stop-2': {
-                  title: 'Cathedral',
-                  description: 'Finish at the cathedral.',
-                },
-              },
-            },
-          },
-        ],
       },
       createAdmin(),
     );
 
-    expect(stopsRepository.delete).toHaveBeenCalledWith({ tourId: 'tour-1' });
-    expect(stopsRepository.save).toHaveBeenCalledWith([
+    expect(toursRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        tourId: 'tour-1',
-        stopId: 'stop-1',
-        orderIndex: 0,
-        durationMinutes: 10,
-        coordinates: { lat: 41.1, lng: 2.1 },
-        nextConnection: { commuteMode: 'walk', durationMinutes: 5 },
+        name: 'Historic Center Main Tour',
+        slug: 'historic-center',
+        tourType: 'group',
+        contentSchema: null,
       }),
-      expect.objectContaining({
-        tourId: 'tour-1',
-        stopId: 'stop-2',
-        orderIndex: 1,
-        durationMinutes: 20,
-        coordinates: { lat: 41.2, lng: 2.2 },
-        nextConnection: null,
-      }),
-    ]);
-    expect(translationsRepository.save).toHaveBeenCalledWith([
-      expect.objectContaining({
-        tourId: 'tour-1',
-        languageCode: 'en',
-        translationStatus: 'ready',
-        publicationStatus: 'published',
-        payload: expect.objectContaining({
-          itineraryStops: expect.objectContaining({
-            'stop-1': expect.objectContaining({
-              description: 'Meet at the main square.',
-            }),
-          }),
-        }),
-      }),
-    ]);
+    );
     expect(result).toEqual(
       expect.objectContaining({
         id: 'tour-1',
         name: 'Historic Center Main Tour',
         slug: 'historic-center',
-        price: {
-          amount: 25,
-          currency: 'EUR',
-        },
-        itinerary: {
-          variant: 'stops',
-          stops: [
-            expect.objectContaining({
-              id: 'stop-1',
-              durationMinutes: 10,
-              coordinates: { lat: 41.1, lng: 2.1 },
-              nextConnection: { commuteMode: 'walk', durationMinutes: 5 },
-            }),
-            expect.objectContaining({
-              id: 'stop-2',
-              durationMinutes: 20,
-              coordinates: { lat: 41.2, lng: 2.2 },
-              nextConnection: null,
-            }),
-          ],
-        },
-        translations: {
-          en: expect.objectContaining({
-            translationStatus: 'ready',
-            publicationStatus: 'published',
-            payload: expect.objectContaining({
-              itineraryStops: expect.objectContaining({
-                'stop-2': expect.objectContaining({
-                  title: 'Cathedral',
-                }),
-              }),
-            }),
-          }),
-        },
-        translationAvailability: [
-          expect.objectContaining({
-            languageCode: 'en',
-            missingRequiredLists: [],
-            missingStopTranslations: [],
-            isSchemaValid: true,
-            publiclyAvailable: true,
-          }),
-        ],
+        translations: {},
+        translationAvailability: [],
       }),
     );
   });
 
-  it('updates stop-based itinerary by removing, editing, and adding stops and localized descriptions', async () => {
-    const existingTranslation = createTranslationEntity({
-      id: 'translation-en',
+  it('updates only shared tour data and recalculates affected translations', async () => {
+    const translation = createTranslationEntity({
       languageCode: 'en',
+      isReady: true,
+      isPublished: true,
       payload: {
         title: 'Historic Center',
-        highlights: ['Roman walls', 'Cathedral square'],
+        cancellationType: 'Free cancellation',
+        highlights: ['Walls'],
         included: ['Guide'],
         notIncluded: ['Food'],
-        itineraryStops: {
-          'stop-1': {
-            title: 'City Hall',
-            description: 'Meet at the main square.',
-          },
-          'stop-2': {
-            title: 'Cathedral',
-            description: 'Old cathedral description.',
-          },
-        },
+        startPoint: { label: 'Town Hall' },
+        endPoint: { label: 'Cathedral' },
+        itineraryDescription: 'Walk through the city.',
       },
     });
-
     const existingTour = createTourEntity({
-      publicationStatus: 'draft',
-      publishedAt: null,
-      publishedBy: null,
+      contentSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          cancellationType: { type: 'string' },
+          highlights: { type: 'array', items: { type: 'string' } },
+          included: { type: 'array', items: { type: 'string' } },
+          notIncluded: { type: 'array', items: { type: 'string' } },
+          startPoint: { type: 'object' },
+          endPoint: { type: 'object' },
+          itineraryDescription: { type: 'string' },
+        },
+        required: [
+          'title',
+          'cancellationType',
+          'highlights',
+          'included',
+          'notIncluded',
+          'startPoint',
+          'endPoint',
+          'itineraryDescription',
+        ],
+      },
+      translations: [translation],
+    });
+    const refreshedTour = createTourEntity({
+      contentSchema: existingTour.contentSchema,
       itineraryVariant: 'stops',
       stops: [
         createStopEntity({
           stopId: 'stop-1',
           orderIndex: 0,
-          durationMinutes: 10,
-          coordinates: { lat: 41.1, lng: 2.1 },
-          nextConnection: { commuteMode: 'walk', durationMinutes: 5 },
-        }),
-        createStopEntity({
-          stopId: 'stop-2',
-          orderIndex: 1,
-          durationMinutes: 15,
-          coordinates: { lat: 41.2, lng: 2.2 },
           nextConnection: null,
         }),
       ],
-      translations: [existingTranslation],
+      translations: [translation],
     });
-
-    const updatedTour = createTourEntity({
-      publicationStatus: 'published',
-      updatedBy: 'admin-1',
-      publishedBy: 'admin-1',
+    const responseTour = createTourEntity({
+      contentSchema: refreshedTour.contentSchema,
       itineraryVariant: 'stops',
-      stops: [
-        createStopEntity({
-          stopId: 'stop-2',
-          orderIndex: 0,
-          durationMinutes: 25,
-          coordinates: { lat: 41.22, lng: 2.22 },
-          nextConnection: { commuteMode: 'metro', durationMinutes: 8 },
-        }),
-        createStopEntity({
-          stopId: 'stop-3',
-          orderIndex: 1,
-          durationMinutes: 30,
-          coordinates: { lat: 41.3, lng: 2.3 },
-          nextConnection: null,
-        }),
-      ],
+      stops: refreshedTour.stops,
       translations: [
         createTranslationEntity({
-          id: 'translation-en',
           languageCode: 'en',
+          isReady: false,
+          isPublished: false,
+          payload: translation.payload,
+        }),
+      ],
+    });
+
+    toursRepository.findOne
+      .mockResolvedValueOnce(existingTour)
+      .mockResolvedValueOnce(refreshedTour)
+      .mockResolvedValueOnce(responseTour);
+
+    await service.update(
+      'tour-1',
+      {
+        itinerary: {
+          variant: 'stops',
+          stops: [{ id: 'stop-1' }],
+        },
+      },
+      createAdmin(),
+    );
+
+    expect(stopsRepository.delete).toHaveBeenCalledWith({ tourId: 'tour-1' });
+    expect(translationsRepository.save).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          languageCode: 'en',
+          isReady: false,
+          isPublished: false,
+        }),
+      ]),
+    );
+  });
+
+  it('creates a translation without a schema and stores it as not ready and unpublished', async () => {
+    const existingTour = createTourEntity({
+      contentSchema: null,
+      translations: [],
+    });
+    const responseTour = createTourEntity({
+      contentSchema: null,
+      translations: [
+        createTranslationEntity({
+          languageCode: 'en',
+          isReady: false,
+          isPublished: false,
+          payload: { title: 'Historic Center' },
+        }),
+      ],
+    });
+
+    toursRepository.findOne
+      .mockResolvedValueOnce(existingTour)
+      .mockResolvedValueOnce(responseTour);
+    languagesRepository.findOne.mockResolvedValue(
+      createLanguageEntity({ code: 'en' }),
+    );
+
+    await service.createTranslation(
+      'tour-1',
+      {
+        languageCode: 'en',
+        payload: { title: 'Historic Center' },
+      },
+      createAdmin(),
+    );
+
+    expect(translationsRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tourId: 'tour-1',
+        languageCode: 'en',
+        isReady: false,
+        isPublished: false,
+      }),
+    );
+  });
+
+  it('updates a translation and auto-unpublishes it when recalculated readiness becomes false', async () => {
+    const existingTour = createTourEntity({
+      contentSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          cancellationType: { type: 'string' },
+          highlights: { type: 'array', items: { type: 'string' } },
+          included: { type: 'array', items: { type: 'string' } },
+          notIncluded: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['title', 'cancellationType', 'highlights', 'included', 'notIncluded'],
+      },
+      translations: [
+        createTranslationEntity({
+          languageCode: 'en',
+          isReady: true,
+          isPublished: true,
           payload: {
             title: 'Historic Center',
-            highlights: ['Gothic Quarter', 'Roman walls'],
+            cancellationType: 'Free cancellation',
+            highlights: ['Walls'],
             included: ['Guide'],
-            notIncluded: ['Tickets'],
-            itineraryStops: {
-              'stop-2': {
-                title: 'Cathedral',
-                description: 'Updated cathedral description.',
-              },
-              'stop-3': {
-                title: 'Roman Wall',
-                description: 'Newly added stop.',
-              },
-            },
+            notIncluded: ['Food'],
           },
         }),
+      ],
+    });
+    const responseTour = createTourEntity({
+      contentSchema: existingTour.contentSchema,
+      translations: [
         createTranslationEntity({
-          id: 'translation-es',
-          languageCode: 'es',
+          languageCode: 'en',
+          isReady: false,
+          isPublished: false,
           payload: {
-            title: 'Centro Historico',
-            highlights: ['Barrio Gotico', 'Murallas romanas'],
-            included: ['Guia'],
-            notIncluded: ['Entradas'],
-            itineraryStops: {
-              'stop-2': {
-                title: 'Catedral',
-                description: 'Descripcion actualizada.',
-              },
-              'stop-3': {
-                title: 'Muralla Romana',
-                description: 'Nueva parada.',
-              },
-            },
+            title: 'Historic Center',
+            cancellationType: 'Free cancellation',
+            highlights: ['Walls'],
+            included: ['Guide'],
           },
         }),
       ],
@@ -393,380 +287,204 @@ describe('ToursService', () => {
 
     toursRepository.findOne
       .mockResolvedValueOnce(existingTour)
-      .mockResolvedValueOnce(updatedTour);
-    toursRepository.save.mockImplementation(async (value) => value);
-    tagsRepository.findBy.mockResolvedValue([
-      createTagEntity({ key: 'history', labels: { en: 'History', es: 'Historia' } }),
-    ] as TagEntity[]);
-    languagesRepository.findBy.mockResolvedValue([
+      .mockResolvedValueOnce(responseTour);
+    languagesRepository.findOne.mockResolvedValue(
       createLanguageEntity({ code: 'en' }),
-      createLanguageEntity({ code: 'es' }),
-    ] as LanguageEntity[]);
+    );
 
-    const result = await service.update(
+    await service.updateTranslation(
       'tour-1',
+      'en',
       {
-        publicationStatus: 'published',
-        itinerary: {
-          variant: 'stops',
-          stops: [
-            {
-              id: 'stop-2',
-              durationMinutes: 25,
-              coordinates: { lat: 41.22, lng: 2.22 },
-              nextConnection: {
-                commuteMode: 'metro',
-                durationMinutes: 8,
-              },
-            },
-            {
-              id: 'stop-3',
-              durationMinutes: 30,
-              coordinates: { lat: 41.3, lng: 2.3 },
-            },
-          ],
+        payload: {
+          title: 'Historic Center',
+          cancellationType: 'Free cancellation',
+          highlights: ['Walls'],
+          included: ['Guide'],
         },
-        translations: [
-          {
-            languageCode: 'en',
-            translationStatus: 'ready',
-            publicationStatus: 'published',
-            payload: {
-              title: 'Historic Center',
-              highlights: ['Gothic Quarter', 'Roman walls'],
-              included: ['Guide'],
-              notIncluded: ['Tickets'],
-              itineraryStops: {
-                'stop-2': {
-                  title: 'Cathedral',
-                  description: 'Updated cathedral description.',
-                },
-                'stop-3': {
-                  title: 'Roman Wall',
-                  description: 'Newly added stop.',
-                },
-              },
-            },
-          },
-          {
-            languageCode: 'es',
-            translationStatus: 'ready',
-            publicationStatus: 'published',
-            payload: {
-              title: 'Centro Historico',
-              highlights: ['Barrio Gotico', 'Murallas romanas'],
-              included: ['Guia'],
-              notIncluded: ['Entradas'],
-              itineraryStops: {
-                'stop-2': {
-                  title: 'Catedral',
-                  description: 'Descripcion actualizada.',
-                },
-                'stop-3': {
-                  title: 'Muralla Romana',
-                  description: 'Nueva parada.',
-                },
-              },
-            },
-          },
-        ],
       },
       createAdmin(),
     );
 
-    expect(stopsRepository.delete).toHaveBeenCalledWith({ tourId: 'tour-1' });
-    expect(stopsRepository.save).toHaveBeenCalledWith([
+    expect(translationsRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
-        tourId: 'tour-1',
-        stopId: 'stop-2',
-        orderIndex: 0,
-        durationMinutes: 25,
-        coordinates: { lat: 41.22, lng: 2.22 },
-        nextConnection: { commuteMode: 'metro', durationMinutes: 8 },
-      }),
-      expect.objectContaining({
-        tourId: 'tour-1',
-        stopId: 'stop-3',
-        orderIndex: 1,
-        durationMinutes: 30,
-        coordinates: { lat: 41.3, lng: 2.3 },
-        nextConnection: null,
-      }),
-    ]);
-    expect(translationsRepository.save).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        id: 'translation-en',
         languageCode: 'en',
-        payload: expect.objectContaining({
-          itineraryStops: {
-            'stop-2': {
-              title: 'Cathedral',
-              description: 'Updated cathedral description.',
-            },
-            'stop-3': {
-              title: 'Roman Wall',
-              description: 'Newly added stop.',
-            },
-          },
-        }),
-      }),
-    );
-    expect(translationsRepository.save).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        tourId: 'tour-1',
-        languageCode: 'es',
-        translationStatus: 'ready',
-        publicationStatus: 'published',
-        payload: expect.objectContaining({
-          itineraryStops: expect.objectContaining({
-            'stop-3': expect.objectContaining({
-              description: 'Nueva parada.',
-            }),
-          }),
-        }),
-      }),
-    );
-    expect(result).toEqual(
-      expect.objectContaining({
-        slug: 'historic-center',
-        name: 'Historic Center Main Tour',
-        itinerary: {
-          variant: 'stops',
-          stops: [
-            expect.objectContaining({
-              id: 'stop-2',
-              durationMinutes: 25,
-            }),
-            expect.objectContaining({
-              id: 'stop-3',
-              durationMinutes: 30,
-            }),
-          ],
-        },
-        translations: {
-          en: expect.objectContaining({
-            payload: expect.objectContaining({
-              itineraryStops: expect.not.objectContaining({
-                'stop-1': expect.anything(),
-              }),
-            }),
-          }),
-          es: expect.objectContaining({
-            payload: expect.objectContaining({
-              itineraryStops: expect.objectContaining({
-                'stop-2': expect.objectContaining({
-                  title: 'Catedral',
-                }),
-              }),
-            }),
-          }),
-        },
-        translationAvailability: expect.arrayContaining([
-          expect.objectContaining({
-            languageCode: 'en',
-            missingRequiredLists: [],
-            publiclyAvailable: true,
-          }),
-          expect.objectContaining({
-            languageCode: 'es',
-            missingRequiredLists: [],
-            publiclyAvailable: true,
-          }),
-        ]),
-        audit: expect.objectContaining({
-          updatedBy: 'admin-1',
-          publishedBy: 'admin-1',
-          publishedAt: expect.any(Date),
-        }),
+        isReady: false,
+        isPublished: false,
       }),
     );
   });
 
-  it('returns admin list and detail responses with normalized scalar and translation data', async () => {
-    const tour = createTourEntity({
-      itineraryVariant: 'description',
+  it('publishes a ready translation only through the dedicated endpoint', async () => {
+    const existingTour = createTourEntity({
+      contentSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          cancellationType: { type: 'string' },
+          highlights: { type: 'array', items: { type: 'string' } },
+          included: { type: 'array', items: { type: 'string' } },
+          notIncluded: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['title', 'cancellationType', 'highlights', 'included', 'notIncluded'],
+      },
       translations: [
         createTranslationEntity({
           languageCode: 'en',
+          isReady: false,
+          isPublished: false,
           payload: {
             title: 'Historic Center',
-            highlights: ['Roman walls', 'Old city lanes'],
+            cancellationType: 'Free cancellation',
+            highlights: ['Walls'],
             included: ['Guide'],
             notIncluded: ['Food'],
-            itineraryDescription: 'Walk through the old city.',
-          },
-        }),
-        createTranslationEntity({
-          languageCode: 'es',
-          translationStatus: 'draft',
-          publicationStatus: 'draft',
-          payload: {
-            title: 'Centro Historico',
           },
         }),
       ],
     });
-
-    toursRepository.find.mockResolvedValue([tour]);
-    toursRepository.findOne.mockResolvedValue(tour);
-
-    const list = await service.findAll();
-    const detail = await service.findOne('tour-1');
-
-    expect(list).toEqual([
-      expect.objectContaining({
-        id: 'tour-1',
-        rating: 4.8,
-        price: {
-          amount: 25,
-          currency: 'EUR',
-        },
-        itinerary: {
-          variant: 'description',
-          stops: [],
-        },
-        tags: [
-          {
-            key: 'history',
-            labels: { en: 'History' },
-          },
-        ],
-        translations: {
-          en: expect.objectContaining({
-            payload: expect.objectContaining({
-              highlights: ['Roman walls', 'Old city lanes'],
-              itineraryDescription: 'Walk through the old city.',
-            }),
-          }),
-          es: expect.objectContaining({
-            translationStatus: 'draft',
-            publicationStatus: 'draft',
-          }),
-        },
-      }),
-    ]);
-    expect(detail).toEqual(
-      expect.objectContaining({
-        id: 'tour-1',
-        startPoint: {},
-        endPoint: {},
-        translationAvailability: expect.arrayContaining([
-          expect.objectContaining({
-            languageCode: 'en',
-            missingRequiredLists: [],
-            isSchemaValid: true,
-          }),
-          expect.objectContaining({
-            languageCode: 'es',
-            missingRequiredLists: ['highlights', 'included', 'notIncluded'],
-            isSchemaValid: true,
-            publiclyAvailable: false,
-          }),
-        ]),
-        audit: expect.objectContaining({
-          createdBy: 'admin-1',
-          updatedBy: 'admin-1',
-          publishedBy: 'admin-1',
-          createdAt: expect.any(Date),
-          updatedAt: expect.any(Date),
-          publishedAt: expect.any(Date),
+    const responseTour = createTourEntity({
+      contentSchema: existingTour.contentSchema,
+      translations: [
+        createTranslationEntity({
+          languageCode: 'en',
+          isReady: true,
+          isPublished: true,
+          payload: existingTour.translations[0].payload,
         }),
+      ],
+    });
+
+    toursRepository.findOne
+      .mockResolvedValueOnce(existingTour)
+      .mockResolvedValueOnce(responseTour);
+    languagesRepository.findOne.mockResolvedValue(
+      createLanguageEntity({ code: 'en' }),
+    );
+
+    await service.publishTranslation(
+      'tour-1',
+      'en',
+      { bookingReferenceId: 'booking-ref-123' },
+      createAdmin(),
+    );
+
+    expect(translationsRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        languageCode: 'en',
+        bookingReferenceId: 'booking-ref-123',
+        isReady: true,
+        isPublished: true,
       }),
     );
   });
 
-  it('rejects tip-based tours that define a fixed price', async () => {
-    toursRepository.findOne.mockResolvedValue(null);
+  it('rejects translation publication when the translation is not ready', async () => {
+    const existingTour = createTourEntity({
+      contentSchema: null,
+      translations: [
+        createTranslationEntity({
+          languageCode: 'en',
+          isReady: false,
+          isPublished: false,
+          payload: { title: 'Historic Center' },
+        }),
+      ],
+    });
+
+    toursRepository.findOne.mockResolvedValue(existingTour);
+    languagesRepository.findOne.mockResolvedValue(
+      createLanguageEntity({ code: 'en' }),
+    );
 
     await expect(
-      service.create(
+      service.publishTranslation('tour-1', 'en', {}, createAdmin()),
+    ).rejects.toThrow('Translation "en" cannot be published until it is ready.');
+  });
+
+  it('rejects duplicate translation creation for the same locale', async () => {
+    const existingTour = createTourEntity({
+      translations: [createTranslationEntity({ languageCode: 'en' })],
+    });
+
+    toursRepository.findOne.mockResolvedValue(existingTour);
+    languagesRepository.findOne.mockResolvedValue(
+      createLanguageEntity({ code: 'en' }),
+    );
+
+    await expect(
+      service.createTranslation(
+        'tour-1',
         {
-          name: 'Tip Tour Main Entry',
-          slug: 'tip-tour',
-          publicationStatus: 'draft',
-          contentSchema: { type: 'object' },
-          price: {
-            amount: 20,
-            currency: 'EUR',
-          },
-          rating: 4.5,
-          reviewCount: 10,
-          tourType: 'tip_based',
-          cancellationType: '24h_free_cancellation',
-          durationMinutes: 90,
-          startPoint: {},
-          endPoint: {},
-          itinerary: {
-            variant: 'description',
-          },
-          tagKeys: [],
+          languageCode: 'en',
+          payload: { title: 'Historic Center' },
+        },
+        createAdmin(),
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rejects unknown translation locales', async () => {
+    toursRepository.findOne.mockResolvedValue(createTourEntity());
+    languagesRepository.findOne.mockResolvedValue(null);
+
+    await expect(
+      service.createTranslation(
+        'tour-1',
+        {
+          languageCode: 'fr',
+          payload: { title: 'Historic Center' },
         },
         createAdmin(),
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('rejects published translations that are missing required localized lists', async () => {
-    toursRepository.findOne.mockResolvedValue(null);
-    languagesRepository.findBy.mockResolvedValue([
+  it('throws when updating a translation that does not exist', async () => {
+    toursRepository.findOne.mockResolvedValue(createTourEntity({ translations: [] }));
+    languagesRepository.findOne.mockResolvedValue(
       createLanguageEntity({ code: 'en' }),
-    ] as LanguageEntity[]);
+    );
 
     await expect(
-      service.create(
-        {
-          name: 'Historic Center Main Tour',
-          slug: 'historic-center',
-          publicationStatus: 'draft',
-          contentSchema: { type: 'object' },
-          price: {
-            amount: 20,
-            currency: 'EUR',
-          },
-          rating: 4.5,
-          reviewCount: 10,
-          tourType: 'group',
-          cancellationType: '24h_free_cancellation',
-          durationMinutes: 90,
-          startPoint: {},
-          endPoint: {},
-          itinerary: {
-            variant: 'description',
-          },
-          tagKeys: [],
-          translations: [
-            {
-              languageCode: 'en',
-              translationStatus: 'ready',
-              publicationStatus: 'published',
-              payload: {
-                title: 'Historic Center',
-                itineraryDescription: 'Walk through the center.',
-              },
-            },
-          ],
-        },
+      service.updateTranslation(
+        'tour-1',
+        'en',
+        { payload: { title: 'Historic Center' } },
         createAdmin(),
       ),
-    ).rejects.toThrow(
-      'Translation "en" is missing required localized lists: highlights, included, notIncluded',
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('deletes a translation and touches the parent tour audit metadata', async () => {
+    const existingTour = createTourEntity({
+      translations: [
+        createTranslationEntity({
+          id: 'translation-en',
+          languageCode: 'en',
+        }),
+      ],
+    });
+
+    toursRepository.findOne.mockResolvedValue(existingTour);
+
+    await service.deleteTranslation('tour-1', 'en', createAdmin());
+
+    expect(translationsRepository.delete).toHaveBeenCalledWith({
+      id: 'translation-en',
+    });
+    expect(toursRepository.update).toHaveBeenCalledWith(
+      { id: 'tour-1' },
+      { updatedBy: 'admin-1' },
     );
   });
 
-  it('rejects duplicate tour slugs on update', async () => {
-    toursRepository.findOne
-      .mockResolvedValueOnce(createTourEntity())
-      .mockResolvedValueOnce({ id: 'tour-2', slug: 'duplicate' } as TourEntity);
+  it('throws when deleting a translation that does not exist', async () => {
+    toursRepository.findOne.mockResolvedValue(createTourEntity({ translations: [] }));
 
     await expect(
-      service.update(
-        'tour-1',
-        { slug: 'duplicate' },
-        createAdmin(),
-      ),
-    ).rejects.toBeInstanceOf(ConflictException);
+      service.deleteTranslation('tour-1', 'en', createAdmin()),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 
@@ -774,9 +492,9 @@ function createAdmin(): AuthenticatedAdmin {
   return {
     id: 'admin-1',
     email: 'admin@example.com',
-    roleName: 'editor',
+    roleName: 'super_admin',
     status: 'active',
-    auth0UserId: 'auth0|123',
+    auth0UserId: 'auth0|admin',
   };
 }
 
@@ -785,48 +503,47 @@ function createTourEntity(overrides: Partial<TourEntity> = {}): TourEntity {
     id: 'tour-1',
     name: 'Historic Center Main Tour',
     slug: 'historic-center',
-    category: 'walking',
     coverMediaRef: null,
     galleryMediaRefs: [],
-    publicationStatus: 'published',
-    contentSchema: { type: 'object' },
+    contentSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        cancellationType: { type: 'string' },
+        highlights: { type: 'array', items: { type: 'string' } },
+        included: { type: 'array', items: { type: 'string' } },
+        notIncluded: { type: 'array', items: { type: 'string' } },
+        startPoint: { type: 'object' },
+        endPoint: { type: 'object' },
+        itineraryDescription: { type: 'string' },
+      },
+      required: [
+        'title',
+        'cancellationType',
+        'highlights',
+        'included',
+        'notIncluded',
+        'startPoint',
+        'endPoint',
+        'itineraryDescription',
+      ],
+    },
     priceAmount: '25.00',
     priceCurrency: 'EUR',
-    rating: '4.8',
-    reviewCount: 100,
+    rating: '4.80',
+    reviewCount: 120,
     tourType: 'group',
-    cancellationType: '24h_free_cancellation',
     durationMinutes: 120,
-    startPoint: {},
-    endPoint: {},
+    startPoint: { coordinates: { lat: 41.1, lng: 2.1 } },
+    endPoint: { coordinates: { lat: 41.2, lng: 2.2 } },
     itineraryVariant: 'description',
-    tags: [
-      createTagEntity({
-        key: 'history',
-        labels: { en: 'History' },
-      }),
-    ],
+    tags: [],
     stops: [],
-    translations: [
-      createTranslationEntity({
-        languageCode: 'en',
-        payload: {
-          title: 'Historic Center',
-          highlights: ['Roman walls', 'Old city lanes'],
-          included: ['Guide'],
-          notIncluded: ['Food'],
-          startPoint: { label: 'Town Hall' },
-          endPoint: { label: 'Canal' },
-          itineraryDescription: 'Walk through the center.',
-        },
-      }),
-    ],
+    translations: [],
     createdBy: 'admin-1',
     updatedBy: 'admin-1',
-    publishedBy: 'admin-1',
     createdAt: new Date('2026-03-12T08:00:00.000Z'),
     updatedAt: new Date('2026-03-12T09:00:00.000Z'),
-    publishedAt: new Date('2026-03-12T10:00:00.000Z'),
     ...overrides,
   } as TourEntity;
 }
@@ -838,15 +555,18 @@ function createTranslationEntity(
     id: 'translation-1',
     tourId: 'tour-1',
     languageCode: 'en',
-    translationStatus: 'ready',
-    publicationStatus: 'published',
+    isReady: true,
+    isPublished: false,
     bookingReferenceId: null,
     payload: {
       title: 'Historic Center',
-      highlights: ['Roman walls', 'Old city lanes'],
+      cancellationType: 'Free cancellation',
+      highlights: ['Walls'],
       included: ['Guide'],
       notIncluded: ['Food'],
-      itineraryDescription: 'Walk through the center.',
+      startPoint: { label: 'Town Hall' },
+      endPoint: { label: 'Cathedral' },
+      itineraryDescription: 'Walk through the city.',
     },
     createdAt: new Date('2026-03-12T08:00:00.000Z'),
     updatedAt: new Date('2026-03-12T09:00:00.000Z'),
@@ -867,16 +587,6 @@ function createStopEntity(
     nextConnection: null,
     ...overrides,
   } as TourItineraryStopEntity;
-}
-
-function createTagEntity(overrides: Partial<TagEntity> = {}): TagEntity {
-  return {
-    key: 'history',
-    labels: { en: 'History' },
-    createdAt: new Date('2026-03-12T08:00:00.000Z'),
-    updatedAt: new Date('2026-03-12T09:00:00.000Z'),
-    ...overrides,
-  } as TagEntity;
 }
 
 function createLanguageEntity(overrides: Partial<LanguageEntity> = {}): LanguageEntity {

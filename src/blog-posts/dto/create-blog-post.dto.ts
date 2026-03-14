@@ -98,6 +98,7 @@ export class CreateBlogPostDto {
   @ApiProperty({
     description: 'Non-localized admin-facing name used to identify the blog post.',
     example: 'Barcelona Historic Center SEO Article',
+    minLength: 1,
     maxLength: 255,
   })
   @IsString()
@@ -126,16 +127,6 @@ export class CreateBlogPostDto {
   @IsOptional()
   heroMediaRef?: string;
 
-  @ApiPropertyOptional({
-    description: 'Optional category grouping for admin organization and public filters.',
-    example: 'city-guides',
-    maxLength: 100,
-  })
-  @IsString()
-  @MaxLength(100)
-  @IsOptional()
-  category?: string;
-
   @ApiProperty({
     description: 'Top-level publication state of the blog post.',
     enum: BLOG_PUBLICATION_STATUSES,
@@ -149,6 +140,7 @@ export class CreateBlogPostDto {
     description: 'Assigned tag keys.',
     type: [String],
     example: ['history', 'city-guide'],
+    uniqueItems: true,
   })
   @IsArray()
   @ArrayUnique()
@@ -159,6 +151,7 @@ export class CreateBlogPostDto {
   @ApiPropertyOptional({
     description: 'Localized translations keyed by locale through an array of translation objects.',
     type: () => [CreateBlogPostTranslationDto],
+    uniqueItems: true,
   })
   @IsArray()
   @ArrayUnique(

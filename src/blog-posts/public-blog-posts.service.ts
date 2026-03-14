@@ -90,7 +90,6 @@ export class PublicBlogPostsService {
       id: blogPost.id,
       slug: blogPost.slug,
       heroMediaRef: blogPost.heroMediaRef,
-      category: blogPost.category,
       tags: blogPost.tags.map((tag) => ({
         key: tag.key,
         label: tag.labels[locale] ?? null,

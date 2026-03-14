@@ -35,6 +35,16 @@ When touching any endpoint, DTO, controller, or returned payload:
 
 Swagger must reflect the actual current implementation, not an aspirational design.
 
+## OpenAPI Export Discipline
+
+When a change affects the API contract or its documentation, regenerate the checked-in OpenAPI YAML:
+
+- run `npm run openapi:export`
+- update `docs/backend.yaml`
+- do not leave `docs/backend.yaml` stale relative to Swagger annotations and DTO validation metadata
+
+API-affecting work is not complete unless `docs/backend.yaml` has been refreshed to match the current implementation.
+
 ## Test Discipline
 
 When behavior changes:

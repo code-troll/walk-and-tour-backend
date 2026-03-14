@@ -16,9 +16,9 @@ import {
 } from 'class-validator';
 
 import {
-  CreateTourTranslationDto,
   PriceDto,
   SharedPointDto,
+  TourMediaAssetDto,
   TourItineraryDto,
 } from './create-tour.dto';
 
@@ -28,6 +28,7 @@ export class UpdateTourDto {
   @ApiPropertyOptional({
     description: 'Updated non-localized admin-facing name.',
     example: 'Barcelona Historic Center Main Tour',
+    minLength: 1,
     maxLength: 255,
   })
   @IsString()
@@ -48,43 +49,24 @@ export class UpdateTourDto {
   slug?: string;
 
   @ApiPropertyOptional({
-    description: 'Updated business category.',
-    example: 'walking',
-    maxLength: 100,
-  })
-  @IsString()
-  @MaxLength(100)
-  @IsOptional()
-  category?: string;
-
-  @ApiPropertyOptional({
-    description: 'Updated cover media reference. Set `null` to clear the value.',
-    example: 'media/tours/historic-center/cover.jpg',
-    maxLength: 255,
+    description: 'Updated cover media asset. Set `null` to clear the value.',
+    type: () => TourMediaAssetDto,
     nullable: true,
   })
-  @IsString()
-  @MaxLength(255)
+  @ValidateNested()
+  @Type(() => TourMediaAssetDto)
   @IsOptional()
-  coverMediaRef?: string | null;
+  coverMediaRef?: TourMediaAssetDto | null;
 
   @ApiPropertyOptional({
-    description: 'Replacement gallery media references.',
-    type: [String],
+    description: 'Replacement gallery media assets.',
+    type: () => [TourMediaAssetDto],
   })
   @IsArray()
-  @IsString({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => TourMediaAssetDto)
   @IsOptional()
-  galleryMediaRefs?: string[];
-
-  @ApiPropertyOptional({
-    description: 'Updated top-level publication state.',
-    enum: ['draft', 'published'],
-    example: 'published',
-  })
-  @IsString()
-  @IsOptional()
-  publicationStatus?: string;
+  galleryMediaRefs?: TourMediaAssetDto[];
 
   @ApiPropertyOptional({
     description: 'Updated shared JSON Schema for localized payload validation.',
@@ -137,20 +119,6 @@ export class UpdateTourDto {
   tourType?: string;
 
   @ApiPropertyOptional({
-    description: 'Updated cancellation policy.',
-    enum: [
-      '12h_free_cancellation',
-      '24h_free_cancellation',
-      '48h_free_cancellation',
-      '72h_free_cancellation',
-    ],
-    example: '24h_free_cancellation',
-  })
-  @IsString()
-  @IsOptional()
-  cancellationType?: string;
-
-  @ApiPropertyOptional({
     description: 'Updated duration in minutes.',
     example: 150,
     minimum: 0,
@@ -190,6 +158,7 @@ export class UpdateTourDto {
   @ApiPropertyOptional({
     description: 'Replacement ordered tag key list.',
     type: [String],
+    uniqueItems: true,
   })
   @IsArray()
   @ArrayUnique()
@@ -197,14 +166,4 @@ export class UpdateTourDto {
   @IsOptional()
   tagKeys?: string[];
 
-  @ApiPropertyOptional({
-    description: 'Translations to merge into the existing translation set by locale code.',
-    type: () => [CreateTourTranslationDto],
-  })
-  @IsArray()
-  @ArrayUnique((translation: CreateTourTranslationDto) => translation.languageCode)
-  @ValidateNested({ each: true })
-  @Type(() => CreateTourTranslationDto)
-  @IsOptional()
-  translations?: CreateTourTranslationDto[];
 }

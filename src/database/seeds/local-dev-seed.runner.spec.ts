@@ -13,7 +13,12 @@ describe('LocalDevSeedRunner', () => {
     };
     const newsletterSubscribersRepository = { save: jest.fn() };
     const tagsService = { create: jest.fn() };
-    const toursService = { create: jest.fn() };
+    const toursService = {
+      create: jest.fn().mockResolvedValue({ id: 'tour-1' }),
+      update: jest.fn(),
+      createTranslation: jest.fn(),
+      publishTranslation: jest.fn(),
+    };
     const blogPostsService = { create: jest.fn() };
     const newsletterTokenService = {
       hashToken: jest.fn((token: string) => `hash:${token}`),
@@ -41,14 +46,23 @@ describe('LocalDevSeedRunner', () => {
     ]);
     expect(adminUsersRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
-        email: 'admin@example.com',
+        email: constants.adminEmail,
         roleName: 'super_admin',
         status: 'active',
-        auth0UserId: null,
+        auth0UserId: expect.any(String),
       }),
     );
     expect(tagsService.create).toHaveBeenCalledTimes(constants.tags.length);
     expect(toursService.create).toHaveBeenCalledTimes(constants.tours.length);
+    expect(toursService.update).toHaveBeenCalledTimes(constants.tours.length);
+    expect(toursService.createTranslation).toHaveBeenCalledTimes(
+      constants.tours.flatMap((tour) => tour.translations).length,
+    );
+    expect(toursService.publishTranslation).toHaveBeenCalledTimes(
+      constants.tours
+        .flatMap((tour) => tour.translations)
+        .filter((translation) => translation.isPublished).length,
+    );
     expect(blogPostsService.create).toHaveBeenCalledTimes(constants.blogPosts.length);
     expect(newsletterSubscribersRepository.save).toHaveBeenCalledWith(
       expect.arrayContaining([
@@ -67,7 +81,7 @@ describe('LocalDevSeedRunner', () => {
       ]),
     );
     expect(summary).toEqual({
-      adminEmail: 'admin@example.com',
+      adminEmail: constants.adminEmail,
       tags: constants.tags.length,
       tours: constants.tours.length,
       blogPosts: constants.blogPosts.length,
@@ -85,11 +99,16 @@ describe('LocalDevSeedRunner', () => {
     const adminUsersRepository = {
       save: jest.fn().mockResolvedValue({
         id: '11111111-1111-1111-1111-111111111111',
-        email: 'admin@example.com',
-        auth0UserId: null,
+        email: getLocalDevSeedConstants().adminEmail,
+        auth0UserId: 'google-oauth2|115126832227190392506',
       }),
     };
-    const toursService = { create: jest.fn() };
+    const toursService = {
+      create: jest.fn().mockResolvedValue({ id: 'tour-1' }),
+      update: jest.fn(),
+      createTranslation: jest.fn(),
+      publishTranslation: jest.fn(),
+    };
     const blogPostsService = { create: jest.fn() };
 
     const runner = new LocalDevSeedRunner({
@@ -106,25 +125,50 @@ describe('LocalDevSeedRunner', () => {
     await runner.run();
 
     expect(toursService.create).toHaveBeenCalledWith(
-      expect.objectContaining({
+      {
         name: 'Historic Center Highlights Catalog Entry',
         slug: 'historic-center-highlights',
-        translations: expect.arrayContaining([
-          expect.objectContaining({
-            languageCode: 'en',
-            payload: expect.objectContaining({
-              highlights: expect.any(Array),
-              included: expect.any(Array),
-              notIncluded: expect.any(Array),
-            }),
-          }),
-        ]),
+        tourType: 'group',
+      },
+      expect.objectContaining({
+        id: '11111111-1111-1111-1111-111111111111',
+        email: getLocalDevSeedConstants().adminEmail,
+        roleName: 'super_admin',
+        status: 'active',
+      }),
+    );
+    expect(toursService.update).toHaveBeenCalledWith(
+      'tour-1',
+      expect.objectContaining({
+        contentSchema: expect.any(Object),
+        tagKeys: expect.any(Array),
+        itinerary: expect.any(Object),
       }),
       expect.objectContaining({
         id: '11111111-1111-1111-1111-111111111111',
-        email: 'admin@example.com',
-        roleName: 'super_admin',
-        status: 'active',
+      }),
+    );
+    expect(toursService.createTranslation).toHaveBeenCalledWith(
+      'tour-1',
+      expect.objectContaining({
+        languageCode: 'en',
+        payload: expect.objectContaining({
+          cancellationType: expect.any(String),
+          highlights: expect.any(Array),
+          included: expect.any(Array),
+          notIncluded: expect.any(Array),
+        }),
+      }),
+      expect.objectContaining({
+        id: '11111111-1111-1111-1111-111111111111',
+      }),
+    );
+    expect(toursService.publishTranslation).toHaveBeenCalledWith(
+      'tour-1',
+      'en',
+      {},
+      expect.objectContaining({
+        id: '11111111-1111-1111-1111-111111111111',
       }),
     );
     expect(blogPostsService.create).toHaveBeenCalledWith(

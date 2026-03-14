@@ -59,14 +59,12 @@ Admin user statuses:
 
 Tour statuses:
 
-- Tour `publicationStatus`: `draft | published`
-- Tour translation `translationStatus`: `draft | ready`
-- Tour translation `publicationStatus`: `published | unpublished`
+- Tour translation `isReady`: `boolean`
+- Tour translation `isPublished`: `boolean`
 
 Tour enums:
 
 - `tourType`: `private | group | tip_based`
-- `cancellationType`: `12h_free_cancellation | 24h_free_cancellation | 48h_free_cancellation | 72h_free_cancellation`
 - `commuteMode`: `walk | bike | bus | train | metro | tram | ferry | private-transport | boat | other`
 
 Blog statuses:
@@ -132,6 +130,7 @@ Frontend implication:
 | Area | Routes | Allowed roles |
 | --- | --- | --- |
 | Admin auth | `/api/admin/auth/*` | Any authenticated mapped admin |
+| Admin media | `/api/admin/media/*` | `super_admin`, `editor` |
 | Admin users | `/api/admin/users*` | `super_admin` |
 | Admin roles | `/api/admin/roles` | `super_admin` |
 | Languages | `/api/admin/languages*` | `super_admin` |
@@ -237,14 +236,12 @@ Returned by `GET /api/admin/auth/me`:
 
 ### Audit metadata
 
-Used on tour and blog admin responses:
+Used on admin responses. Blog posts include all of these fields; tours include the create/update subset only:
 
 - `createdBy: UUID | null`
 - `updatedBy: UUID | null`
-- `publishedBy: UUID | null`
 - `createdAt`
 - `updatedAt`
-- `publishedAt: string | null`
 
 ## 5. Validation Mechanisms
 
@@ -285,6 +282,7 @@ Each tour stores a shared `contentSchema`. Each localized translation stores a `
 Validation rules:
 
 - `contentSchema` itself is validated against a restricted JSON Schema subset.
+- `contentSchema` must declare `payload.cancellationType` as a required localized string field.
 - translation `payload` is validated with AJV against that schema.
 - draft translations are validated against a relaxed schema with `required` removed recursively.
 - `ready` and `published` translations must satisfy the full schema.
@@ -315,19 +313,20 @@ If a schema uses unsupported keys, the backend rejects it with `400`.
 
 A locale is publicly available only when all of the following are true:
 
-- the parent tour `publicationStatus` is `published`
+- the shared tour data is valid for public rendering
 - the requested locale is enabled
-- the translation `translationStatus` is `ready`
-- the translation `publicationStatus` is `published`
+- the translation `isReady` is `true`
+- the translation `isPublished` is `true`
 - the localized `payload` satisfies the full `contentSchema`
 
 Additional required localized lists for tour translations:
 
+- `cancellationType: string`
 - `highlights: string[]`
 - `included: string[]`
 - `notIncluded: string[]`
 
-These lists are required for a locale to be publishable and public.
+These localized fields are required for a locale to be publishable and public.
 
 ### Itinerary-specific tour validation
 
@@ -375,6 +374,41 @@ Response:
 
 ### 6.2 Admin Users
 
+### 6.2 Admin Media
+
+Routes:
+
+| Method | Path | Roles |
+| --- | --- | --- |
+| `POST` | `/api/admin/media/upload` | `super_admin`, `editor` |
+
+Purpose:
+
+- Upload one image to the configured storage backend and receive a reusable media asset descriptor.
+
+Request:
+
+- `multipart/form-data`
+- file field: `file`
+- optional text field: `folder`
+
+Response:
+
+- `ref`
+- `altText`
+- `publicUrl`
+- `contentType`
+- `size`
+
+Frontend notes:
+
+- Upload does not modify a tour directly.
+- Use the returned `ref` in `coverMediaRef` or `galleryMediaRefs`.
+- `altText` returns as `null` from upload and is edited separately on the tour form.
+- Only image uploads are accepted.
+
+### 6.3 Admin Users
+
 Routes:
 
 | Method | Path | Roles |
@@ -403,7 +437,7 @@ Frontend notes:
 - `GET /api/admin/users` returns expanded `role` objects, not only `roleName`
 - first-login Auth0 binding can happen automatically via email match, even if the user was created without `auth0UserId`
 
-### 6.3 Admin Roles
+### 6.4 Admin Roles
 
 Routes:
 
@@ -415,7 +449,7 @@ Frontend notes:
 
 - Use this to populate role selectors instead of hardcoding labels and descriptions in the UI.
 
-### 6.4 Languages
+### 6.5 Languages
 
 Routes:
 
@@ -441,7 +475,7 @@ Frontend notes:
 - The backend treats languages as admin-managed data.
 - Public content routes require the requested locale to be enabled.
 
-### 6.5 Tags
+### 6.6 Tags
 
 Routes:
 
@@ -472,7 +506,7 @@ Frontend notes:
 - Deleting a tag first removes its associations from tours and blog posts, then deletes the tag itself.
 - Successful delete returns `204 No Content`.
 
-### 6.6 Tours
+### 6.7 Tours
 
 Routes:
 
@@ -482,6 +516,11 @@ Routes:
 | `GET` | `/api/admin/tours/:id` | `super_admin`, `editor` |
 | `POST` | `/api/admin/tours` | `super_admin`, `editor` |
 | `PATCH` | `/api/admin/tours/:id` | `super_admin`, `editor` |
+| `POST` | `/api/admin/tours/:id/translations` | `super_admin`, `editor` |
+| `PATCH` | `/api/admin/tours/:id/translations/:languageCode` | `super_admin`, `editor` |
+| `DELETE` | `/api/admin/tours/:id/translations/:languageCode` | `super_admin`, `editor` |
+| `POST` | `/api/admin/tours/:id/translations/:languageCode/publish` | `super_admin`, `editor` |
+| `POST` | `/api/admin/tours/:id/translations/:languageCode/unpublish` | `super_admin`, `editor` |
 
 Shared field note:
 
@@ -492,49 +531,72 @@ Shared field note:
 
 Top-level request shape:
 
+- `POST /api/admin/tours` only accepts:
+  - `name`
+  - `slug`
+  - `tourType`
+- All other shared tour fields are added later through `PATCH /api/admin/tours/:id`.
+
+Patch request shape:
+
 - `name`
 - `slug`
-- `category?`
 - `coverMediaRef?`
 - `galleryMediaRefs?`
-- `publicationStatus`
 - `contentSchema`
 - `price?`
 - `rating`
 - `reviewCount`
 - `tourType`
-- `cancellationType`
 - `durationMinutes`
 - `startPoint`
 - `endPoint`
 - `itinerary`
 - `tagKeys`
-- `translations?`
 
-Translation request shape:
+Translation create request shape:
 
 - `languageCode`
-- `translationStatus`
-- `publicationStatus`
 - `bookingReferenceId?`
 - `payload`
 
+Translation patch request shape:
+
+- `bookingReferenceId?`
+- `payload?`
+
+Translation delete behavior:
+
+- `DELETE /api/admin/tours/:id/translations/:languageCode`
+- returns `204 No Content`
+- permanently removes that locale translation from the tour
+
+Translation publish request shape:
+
+- `bookingReferenceId?`
+
 Translation note:
 
-- translation payloads still carry localized fields such as `title`
+- translation payloads carry localized fields such as `title` and `cancellationType`
 - translations do not include a separate `name`
+- `isReady` is returned by the backend but is derived from translation completeness and must not be sent by the frontend
+- translation save endpoints do not accept `isPublished`; publish/unpublish is only available through the dedicated translation endpoints
 
 Key DTO rules:
 
 - `name` is required on create and max length `255`
 - `slug` pattern: `^[a-z0-9]+(?:-[a-z0-9]+)*$`
 - `slug` max length: `150`
-- `galleryMediaRefs` must be string arrays
+- `tourType` is required on create
+- `coverMediaRef` uses `{ ref, altText? }`
+- `galleryMediaRefs` is an array of `{ ref, altText? }`
+- media `ref` max length: `255`
+- media `altText` is optional and keyed by locale code
+- media `altText` values must be non-empty strings with max length `255`
 - `rating` must be between `1` and `5`
 - `reviewCount` must be `>= 0`
 - `durationMinutes` must be `>= 0`
 - `tagKeys` must be unique
-- `translations` must be unique by `languageCode`
 - `itinerary.variant` must be `description` or `stops`
 - stop IDs use the same slug-like pattern as other stable keys
 
@@ -542,7 +604,11 @@ Update semantics:
 
 - shared fields are partially updated
 - if `itinerary` is included, the shared itinerary is replaced
-- if `translations` are included, translations are merged by `languageCode`
+- shared save endpoints do not accept translations or any publish/unpublish intent
+- translations can be created before `contentSchema` exists; they are stored with `isReady = false`
+- translation publish is rejected unless the backend calculates the translation as ready
+- updating shared tour fields recalculates readiness for existing translations and auto-unpublishes any translation that becomes not ready
+- updating a translation recalculates readiness and auto-unpublishes it when it becomes not ready
 
 Admin response shape includes:
 
@@ -556,8 +622,8 @@ Admin response shape includes:
 `translationAvailability[]` is especially important for the admin UI. Each locale entry includes:
 
 - `languageCode`
-- `translationStatus`
-- `publicationStatus`
+- `isReady`
+- `isPublished`
 - `missingRequiredLists`
 - `missingStopTranslations`
 - `isSchemaValid`
@@ -565,12 +631,14 @@ Admin response shape includes:
 
 Frontend notes:
 
+- Expect newly created tours to come back with nullable shared fields such as `contentSchema`, `rating`, `reviewCount`, `durationMinutes`, `startPoint`, `endPoint`, and `itinerary`.
 - Use `translationAvailability` to drive publishability indicators and per-locale warnings.
-- Do not assume a translation is public just because it exists.
-- `highlights`, `included`, and `notIncluded` are translation-owned fields.
+- Do not assume a translation is public just because it exists or even because it is marked `isPublished`; shared tour completeness still gates public exposure.
+- Do not keep a frontend-owned `isReady`; always read the backend-calculated value from responses.
+- `cancellationType`, `highlights`, `included`, and `notIncluded` are translation-owned fields.
 - `payload` is intentionally schema-driven and should be edited against the tour's `contentSchema`.
 
-### 6.7 Blog Posts
+### 6.8 Blog Posts
 
 Routes:
 
@@ -593,7 +661,6 @@ Top-level request shape:
 - `name`
 - `slug`
 - `heroMediaRef?`
-- `category?`
 - `publicationStatus`
 - `tagKeys?`
 - `translations?`
@@ -620,7 +687,6 @@ Key DTO rules:
 - `slug` pattern: `^[a-z0-9]+(?:-[a-z0-9]+)*$`
 - `slug` max length: `150`
 - `heroMediaRef` max length: `255`
-- `category` max length: `100`
 - `tagKeys` must be unique
 - `translations` must be unique by `languageCode`
 - `title` max length: `255`
@@ -646,7 +712,7 @@ Frontend notes:
 - updates merge translations by locale code
 - HTML content is stored and returned as HTML, not rich-text blocks or Markdown
 
-### 6.8 Newsletter Subscribers
+### 6.9 Newsletter Subscribers
 
 Routes:
 
@@ -713,7 +779,7 @@ Rules:
 
 - `locale` is required
 - no locale fallback exists
-- only published tours are returned
+- only tours with valid shared public data are returned
 - only locales that are enabled, `ready`, `published`, and schema-valid are returned
 
 Public tour response includes:
@@ -722,7 +788,6 @@ Public tour response includes:
 - localized `translation`
 - localized `itinerary`
 - localized tag labels for the requested locale
-- `publishedAt`
 
 ### 7.2 Public Blog Posts
 

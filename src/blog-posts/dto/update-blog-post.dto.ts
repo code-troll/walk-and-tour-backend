@@ -18,6 +18,7 @@ export class UpdateBlogPostDto {
   @ApiPropertyOptional({
     description: 'Updated non-localized admin-facing name.',
     example: 'Barcelona Historic Center SEO Article',
+    minLength: 1,
     maxLength: 255,
   })
   @IsString()
@@ -49,16 +50,6 @@ export class UpdateBlogPostDto {
   heroMediaRef?: string | null;
 
   @ApiPropertyOptional({
-    description: 'Updated category.',
-    example: 'city-guides',
-    maxLength: 100,
-  })
-  @IsString()
-  @MaxLength(100)
-  @IsOptional()
-  category?: string;
-
-  @ApiPropertyOptional({
     description: 'Updated top-level publication state.',
     enum: ['draft', 'published'],
     example: 'published',
@@ -71,6 +62,7 @@ export class UpdateBlogPostDto {
     description: 'Replacement tag key list.',
     type: [String],
     example: ['history', 'architecture'],
+    uniqueItems: true,
   })
   @IsArray()
   @ArrayUnique()
@@ -81,6 +73,7 @@ export class UpdateBlogPostDto {
   @ApiPropertyOptional({
     description: 'Translations to merge into the existing set by locale code.',
     type: () => [CreateBlogPostTranslationDto],
+    uniqueItems: true,
   })
   @IsArray()
   @ArrayUnique(

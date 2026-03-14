@@ -82,7 +82,6 @@ function createPublicBlogPost(overrides: Partial<BlogPostEntity> = {}): BlogPost
     name: 'Royal Copenhagen Article',
     slug: 'royal-copenhagen',
     heroMediaRef: 'hero.jpg',
-    category: 'history',
     publicationStatus: 'published',
     tags: [
       {

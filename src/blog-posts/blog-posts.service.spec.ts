@@ -161,7 +161,6 @@ function createBlogPostEntity(): BlogPostEntity {
     name: 'Royal Copenhagen Article',
     slug: 'royal-copenhagen',
     heroMediaRef: null,
-    category: null,
     publicationStatus: 'published',
     tags: [
       {

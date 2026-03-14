@@ -26,20 +26,14 @@ export class TourEntity {
   @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  category!: string | null;
-
-  @Column({ name: 'cover_media_ref', type: 'varchar', length: 255, nullable: true })
-  coverMediaRef!: string | null;
+  @Column({ name: 'cover_media_ref', type: 'jsonb', nullable: true })
+  coverMediaRef!: Record<string, unknown> | null;
 
   @Column({ name: 'gallery_media_refs', type: 'jsonb', default: [] })
-  galleryMediaRefs!: string[];
+  galleryMediaRefs!: Record<string, unknown>[];
 
-  @Column({ name: 'publication_status', type: 'varchar', length: 20 })
-  publicationStatus!: string;
-
-  @Column({ name: 'content_schema', type: 'jsonb' })
-  contentSchema!: Record<string, unknown>;
+  @Column({ name: 'content_schema', type: 'jsonb', nullable: true })
+  contentSchema!: Record<string, unknown> | null;
 
   @Column({
     name: 'price_amount',
@@ -53,29 +47,26 @@ export class TourEntity {
   @Column({ name: 'price_currency', type: 'varchar', length: 10, nullable: true })
   priceCurrency!: string | null;
 
-  @Column({ type: 'numeric', precision: 3, scale: 2 })
-  rating!: string;
+  @Column({ type: 'numeric', precision: 3, scale: 2, nullable: true })
+  rating!: string | null;
 
-  @Column({ name: 'review_count', type: 'integer' })
-  reviewCount!: number;
+  @Column({ name: 'review_count', type: 'integer', nullable: true })
+  reviewCount!: number | null;
 
   @Column({ name: 'tour_type', type: 'varchar', length: 20 })
   tourType!: string;
 
-  @Column({ name: 'cancellation_type', type: 'varchar', length: 30 })
-  cancellationType!: string;
+  @Column({ name: 'duration_minutes', type: 'integer', nullable: true })
+  durationMinutes!: number | null;
 
-  @Column({ name: 'duration_minutes', type: 'integer' })
-  durationMinutes!: number;
+  @Column({ name: 'start_point', type: 'jsonb', nullable: true })
+  startPoint!: Record<string, unknown> | null;
 
-  @Column({ name: 'start_point', type: 'jsonb' })
-  startPoint!: Record<string, unknown>;
+  @Column({ name: 'end_point', type: 'jsonb', nullable: true })
+  endPoint!: Record<string, unknown> | null;
 
-  @Column({ name: 'end_point', type: 'jsonb' })
-  endPoint!: Record<string, unknown>;
-
-  @Column({ name: 'itinerary_variant', type: 'varchar', length: 20 })
-  itineraryVariant!: string;
+  @Column({ name: 'itinerary_variant', type: 'varchar', length: 20, nullable: true })
+  itineraryVariant!: string | null;
 
   @ManyToMany(() => TagEntity)
   @JoinTable({
@@ -101,15 +92,9 @@ export class TourEntity {
   @Column({ name: 'updated_by', type: 'uuid', nullable: true })
   updatedBy!: string | null;
 
-  @Column({ name: 'published_by', type: 'uuid', nullable: true })
-  publishedBy!: string | null;
-
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
-
-  @Column({ name: 'published_at', type: 'timestamp', nullable: true })
-  publishedAt!: Date | null;
 }

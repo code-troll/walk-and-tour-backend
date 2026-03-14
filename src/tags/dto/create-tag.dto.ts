@@ -16,9 +16,10 @@ export class CreateTagDto {
   key!: string;
 
   @ApiProperty({
-    description: 'Localized tag labels keyed by locale code. Every key must reference a registered language.',
+    description:
+      'Localized tag labels keyed by locale code. Every key must reference a registered language and each label can be at most 100 characters long.',
     type: 'object',
-    additionalProperties: { type: 'string' },
+    additionalProperties: { type: 'string', maxLength: 100 },
     example: {
       en: 'History',
       es: 'Historia',

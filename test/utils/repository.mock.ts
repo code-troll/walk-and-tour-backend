@@ -6,6 +6,7 @@ export interface RepositoryMock<_T> {
   count: jest.Mock;
   create: jest.Mock;
   save: jest.Mock;
+  update: jest.Mock;
   delete: jest.Mock;
 }
 
@@ -18,6 +19,7 @@ export function createRepositoryMock<T>(): RepositoryMock<T> {
     count: jest.fn(),
     create: jest.fn((value: Partial<T>) => value),
     save: jest.fn(async (value: T) => value),
+    update: jest.fn(),
     delete: jest.fn(),
   };
 }

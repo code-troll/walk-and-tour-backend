@@ -32,6 +32,7 @@ Implementation tracking lives in `docs/implementation-status.md`.
 - `src/tours`: admin and public tour APIs with schema-driven localized content
 - `src/blog-posts`: admin and public blog APIs
 - `src/newsletter-subscribers`: subscribe, confirm, unsubscribe, admin list/detail/export
+- `src/admin-media`: admin image upload API backed by the shared storage abstraction
 - `src/providers/email`: console and Resend-backed email delivery adapters
 - `src/storage`: local-filesystem and Supabase-backed storage adapters
 
@@ -76,7 +77,7 @@ Notes:
 - `STORAGE_DRIVER=local` is the safe default for development.
 - admin endpoints boot without valid Auth0 credentials, but protected admin requests will only work with a valid bearer token and local admin mapping.
 - `CORS_ALLOWED_ORIGINS` is a comma-separated list of browser origins allowed to call the backend, for example `http://admin.dev.walkandtour.dk:3001,http://localhost:3001`.
-- `AUTH_BOOTSTRAP_SUPER_ADMIN_EMAIL` and `AUTH_BOOTSTRAP_SUPER_ADMIN_SUB` can bootstrap the first admin on an empty database, and the latest admin migration can also sync an existing local super admin to those values when migrations are run.
+- `AUTH_BOOTSTRAP_SUPER_ADMIN_EMAIL` and `AUTH_BOOTSTRAP_SUPER_ADMIN_SUB` can bootstrap the first admin on an empty database.
 
 ## Run Locally
 
@@ -100,7 +101,20 @@ App URLs:
 - API base: `http://localhost:3000/api`
 - Swagger UI: `http://localhost:3000/api/docs`
 - OpenAPI JSON: `http://localhost:3000/api/docs-json`
+- OpenAPI YAML export: `npm run openapi:export`
 - Health: `http://localhost:3000/api/health`
+
+Tour admin write flow:
+
+- `POST /api/admin/tours` creates the shared tour shell
+- `PATCH /api/admin/tours/:id` updates only shared tour fields
+- `POST /api/admin/tours/:id/translations` and `PATCH /api/admin/tours/:id/translations/:languageCode` manage localized translations independently
+- `DELETE /api/admin/tours/:id/translations/:languageCode` removes a locale translation
+- translation publication changes only through `POST /api/admin/tours/:id/translations/:languageCode/publish` and `/unpublish`
+
+Admin media upload:
+
+- `POST /api/admin/media/upload`
 
 ## Auth0 Setup
 
@@ -215,7 +229,7 @@ AUTH_BOOTSTRAP_SUPER_ADMIN_SUB=google-oauth2|123456789012345678901
 - `auth0|...`
 - `google-oauth2|...`
 
-If your database already contains admin users, run migrations after setting these values so the bootstrap admin sync migration can reconcile the local super admin record.
+If your database already contains admin users, update that admin record directly or start from a clean local database.
 
 ### 6. Common Failure Cases
 
@@ -361,6 +375,7 @@ Current domain persistence includes:
 
 Swagger notes and scope live in `docs/api-documentation.md`.
 Frontend-oriented API guidance lives in `docs/admin-frontend-api.md`.
+The checked-in `docs/backend.yaml` should be regenerated with `npm run openapi:export` instead of edited by hand.
 
 ## Quality Checks
 
@@ -376,12 +391,17 @@ Testing notes and the current coverage scope live in `docs/testing.md`.
 
 ## Technical Notes
 
+- Request validation requirements belong in the DTOs. Use `class-validator` for runtime enforcement and mirror the same limits in `@ApiProperty` / `@ApiPropertyOptional` so they appear in Swagger/OpenAPI.
+- Tag labels are limited to 100 characters per locale entry.
 - Tour localized content is schema-driven. Each tour stores a JSON Schema that validates localized translation payloads.
 - Tours and blog posts also carry a shared non-localized `name` field for admin-side identification; localized public-facing titles remain on translations.
+- Tours store `cancellationType` as localized free-text policy text inside each translation payload rather than on the shared tour record.
+- Tour media assets can optionally include localized alt text maps on `coverMediaRef` and each `galleryMediaRefs` entry.
+- Admin image uploads are exposed through `POST /api/admin/media/upload`; use the returned `ref` in tour media assets.
 - Tags can be deleted through the admin API; deletion removes the tag from tours and blog posts before deleting the shared tag record.
 - Public tour visibility is strict: no locale fallback, no unpublished tours, no unpublished translations, and no invalid localized payloads.
 - Blog posts use shared metadata plus per-locale HTML translations.
 - Newsletter subscribers use double opt-in. Confirmation and unsubscribe links are tokenized.
 - Provider integrations are behind application-level abstractions so email/storage backends can change without rewriting domain modules.
-- Storage adapters exist, but no media upload API is exposed yet.
 - Resend and Supabase support are present at the adapter layer; live provider verification depends on real credentials and environment configuration.
+- The OpenAPI export command uses a documentation-only Nest module, so it can regenerate `docs/backend.yaml` without a live database connection.

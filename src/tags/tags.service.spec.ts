@@ -79,6 +79,20 @@ describe('TagsService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('rejects labels longer than 100 characters', async () => {
+    tagsRepository.findOne.mockResolvedValue(null);
+    languagesRepository.find.mockResolvedValue([{ code: 'en' }] as LanguageEntity[]);
+
+    await expect(
+      service.create({
+        key: 'history',
+        labels: {
+          en: 'x'.repeat(101),
+        },
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('rejects updates for missing tags', async () => {
     tagsRepository.findOne.mockResolvedValue(null);
 

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AdminMediaModule } from './admin-media/admin-media.module';
 import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { AdminUsersModule } from './admin-users/admin-users.module';
 import { BlogPostsModule } from './blog-posts/blog-posts.module';
@@ -14,6 +15,7 @@ import { ToursModule } from './tours/tours.module';
 @Module({
   imports: [
     DatabaseModule,
+    AdminMediaModule,
     AdminAuthModule,
     AdminUsersModule,
     BlogPostsModule,

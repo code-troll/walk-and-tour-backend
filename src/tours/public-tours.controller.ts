@@ -20,7 +20,8 @@ export class PublicToursController {
 
   @ApiOperation({
     summary: 'List public tours by locale',
-    description: 'Returns only published tours that have a locale-specific published and schema-valid translation for the requested locale.',
+    description:
+      'Returns only tours whose shared data is publicly valid and whose requested locale has a published, ready, and schema-valid translation.',
   })
   @ApiQuery({
     name: 'locale',
@@ -41,7 +42,8 @@ export class PublicToursController {
 
   @ApiOperation({
     summary: 'Get a public tour by slug and locale',
-    description: 'Returns a published tour only when the requested locale is enabled and has a published, ready, schema-valid translation.',
+    description:
+      'Returns a public tour only when the shared tour data is valid, the requested locale is enabled, and that locale has a published, ready, schema-valid translation.',
   })
   @ApiParam({
     name: 'slug',

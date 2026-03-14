@@ -46,6 +46,10 @@
       "title": {
         "type": "string"
       },
+      "cancellationType": {
+        "type": "string",
+        "description": "Localized cancellation policy text shown to users for this language."
+      },
       "imageAlt": {
         "type": "string"
       },
@@ -98,6 +102,7 @@
       "additionalProperties": false,
       "required": [
         "title",
+        "cancellationType",
         "highlights",
         "included",
         "notIncluded",
@@ -108,6 +113,9 @@
       "properties": {
         "title": {
           "$ref": "#/$defs/BasePayloadProperties/title"
+        },
+        "cancellationType": {
+          "$ref": "#/$defs/BasePayloadProperties/cancellationType"
         },
         "imageAlt": {
           "$ref": "#/$defs/BasePayloadProperties/imageAlt"
@@ -140,6 +148,7 @@
       "additionalProperties": false,
       "required": [
         "title",
+        "cancellationType",
         "highlights",
         "included",
         "notIncluded",
@@ -150,6 +159,9 @@
       "properties": {
         "title": {
           "$ref": "#/$defs/BasePayloadProperties/title"
+        },
+        "cancellationType": {
+          "$ref": "#/$defs/BasePayloadProperties/cancellationType"
         },
         "imageAlt": {
           "$ref": "#/$defs/BasePayloadProperties/imageAlt"

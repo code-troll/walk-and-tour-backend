@@ -12,6 +12,8 @@ import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { TagEntity } from './tag.entity';
 
+const TAG_LABEL_MAX_LENGTH = 100;
+
 @Injectable()
 export class TagsService {
   constructor(
@@ -118,6 +120,12 @@ export class TagsService {
 
       if (typeof value !== 'string' || value.trim().length === 0) {
         throw new BadRequestException(`Tag label for "${code}" must be a non-empty string.`);
+      }
+
+      if (value.length > TAG_LABEL_MAX_LENGTH) {
+        throw new BadRequestException(
+          `Tag label for "${code}" must be ${TAG_LABEL_MAX_LENGTH} characters or fewer.`,
+        );
       }
     }
   }

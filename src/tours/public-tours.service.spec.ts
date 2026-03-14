@@ -36,16 +36,12 @@ describe('PublicToursService', () => {
     toursRepository.find.mockResolvedValue([
       createPublicTour(),
       createPublicTour({
-        slug: 'draft-tour',
-        publicationStatus: 'draft',
-      }),
-      createPublicTour({
         slug: 'draft-translation-tour',
         translations: [
           createTranslationEntity({
             languageCode: 'en',
-            translationStatus: 'draft',
-            publicationStatus: 'draft',
+            isReady: false,
+            isPublished: false,
           }),
         ],
       }),
@@ -57,6 +53,20 @@ describe('PublicToursService', () => {
       expect.objectContaining({
         id: 'tour-1',
         slug: 'historic-center',
+        coverMediaRef: {
+          ref: 'cover.jpg',
+          altText: {
+            en: 'Historic center skyline',
+          },
+        },
+        galleryMediaRefs: [
+          {
+            ref: '1.jpg',
+            altText: {
+              en: 'Stone alley in the old town',
+            },
+          },
+        ],
         price: {
           amount: 25,
           currency: 'EUR',
@@ -78,6 +88,7 @@ describe('PublicToursService', () => {
         translation: {
           locale: 'en',
           bookingReferenceId: null,
+          cancellationType: 'Free cancellation up to 24 hours before the start time.',
           highlights: ['Roman walls', 'Gothic Quarter lanes'],
           included: ['Guide'],
           notIncluded: ['Food'],
@@ -90,7 +101,6 @@ describe('PublicToursService', () => {
           variant: 'description',
           itineraryDescription: 'Walk through the old city.',
         },
-        publishedAt: new Date('2026-03-12T10:00:00.000Z'),
       }),
     ]);
   });
@@ -129,6 +139,7 @@ describe('PublicToursService', () => {
             languageCode: 'en',
             payload: {
               title: 'Historic Center',
+              cancellationType: 'Free cancellation up to 24 hours before the start time.',
               highlights: ['Roman walls', 'Gothic Quarter lanes'],
               included: ['Guide'],
               notIncluded: ['Food'],
@@ -198,7 +209,7 @@ describe('PublicToursService', () => {
     );
   });
 
-  it('rejects published tours whose localized lists are missing', async () => {
+  it('rejects public tours whose localized lists are missing', async () => {
     languagesRepository.findOne.mockResolvedValue(
       createLanguageEntity({ code: 'en', isEnabled: true }),
     );
@@ -229,17 +240,26 @@ function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
     id: 'tour-1',
     name: 'Historic Center Main Tour',
     slug: 'historic-center',
-    category: 'walking',
-    coverMediaRef: 'cover.jpg',
-    galleryMediaRefs: ['1.jpg'],
-    publicationStatus: 'published',
+    coverMediaRef: {
+      ref: 'cover.jpg',
+      altText: {
+        en: 'Historic center skyline',
+      },
+    },
+    galleryMediaRefs: [
+      {
+        ref: '1.jpg',
+        altText: {
+          en: 'Stone alley in the old town',
+        },
+      },
+    ],
     contentSchema: { type: 'object' },
     priceAmount: '25.00',
     priceCurrency: 'EUR',
     rating: '4.8',
     reviewCount: 120,
     tourType: 'group',
-    cancellationType: '24h_free_cancellation',
     durationMinutes: 120,
     startPoint: { coordinates: { lat: 41.1, lng: 2.1 } },
     endPoint: { coordinates: { lat: 41.2, lng: 2.2 } },
@@ -256,6 +276,7 @@ function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
         languageCode: 'en',
         payload: {
           title: 'Historic Center',
+          cancellationType: 'Free cancellation up to 24 hours before the start time.',
           highlights: ['Roman walls', 'Gothic Quarter lanes'],
           included: ['Guide'],
           notIncluded: ['Food'],
@@ -265,7 +286,10 @@ function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
         },
       }),
     ],
-    publishedAt: new Date('2026-03-12T10:00:00.000Z'),
+    createdBy: 'admin-1',
+    updatedBy: 'admin-1',
+    createdAt: new Date('2026-03-12T08:00:00.000Z'),
+    updatedAt: new Date('2026-03-12T09:00:00.000Z'),
     ...overrides,
   } as TourEntity;
 }
@@ -299,11 +323,12 @@ function createTranslationEntity(
     id: 'translation-1',
     tourId: 'tour-1',
     languageCode: 'en',
-    translationStatus: 'ready',
-    publicationStatus: 'published',
+    isReady: true,
+    isPublished: true,
     bookingReferenceId: null,
     payload: {
       title: 'Historic Center',
+      cancellationType: 'Free cancellation up to 24 hours before the start time.',
       highlights: ['Roman walls', 'Gothic Quarter lanes'],
       included: ['Guide'],
       notIncluded: ['Food'],

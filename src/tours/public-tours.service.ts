@@ -34,7 +34,7 @@ export class PublicToursService {
         translations: true,
       },
       order: {
-        publishedAt: 'DESC',
+        updatedAt: 'DESC',
       },
     });
 
@@ -84,15 +84,15 @@ export class PublicToursService {
   }
 
   private toPublicResponse(tour: TourEntity, locale: string): unknown | null {
-    if (tour.publicationStatus !== 'published') {
+    if (!this.isSharedTourPubliclyValid(tour)) {
       return null;
     }
 
     const translation = tour.translations.find(
       (entry) =>
         entry.languageCode === locale &&
-        entry.translationStatus === 'ready' &&
-        entry.publicationStatus === 'published',
+        entry.isReady &&
+        entry.isPublished,
     );
 
     if (!translation || !this.isTranslationPubliclyValid(tour, translation)) {
@@ -126,9 +126,8 @@ export class PublicToursService {
     return {
       id: tour.id,
       slug: tour.slug,
-      category: tour.category,
-      coverMediaRef: tour.coverMediaRef,
-      galleryMediaRefs: tour.galleryMediaRefs,
+      coverMediaRef: this.toResponseMediaAsset(tour.coverMediaRef),
+      galleryMediaRefs: tour.galleryMediaRefs.map((asset) => this.toResponseMediaAsset(asset)),
       price:
         tour.priceAmount && tour.priceCurrency
           ? {
@@ -139,7 +138,6 @@ export class PublicToursService {
       rating: Number(tour.rating),
       reviewCount: tour.reviewCount,
       tourType: tour.tourType,
-      cancellationType: tour.cancellationType,
       durationMinutes: tour.durationMinutes,
       startPoint: {
         shared: tour.startPoint,
@@ -156,13 +154,13 @@ export class PublicToursService {
       translation: {
         locale,
         bookingReferenceId: translation.bookingReferenceId,
+        cancellationType: this.getStringField(payload, 'cancellationType'),
         highlights: this.getStringListField(payload, 'highlights'),
         included: this.getStringListField(payload, 'included'),
         notIncluded: this.getStringListField(payload, 'notIncluded'),
         payload,
       },
       itinerary,
-      publishedAt: tour.publishedAt,
     };
   }
 
@@ -171,6 +169,10 @@ export class PublicToursService {
     translation: TourTranslationEntity,
   ): boolean {
     try {
+      if (!tour.contentSchema || !tour.itineraryVariant) {
+        return false;
+      }
+
       this.payloadValidationService.validateOrThrow(
         tour.contentSchema,
         translation.payload,
@@ -201,6 +203,34 @@ export class PublicToursService {
     } catch {
       return false;
     }
+  }
+
+  private isSharedTourPubliclyValid(tour: TourEntity): boolean {
+    if (!tour.contentSchema || !tour.itineraryVariant) {
+      return false;
+    }
+
+    if (!tour.startPoint || !tour.endPoint) {
+      return false;
+    }
+
+    if (tour.rating === null || tour.reviewCount === null || tour.durationMinutes === null) {
+      return false;
+    }
+
+    if (tour.tourType !== 'tip_based' && (!tour.priceAmount || !tour.priceCurrency)) {
+      return false;
+    }
+
+    if (tour.tourType === 'tip_based' && (tour.priceAmount || tour.priceCurrency)) {
+      return false;
+    }
+
+    if (tour.itineraryVariant === 'stops' && tour.stops.length === 0) {
+      return false;
+    }
+
+    return true;
   }
 
   private getLocalizedStops(
@@ -252,5 +282,18 @@ export class PublicToursService {
     }
 
     return [...value];
+  }
+
+  private toResponseMediaAsset(
+    asset: Record<string, unknown> | null,
+  ): { ref: string; altText: Record<string, string> | null } | null {
+    if (!asset) {
+      return null;
+    }
+
+    return {
+      ref: asset.ref as string,
+      altText: (asset.altText as Record<string, string> | undefined) ?? null,
+    };
   }
 }

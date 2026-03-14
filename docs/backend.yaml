@@ -1,1214 +1,3680 @@
-openapi: 3.1.0
-info:
-  title: Walk and Tour Backend API
-  version: 1.0.0
-servers:
-  - url: https://backend.example.com
+openapi: 3.0.0
 paths:
   /api/admin/auth/me:
     get:
-      operationId: getAdminAuthMe
+      description: Resolves the authenticated Auth0 bearer token to the local admin user context used by guarded admin routes.
+      operationId: AdminAuthController_me
+      parameters: []
       responses:
         "200":
-          description: Authenticated admin context
+          description: Resolved authenticated admin context.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthenticatedAdmin"
+                $ref: "#/components/schemas/AuthenticatedAdminResponseDto"
         "401":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
         "403":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Get the current authenticated admin
+      tags:
+        - Admin Auth
   /api/admin/auth/logout:
     post:
-      operationId: postAdminLogout
+      description: The backend uses bearer tokens, so logout is handled by the client discarding the current token.
+      operationId: AdminAuthController_logout
+      parameters: []
       responses:
         "200":
-          description: Logout instructions
+          description: Logout handling instructions.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LogoutInstruction"
+                $ref: "#/components/schemas/LogoutResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Describe admin logout behavior
+      tags:
+        - Admin Auth
+  /api/admin/media/upload:
+    post:
+      description: Uploads one image through the configured storage driver and returns a reusable media asset descriptor.
+      operationId: AdminMediaController_upload
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                folder:
+                  type: string
+                  example: tours/historic-center
+              required:
+                - file
+      responses:
+        "201":
+          description: Stored media asset descriptor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadedMediaResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Upload an image asset for admin content
+      tags:
+        - Admin Media
   /api/admin/users:
     get:
-      operationId: listAdminUsers
+      description: Returns all local admin users with their expanded role records.
+      operationId: AdminUsersController_findAll
+      parameters: []
       responses:
         "200":
-          description: Admin users
+          description: Admin users.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/AdminUser"
+                  $ref: "#/components/schemas/AdminUserResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List admin users
+      tags:
+        - Admin Users
     post:
-      operationId: createAdminUser
+      description: Creates a local admin user record that can later authenticate through Auth0 mapping.
+      operationId: AdminUsersController_create
+      parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AdminUserUpsert"
+              $ref: "#/components/schemas/CreateAdminUserDto"
       responses:
         "201":
-          description: Created admin user
+          description: Created admin user.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminUser"
+                $ref: "#/components/schemas/AdminUserResponseDto"
         "400":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
         "409":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create an admin user
+      tags:
+        - Admin Users
   /api/admin/users/{id}:
     patch:
-      operationId: updateAdminUser
+      description: Updates email, role, Auth0 mapping, or status of an existing local admin user.
+      operationId: AdminUsersController_update
       parameters:
-        - $ref: "#/components/parameters/UuidPathId"
+        - name: id
+          required: true
+          in: path
+          description: Admin user UUID.
+          schema:
+            format: uuid
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AdminUserUpdate"
+              $ref: "#/components/schemas/UpdateAdminUserDto"
       responses:
         "200":
-          description: Updated admin user
+          description: Updated admin user.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminUser"
+                $ref: "#/components/schemas/AdminUserResponseDto"
         "400":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
         "404":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
         "409":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update an admin user
+      tags:
+        - Admin Users
   /api/admin/roles:
     get:
-      operationId: listAdminRoles
+      description: Returns the local role catalog used by admin route authorization.
+      operationId: RolesController_findAll
+      parameters: []
       responses:
         "200":
-          description: Roles
+          description: Available admin roles.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Role"
-  /api/admin/languages:
-    get:
-      operationId: listLanguages
-      responses:
-        "200":
-          description: Languages
+                  $ref: "#/components/schemas/RoleResponseDto"
+        "401":
+          description: ""
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Language"
-    post:
-      operationId: createLanguage
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LanguageUpsert"
-      responses:
-        "201":
-          description: Created language
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Language"
-        "400":
-          $ref: "#/components/responses/ErrorResponse"
-        "409":
-          $ref: "#/components/responses/ErrorResponse"
-  /api/admin/languages/{code}:
-    patch:
-      operationId: updateLanguage
-      parameters:
-        - $ref: "#/components/parameters/LanguageCodePath"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LanguagePatch"
-      responses:
-        "200":
-          description: Updated language
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Language"
-        "400":
-          $ref: "#/components/responses/ErrorResponse"
-        "404":
-          $ref: "#/components/responses/ErrorResponse"
-        "409":
-          $ref: "#/components/responses/ErrorResponse"
-  /api/admin/tags:
-    get:
-      operationId: listTags
-      responses:
-        "200":
-          description: Tags
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Tag"
-    post:
-      operationId: createTag
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TagUpsert"
-      responses:
-        "201":
-          description: Created tag
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Tag"
-        "400":
-          $ref: "#/components/responses/ErrorResponse"
-        "409":
-          $ref: "#/components/responses/ErrorResponse"
-  /api/admin/tags/{key}:
-    patch:
-      operationId: updateTag
-      parameters:
-        - $ref: "#/components/parameters/TagKeyPath"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TagPatch"
-      responses:
-        "200":
-          description: Updated tag
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Tag"
-        "400":
-          $ref: "#/components/responses/ErrorResponse"
-        "404":
-          $ref: "#/components/responses/ErrorResponse"
-        "409":
-          $ref: "#/components/responses/ErrorResponse"
-    delete:
-      operationId: deleteTag
-      parameters:
-        - $ref: "#/components/parameters/TagKeyPath"
-      responses:
-        "204":
-          description: Tag deleted after cascading association removal
-        "404":
-          $ref: "#/components/responses/ErrorResponse"
-  /api/admin/tours:
-    get:
-      operationId: listAdminTours
-      responses:
-        "200":
-          description: Tours
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AdminTour"
-    post:
-      operationId: createTour
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AdminTourUpsert"
-      responses:
-        "201":
-          description: Created tour
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AdminTour"
-        "400":
-          $ref: "#/components/responses/ErrorResponse"
-        "409":
-          $ref: "#/components/responses/ErrorResponse"
-  /api/admin/tours/{id}:
-    get:
-      operationId: getAdminTour
-      parameters:
-        - $ref: "#/components/parameters/UuidPathId"
-      responses:
-        "200":
-          description: Tour
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AdminTour"
-        "404":
-          $ref: "#/components/responses/ErrorResponse"
-    patch:
-      operationId: updateTour
-      parameters:
-        - $ref: "#/components/parameters/UuidPathId"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AdminTourPatch"
-      responses:
-        "200":
-          description: Updated tour
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AdminTour"
-        "400":
-          $ref: "#/components/responses/ErrorResponse"
-        "404":
-          $ref: "#/components/responses/ErrorResponse"
-        "409":
-          $ref: "#/components/responses/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List admin roles
+      tags:
+        - Admin Roles
   /api/admin/blog-posts:
     get:
-      operationId: listAdminBlogPosts
+      description: Returns all blog posts with localized translation maps, public availability diagnostics, and audit metadata.
+      operationId: BlogPostsController_findAllAdmin
+      parameters: []
       responses:
         "200":
-          description: Blog posts
+          description: Admin blog post records.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/AdminBlogPost"
+                  $ref: "#/components/schemas/BlogAdminResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List blog posts for admin management
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
     post:
-      operationId: createBlogPost
+      description: Creates a blog post with shared attributes and localized translations.
+      operationId: BlogPostsController_createAdmin
+      parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AdminBlogPostUpsert"
+              $ref: "#/components/schemas/CreateBlogPostDto"
       responses:
         "201":
-          description: Created blog post
+          description: Created admin blog post record.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminBlogPost"
+                $ref: "#/components/schemas/BlogAdminResponseDto"
         "400":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
         "409":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create a blog post
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
   /api/admin/blog-posts/{id}:
     get:
-      operationId: getAdminBlogPost
+      description: Returns the full admin representation of a single blog post.
+      operationId: BlogPostsController_findOneAdmin
       parameters:
-        - $ref: "#/components/parameters/UuidPathId"
+        - name: id
+          required: true
+          in: path
+          description: Blog post UUID.
+          schema:
+            format: uuid
+            type: string
       responses:
         "200":
-          description: Blog post
+          description: Admin blog post record.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminBlogPost"
+                $ref: "#/components/schemas/BlogAdminResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
         "404":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Get a blog post by UUID for admin management
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
     patch:
-      operationId: updateBlogPost
+      description: Updates shared blog data and merges translations by locale code.
+      operationId: BlogPostsController_updateAdmin
       parameters:
-        - $ref: "#/components/parameters/UuidPathId"
+        - name: id
+          required: true
+          in: path
+          description: Blog post UUID.
+          schema:
+            format: uuid
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AdminBlogPostPatch"
+              $ref: "#/components/schemas/UpdateBlogPostDto"
       responses:
         "200":
-          description: Updated blog post
+          description: Updated admin blog post record.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminBlogPost"
+                $ref: "#/components/schemas/BlogAdminResponseDto"
         "400":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
         "404":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
         "409":
-          $ref: "#/components/responses/ErrorResponse"
-  /api/admin/newsletter/subscribers:
-    get:
-      operationId: listNewsletterSubscribers
-      parameters:
-        - name: q
-          in: query
-          schema:
-            type: string
-        - name: status
-          in: query
-          schema:
-            $ref: "#/components/schemas/NewsletterSubscriptionStatus"
-        - name: page
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 200
-      responses:
-        "200":
-          description: Paginated subscribers
+          description: ""
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaginatedNewsletterSubscribers"
-  /api/admin/newsletter/subscribers/export:
-    get:
-      operationId: exportNewsletterSubscribers
-      parameters:
-        - name: q
-          in: query
-          schema:
-            type: string
-        - name: status
-          in: query
-          schema:
-            $ref: "#/components/schemas/NewsletterSubscriptionStatus"
-      responses:
-        "200":
-          description: CSV export
-          content:
-            text/csv:
-              schema:
-                type: string
-  /api/admin/newsletter/subscribers/{id}:
-    get:
-      operationId: getNewsletterSubscriber
-      parameters:
-        - $ref: "#/components/parameters/UuidPathId"
-      responses:
-        "200":
-          description: Subscriber detail
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NewsletterSubscriber"
-        "404":
-          $ref: "#/components/responses/ErrorResponse"
-  /api/public/tours:
-    get:
-      operationId: listPublicTours
-      parameters:
-        - $ref: "#/components/parameters/LocaleQuery"
-      responses:
-        "200":
-          description: Public tours
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/PublicTour"
-        "400":
-          $ref: "#/components/responses/ErrorResponse"
-  /api/public/tours/{slug}:
-    get:
-      operationId: getPublicTour
-      parameters:
-        - $ref: "#/components/parameters/SlugPath"
-        - $ref: "#/components/parameters/LocaleQuery"
-      responses:
-        "200":
-          description: Public tour
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PublicTour"
-        "400":
-          $ref: "#/components/responses/ErrorResponse"
-        "404":
-          $ref: "#/components/responses/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update a blog post
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
   /api/public/blog-posts:
     get:
-      operationId: listPublicBlogPosts
+      description: Returns only published blog posts whose requested locale also has a published translation.
+      operationId: BlogPostsController_findAllPublic
       parameters:
-        - $ref: "#/components/parameters/LocaleQuery"
+        - name: locale
+          required: true
+          in: query
+          description: Requested locale code.
+          schema:
+            pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+            example: en
+            type: string
       responses:
         "200":
-          description: Public blog posts
+          description: Published localized blog posts.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/PublicBlogPost"
+                  $ref: "#/components/schemas/PublicBlogResponseDto"
         "400":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: List public blog posts by locale
+      tags:
+        - BlogPosts
+        - Public Blog Posts
   /api/public/blog-posts/{slug}:
     get:
-      operationId: getPublicBlogPost
+      description: >-
+        Returns a published blog post only when the requested locale is enabled and that locale has a published
+        translation.
+      operationId: BlogPostsController_findOnePublic
       parameters:
-        - $ref: "#/components/parameters/SlugPath"
-        - $ref: "#/components/parameters/LocaleQuery"
+        - name: slug
+          required: true
+          in: path
+          description: Public blog post slug.
+          schema:
+            example: barcelona-historic-center-guide
+            type: string
+        - name: locale
+          required: true
+          in: query
+          description: Requested locale code.
+          schema:
+            pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+            example: en
+            type: string
       responses:
         "200":
-          description: Public blog post
+          description: Published localized public blog post.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PublicBlogPost"
+                $ref: "#/components/schemas/PublicBlogResponseDto"
         "400":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
         "404":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: Get a public blog post by slug and locale
+      tags:
+        - BlogPosts
+        - Public Blog Posts
+  /api/health:
+    get:
+      description: >-
+        Returns a simple liveness payload together with the shared enum vocabularies currently compiled into the
+        backend.
+      operationId: HealthController_getHealth
+      parameters: []
+      responses:
+        "200":
+          description: Foundation health payload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponseDto"
+      summary: Get service health and foundation vocabulary
+      tags:
+        - Health
+  /api/admin/languages:
+    get:
+      description: Returns all registered languages ordered by `sortOrder` and then by locale code.
+      operationId: LanguagesController_findAll
+      parameters: []
+      responses:
+        "200":
+          description: Registered language records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LanguageResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List configured languages
+      tags:
+        - Admin Languages
+    post:
+      description: Registers a locale that can later be used by tags, tours, blog posts, and public locale-aware endpoints.
+      operationId: LanguagesController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLanguageDto"
+      responses:
+        "201":
+          description: Created language record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LanguageResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create a language
+      tags:
+        - Admin Languages
+  /api/admin/languages/{code}:
+    patch:
+      description: Updates metadata and enablement for a previously registered language.
+      operationId: LanguagesController_update
+      parameters:
+        - name: code
+          required: true
+          in: path
+          description: Existing locale code to update.
+          schema:
+            example: en
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLanguageDto"
+      responses:
+        "200":
+          description: Updated language record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LanguageResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update a language
+      tags:
+        - Admin Languages
   /api/public/newsletter/subscribers/subscribe:
     post:
-      operationId: subscribeToNewsletter
+      description: >-
+        Starts or restarts the double opt-in flow. The subscriber remains in `pending_confirmation` until the
+        confirmation token is used.
+      operationId: NewsletterSubscribersController_subscribe
+      parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/NewsletterSubscribeRequest"
+              $ref: "#/components/schemas/SubscribeNewsletterDto"
       responses:
-        "200":
-          description: Subscribe result
+        "201":
+          description: Subscription request accepted.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NewsletterSubscribeResponse"
+                $ref: "#/components/schemas/NewsletterSubscriptionRequestedResponseDto"
         "400":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: Start newsletter subscription
+      tags:
+        - NewsletterSubscribers
+        - Public Newsletter Subscribers
   /api/public/newsletter/subscribers/confirm:
     post:
-      operationId: confirmNewsletterSubscription
+      description: Completes the double opt-in flow using a confirmation token delivered through email.
+      operationId: NewsletterSubscribersController_confirm
+      parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/TokenRequest"
+              $ref: "#/components/schemas/NewsletterTokenDto"
       responses:
         "200":
-          description: Confirm result
+          description: Newsletter subscription confirmed.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TokenResult"
+                $ref: "#/components/schemas/NewsletterSubscriptionConfirmedResponseDto"
         "400":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
         "404":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: Confirm newsletter subscription
+      tags:
+        - NewsletterSubscribers
+        - Public Newsletter Subscribers
+    get:
+      description: Confirms a newsletter subscription using a token carried in a direct email link.
+      operationId: NewsletterSubscribersController_confirmByLink
+      parameters:
+        - name: token
+          required: true
+          in: query
+          description: Opaque newsletter confirmation token.
+          schema:
+            pattern: ^[a-f0-9]{48}$
+            example: 0123456789abcdef0123456789abcdef0123456789abcdef
+            type: string
+      responses:
+        "200":
+          description: Newsletter subscription confirmed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsletterSubscriptionConfirmedResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: Confirm newsletter subscription via direct link
+      tags:
+        - NewsletterSubscribers
+        - Public Newsletter Subscribers
   /api/public/newsletter/subscribers/unsubscribe:
     post:
-      operationId: unsubscribeFromNewsletter
+      description: Unsubscribes a subscriber using the tokenized unsubscribe link delivered through email.
+      operationId: NewsletterSubscribersController_unsubscribe
+      parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/TokenRequest"
+              $ref: "#/components/schemas/NewsletterTokenDto"
       responses:
         "200":
-          description: Unsubscribe result
+          description: Newsletter subscriber unsubscribed.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TokenResult"
+                $ref: "#/components/schemas/NewsletterUnsubscribedResponseDto"
         "400":
-          $ref: "#/components/responses/ErrorResponse"
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
         "404":
-          $ref: "#/components/responses/ErrorResponse"
-components:
-  parameters:
-    UuidPathId:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
-    LanguageCodePath:
-      name: code
-      in: path
-      required: true
-      schema:
-        $ref: "#/components/schemas/LocaleCode"
-    TagKeyPath:
-      name: key
-      in: path
-      required: true
-      schema:
-        type: string
-        pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
-    SlugPath:
-      name: slug
-      in: path
-      required: true
-      schema:
-        type: string
-        pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
-    LocaleQuery:
-      name: locale
-      in: query
-      required: true
-      schema:
-        $ref: "#/components/schemas/LocaleCode"
-  responses:
-    ErrorResponse:
-      description: Error payload
-      content:
-        application/json:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: Unsubscribe from the newsletter
+      tags:
+        - NewsletterSubscribers
+        - Public Newsletter Subscribers
+    get:
+      description: Unsubscribes a newsletter subscriber using a token carried in a direct email link.
+      operationId: NewsletterSubscribersController_unsubscribeByLink
+      parameters:
+        - name: token
+          required: true
+          in: query
+          description: Opaque newsletter unsubscribe token.
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            pattern: ^[a-f0-9]{48}$
+            example: 0123456789abcdef0123456789abcdef0123456789abcdef
+            type: string
+      responses:
+        "200":
+          description: Newsletter subscriber unsubscribed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsletterUnsubscribedResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: Unsubscribe via direct link
+      tags:
+        - NewsletterSubscribers
+        - Public Newsletter Subscribers
+  /api/admin/newsletter/subscribers:
+    get:
+      description: Returns newsletter subscribers with optional email search, status filtering, and pagination.
+      operationId: NewsletterSubscribersController_findAll
+      parameters:
+        - name: q
+          required: false
+          in: query
+          description: Case-insensitive email search term.
+          schema:
+            maxLength: 255
+            example: subscriber@example.com
+            type: string
+        - name: status
+          required: false
+          in: query
+          description: Optional subscription status filter.
+          schema:
+            enum:
+              - pending_confirmation
+              - subscribed
+              - unsubscribed
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: 1-based page number.
+          schema:
+            minimum: 1
+            default: 1
+            example: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          description: Page size. Maximum 200.
+          schema:
+            minimum: 1
+            maximum: 200
+            default: 50
+            example: 50
+            type: number
+      responses:
+        "200":
+          description: Paginated newsletter subscribers.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsletterSubscriberAdminListResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List newsletter subscribers
+      tags:
+        - NewsletterSubscribers
+        - Admin Newsletter Subscribers
+  /api/admin/newsletter/subscribers/export:
+    get:
+      description: Exports newsletter subscribers using the same search and status filters as the list endpoint.
+      operationId: NewsletterSubscribersController_exportCsv
+      parameters:
+        - name: q
+          required: false
+          in: query
+          description: Case-insensitive email search term.
+          schema:
+            maxLength: 255
+            example: subscriber@example.com
+            type: string
+        - name: status
+          required: false
+          in: query
+          description: Optional subscription status filter.
+          schema:
+            enum:
+              - pending_confirmation
+              - subscribed
+              - unsubscribed
+            type: string
+      responses:
+        "200":
+          description: CSV export of newsletter subscribers.
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+                example: >-
+                  "id","email","subscriptionStatus","preferredLocale","consentSource","consentedAt","confirmedAt","unsubscribedAt","createdAt","updatedAt"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Export newsletter subscribers as CSV
+      tags:
+        - NewsletterSubscribers
+        - Admin Newsletter Subscribers
+  /api/admin/newsletter/subscribers/{id}:
+    get:
+      description: Returns the full admin view of a newsletter subscriber record.
+      operationId: NewsletterSubscribersController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Newsletter subscriber UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Newsletter subscriber detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsletterSubscriberAdminResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Get newsletter subscriber detail
+      tags:
+        - NewsletterSubscribers
+        - Admin Newsletter Subscribers
+  /api/admin/tags:
+    get:
+      description: Returns all registered tags ordered by key.
+      operationId: TagsController_findAll
+      parameters: []
+      responses:
+        "200":
+          description: Registered tags.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TagResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List tags
+      tags:
+        - Admin Tags
+    post:
+      description: Creates a reusable tag with locale-specific labels.
+      operationId: TagsController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTagDto"
+      responses:
+        "201":
+          description: Created tag record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create a tag
+      tags:
+        - Admin Tags
+  /api/admin/tags/{key}:
+    patch:
+      description: Replaces the localized labels for an existing tag.
+      operationId: TagsController_update
+      parameters:
+        - name: key
+          required: true
+          in: path
+          description: Stable tag key.
+          schema:
+            example: history
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTagDto"
+      responses:
+        "200":
+          description: Updated tag record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update a tag
+      tags:
+        - Admin Tags
+    delete:
+      description: Removes the tag from all tours and blog posts, then deletes the tag record itself.
+      operationId: TagsController_remove
+      parameters:
+        - name: key
+          required: true
+          in: path
+          description: Stable tag key.
+          schema:
+            example: history
+            type: string
+      responses:
+        "204":
+          description: Tag deleted after all tour and blog associations were removed.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Delete a tag
+      tags:
+        - Admin Tags
+  /api/public/tours:
+    get:
+      description: >-
+        Returns only tours whose shared data is publicly valid and whose requested locale has a published, ready, and
+        schema-valid translation.
+      operationId: PublicToursController_findAll
+      parameters:
+        - name: locale
+          required: true
+          in: query
+          description: Requested locale code.
+          schema:
+            pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+            example: en
+            type: string
+      responses:
+        "200":
+          description: Published public tours for the requested locale.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicTourResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: List public tours by locale
+      tags:
+        - Public Tours
+  /api/public/tours/{slug}:
+    get:
+      description: >-
+        Returns a public tour only when the shared tour data is valid, the requested locale is enabled, and that locale
+        has a published, ready, schema-valid translation.
+      operationId: PublicToursController_findOne
+      parameters:
+        - name: slug
+          required: true
+          in: path
+          description: Public tour slug.
+          schema:
+            example: historic-center
+            type: string
+        - name: locale
+          required: true
+          in: query
+          description: Requested locale code.
+          schema:
+            pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+            example: en
+            type: string
+      responses:
+        "200":
+          description: Published localized public tour.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicTourResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: Get a public tour by slug and locale
+      tags:
+        - Public Tours
+  /api/admin/tours:
+    get:
+      description: Returns all tours with shared data, translation diagnostics, and audit metadata.
+      operationId: ToursController_findAll
+      parameters: []
+      responses:
+        "200":
+          description: Admin tour records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TourAdminResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List tours for admin management
+      tags:
+        - Admin Tours
+    post:
+      description: >-
+        Creates a minimal draft tour with only the shared identifier fields. Shared content, schema, media, itinerary,
+        tags, and translations are added later through PATCH.
+      operationId: ToursController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTourDto"
+      responses:
+        "201":
+          description: Created admin tour record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create a tour
+      tags:
+        - Admin Tours
+  /api/admin/tours/{id}:
+    get:
+      description: Returns the full admin representation of a single tour, including translation availability diagnostics.
+      operationId: ToursController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Admin tour record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourAdminResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Get a tour by UUID for admin management
+      tags:
+        - Admin Tours
+    patch:
+      description: >-
+        Updates only shared tour data. It fully replaces the shared itinerary when provided and recalculates readiness
+        for existing translations that depend on shared schema or stop structure.
+      operationId: ToursController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTourDto"
+      responses:
+        "200":
+          description: Updated admin tour record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update a tour
+      tags:
+        - Admin Tours
+  /api/admin/tours/{id}/translations:
+    post:
+      description: >-
+        Creates a localized tour translation independently from the shared tour record. The backend calculates readiness
+        and keeps the translation unpublished until the dedicated publish endpoint is called.
+      operationId: ToursController_createTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTourTranslationDto"
+      responses:
+        "201":
+          description: Admin tour record after translation creation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create a tour translation
+      tags:
+        - Admin Tours
+  /api/admin/tours/{id}/translations/{languageCode}:
+    patch:
+      description: >-
+        Updates one localized tour translation independently from shared tour data. Any readiness recalculation that
+        fails will automatically unpublish that translation.
+      operationId: ToursController_updateTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: languageCode
+          required: true
+          in: path
+          description: Translation locale code.
+          schema:
+            example: en
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTourTranslationDto"
+      responses:
+        "200":
+          description: Admin tour record after translation update.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update a tour translation
+      tags:
+        - Admin Tours
+    delete:
+      description: Deletes one localized tour translation by locale code. This permanently removes the locale from the tour.
+      operationId: ToursController_deleteTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: languageCode
+          required: true
+          in: path
+          description: Translation locale code.
+          schema:
+            example: en
+            type: string
+      responses:
+        "204":
+          description: Translation deleted successfully.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Delete a tour translation
+      tags:
+        - Admin Tours
+  /api/admin/tours/{id}/translations/{languageCode}/publish:
+    post:
+      description: >-
+        Publishes one localized tour translation. This endpoint is the only place where translation publication can be
+        enabled, and it rejects translations that are not ready.
+      operationId: ToursController_publishTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: languageCode
+          required: true
+          in: path
+          description: Translation locale code.
+          schema:
+            example: en
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishTourTranslationDto"
+      responses:
+        "200":
+          description: Admin tour record after translation publication.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Publish a tour translation
+      tags:
+        - Admin Tours
+  /api/admin/tours/{id}/translations/{languageCode}/unpublish:
+    post:
+      description: >-
+        Unpublishes one localized tour translation. This endpoint is the only place where translation publication can be
+        disabled manually.
+      operationId: ToursController_unpublishTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: languageCode
+          required: true
+          in: path
+          description: Translation locale code.
+          schema:
+            example: en
+            type: string
+      responses:
+        "200":
+          description: Admin tour record after translation unpublication.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourAdminResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Unpublish a tour translation
+      tags:
+        - Admin Tours
+info:
+  title: Walk and Tour Backend API
+  description: Administrative and public API surface for languages, tags, tours, blog posts, and admin authentication.
+  version: 1.0.0
+  contact: {}
+tags: []
+servers: []
+components:
+  securitySchemes:
+    admin-auth:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      description: Auth0-issued bearer token required by protected admin endpoints.
   schemas:
-    LocaleCode:
-      type: string
-      pattern: "^[a-z]{2}(?:-[A-Z]{2})?$"
-    AdminRoleName:
-      type: string
-      enum: [super_admin, editor, marketing]
-    AdminUserStatus:
-      type: string
-      enum: [invited, active, disabled]
-    PublicationStatus:
-      type: string
-      enum: [draft, published]
-    TranslationStatus:
-      type: string
-      enum: [draft, ready]
-    TranslationPublicationStatus:
-      type: string
-      enum: [published, unpublished]
-    TourType:
-      type: string
-      enum: [private, group, tip_based]
-    CancellationType:
-      type: string
-      enum:
-        - 12h_free_cancellation
-        - 24h_free_cancellation
-        - 48h_free_cancellation
-        - 72h_free_cancellation
-    NewsletterSubscriptionStatus:
-      type: string
-      enum: [pending_confirmation, subscribed, unsubscribed]
-    ErrorResponse:
+    AuthenticatedAdminResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Local admin UUID.
+          format: uuid
+        email:
+          type: string
+          description: Authenticated admin email.
+          example: editor@example.com
+        roleName:
+          type: string
+          description: Resolved local role of the authenticated admin.
+          enum:
+            - super_admin
+            - editor
+            - marketing
+        status:
+          type: string
+          description: Lifecycle status of the authenticated admin.
+          enum:
+            - invited
+            - active
+            - disabled
+        auth0UserId:
+          type: string
+          description: Bearer token subject issued by Auth0.
+          example: auth0|abc123
+      required:
+        - id
+        - email
+        - roleName
+        - status
+        - auth0UserId
+    ErrorResponseDto:
       type: object
       properties:
         statusCode:
-          type: integer
+          type: number
+          description: HTTP status code returned by NestJS for the failed request.
+          example: 400
         message:
+          description: Validation or domain error details. NestJS may return a string or a list of strings.
           oneOf:
             - type: string
+              example: Validation failed
             - type: array
               items:
                 type: string
+              example:
+                - slug must match /^[a-z0-9]+(?:-[a-z0-9]+)*$/
         error:
           type: string
-      required: [statusCode, message]
-    LogoutInstruction:
+          description: NestJS exception name.
+          example: Bad Request
+      required:
+        - statusCode
+        - message
+        - error
+    LogoutResponseDto:
       type: object
       properties:
         logoutStrategy:
           type: string
-      required: [logoutStrategy]
-    AuthenticatedAdmin:
+          description: Logout strategy expected by the frontend. Tokens are bearer tokens and must be discarded client-side.
+          example: client_discard_bearer_token
+      required:
+        - logoutStrategy
+    UploadedMediaResponseDto:
       type: object
       properties:
-        id:
+        ref:
           type: string
-          format: uuid
-        email:
+          description: Media reference path.
+          example: media/tours/historic-center/cover.jpg
+        altText:
+          type: object
+          description: Optional localized alt text keyed by locale code.
+          additionalProperties:
+            type: string
+          nullable: true
+          example:
+            en: View of the cathedral facade
+            es: Vista de la fachada de la catedral
+        publicUrl:
           type: string
-          format: email
-        roleName:
-          $ref: "#/components/schemas/AdminRoleName"
-        status:
-          $ref: "#/components/schemas/AdminUserStatus"
-        auth0UserId:
+          description: Public URL resolved by the configured storage driver.
+          example: http://api.dev.walkandtour.dk:3000/media/tours/historic-center/uuid-cover.jpg
+        contentType:
           type: string
-      required: [id, email, roleName, status, auth0UserId]
-    Role:
+          description: Detected content type of the uploaded object.
+          example: image/jpeg
+        size:
+          type: number
+          description: Stored file size in bytes.
+          example: 248193
+      required:
+        - ref
+        - publicUrl
+        - contentType
+        - size
+    RoleResponseDto:
       type: object
       properties:
         name:
-          $ref: "#/components/schemas/AdminRoleName"
+          type: string
+          description: Stable role name used by route guards.
+          enum:
+            - super_admin
+            - editor
+            - marketing
+          example: super_admin
         description:
           type: string
+          description: Human-readable explanation of the role.
+          example: Full administrative access to backoffice management endpoints.
         permissions:
+          description: Permission identifiers attached to the role record.
+          example:
+            - admin.users.manage
+            - content.publish
           type: array
           items:
             type: string
         createdAt:
           type: string
+          description: Creation timestamp.
+          format: date-time
         updatedAt:
           type: string
-      required: [name, description, permissions, createdAt, updatedAt]
-    AdminUser:
+          description: Last update timestamp.
+          format: date-time
+      required:
+        - name
+        - description
+        - permissions
+        - createdAt
+        - updatedAt
+    AdminUserResponseDto:
       type: object
       properties:
         id:
           type: string
+          description: Admin user UUID.
           format: uuid
         auth0UserId:
-          type: [string, "null"]
+          type: object
+          description: Mapped Auth0 subject, if already linked.
+          example: auth0|abc123
+          nullable: true
         email:
           type: string
-          format: email
+          description: Normalized admin email address.
+          example: admin@example.com
         roleName:
-          $ref: "#/components/schemas/AdminRoleName"
+          type: string
+          description: Assigned role name.
+          enum:
+            - super_admin
+            - editor
+            - marketing
         role:
-          $ref: "#/components/schemas/Role"
+          description: Expanded role record.
+          allOf:
+            - $ref: "#/components/schemas/RoleResponseDto"
         status:
-          $ref: "#/components/schemas/AdminUserStatus"
+          type: string
+          description: Lifecycle state of the admin user.
+          enum:
+            - invited
+            - active
+            - disabled
         createdAt:
           type: string
+          description: Creation timestamp.
+          format: date-time
         updatedAt:
           type: string
+          description: Last update timestamp.
+          format: date-time
         lastLoginAt:
-          type: [string, "null"]
-      required: [id, auth0UserId, email, roleName, role, status, createdAt, updatedAt, lastLoginAt]
-    AdminUserUpsert:
+          type: string
+          description: Last successful authenticated login timestamp.
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - email
+        - roleName
+        - role
+        - status
+        - createdAt
+        - updatedAt
+    CreateAdminUserDto:
       type: object
       properties:
         email:
           type: string
-          format: email
+          description: Email address used to identify the local admin user.
+          example: admin@example.com
         roleName:
-          $ref: "#/components/schemas/AdminRoleName"
-        status:
-          $ref: "#/components/schemas/AdminUserStatus"
+          type: string
+          description: Role assigned to the new admin user.
+          enum:
+            - super_admin
+            - editor
+            - marketing
+          example: editor
         auth0UserId:
-          type: [string, "null"]
-      required: [email, roleName]
-    AdminUserUpdate:
+          type: string
+          description: Optional Auth0 subject to pre-bind to the local admin user.
+          example: auth0|abc123
+          maxLength: 255
+        status:
+          type: string
+          description: Initial lifecycle status. Defaults to `invited` when omitted.
+          enum:
+            - invited
+            - active
+            - disabled
+          example: invited
+          default: invited
+      required:
+        - email
+        - roleName
+    UpdateAdminUserDto:
       type: object
       properties:
         email:
           type: string
-          format: email
+          description: Updated email address for the admin user.
+          example: admin@example.com
         roleName:
-          $ref: "#/components/schemas/AdminRoleName"
-        status:
-          $ref: "#/components/schemas/AdminUserStatus"
+          type: string
+          description: Updated role assignment.
+          enum:
+            - super_admin
+            - editor
+            - marketing
+          example: marketing
         auth0UserId:
-          type: [string, "null"]
-    Language:
-      type: object
-      properties:
-        code:
-          $ref: "#/components/schemas/LocaleCode"
-        name:
+          type: object
+          description: Updated Auth0 subject. Set `null` to unlink the current identity.
+          example: auth0|abc123
+          nullable: true
+          maxLength: 255
+        status:
           type: string
-        isEnabled:
-          type: boolean
-        sortOrder:
-          type: integer
-        createdAt:
-          type: string
-        updatedAt:
-          type: string
-      required: [code, name, isEnabled, sortOrder, createdAt, updatedAt]
-    LanguageUpsert:
-      type: object
-      properties:
-        code:
-          $ref: "#/components/schemas/LocaleCode"
-        name:
-          type: string
-        isEnabled:
-          type: boolean
-        sortOrder:
-          type: integer
-      required: [code, name, sortOrder]
-    LanguagePatch:
-      type: object
-      properties:
-        name:
-          type: string
-        isEnabled:
-          type: boolean
-        sortOrder:
-          type: integer
-    Tag:
+          description: Updated lifecycle status.
+          enum:
+            - invited
+            - active
+            - disabled
+          example: disabled
+    TagResponseDto:
       type: object
       properties:
         key:
           type: string
+          description: Stable internal tag key.
+          example: history
         labels:
           type: object
+          description: Localized labels keyed by locale code.
           additionalProperties:
             type: string
+          example:
+            en: History
+            es: Historia
         createdAt:
           type: string
+          description: Creation timestamp.
+          format: date-time
         updatedAt:
           type: string
-      required: [key, labels, createdAt, updatedAt]
-    TagUpsert:
-      type: object
-      properties:
-        key:
-          type: string
-        labels:
-          type: object
-          additionalProperties:
-            type: string
-      required: [key, labels]
-    TagPatch:
-      type: object
-      properties:
-        labels:
-          type: object
-          additionalProperties:
-            type: string
-      required: [labels]
-    AuditMetadata:
-      type: object
-      properties:
-        createdBy:
-          type: [string, "null"]
-        updatedBy:
-          type: [string, "null"]
-        publishedBy:
-          type: [string, "null"]
-        createdAt:
-          type: string
-        updatedAt:
-          type: string
-        publishedAt:
-          type: [string, "null"]
-      required: [createdBy, updatedBy, publishedBy, createdAt, updatedAt, publishedAt]
-    TranslationAvailability:
+          description: Last update timestamp.
+          format: date-time
+      required:
+        - key
+        - labels
+        - createdAt
+        - updatedAt
+    BlogTranslationAvailabilityResponseDto:
       type: object
       properties:
         languageCode:
-          $ref: "#/components/schemas/LocaleCode"
-        translationStatus:
-          $ref: "#/components/schemas/TranslationStatus"
+          type: string
+          description: Locale code being evaluated.
+          example: en
         publicationStatus:
-          $ref: "#/components/schemas/TranslationPublicationStatus"
+          type: string
+          description: Translation publication state.
+          enum:
+            - published
+            - unpublished
+        publiclyAvailable:
+          type: boolean
+          description: Whether the locale is currently exposed through the public blog APIs.
+          example: true
+      required:
+        - languageCode
+        - publicationStatus
+        - publiclyAvailable
+    AuditMetadataDto:
+      type: object
+      properties:
+        createdBy:
+          type: object
+          description: UUID of the admin that originally created the record.
+          format: uuid
+          nullable: true
+        updatedBy:
+          type: object
+          description: UUID of the admin that most recently updated the record.
+          format: uuid
+          nullable: true
+        publishedBy:
+          type: object
+          description: UUID of the admin that published the record, if it is currently published.
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          description: Creation timestamp.
+          format: date-time
+        updatedAt:
+          type: string
+          description: Last update timestamp.
+          format: date-time
+        publishedAt:
+          type: string
+          description: Publication timestamp, or `null` when the record is not currently published.
+          format: date-time
+          nullable: true
+      required:
+        - createdAt
+        - updatedAt
+    BlogAdminResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Blog post UUID.
+          format: uuid
+        name:
+          type: string
+          description: Non-localized admin-facing name for the blog post.
+          example: Barcelona Historic Center SEO Article
+        slug:
+          type: string
+          description: Stable public slug.
+          example: barcelona-historic-center-guide
+        heroMediaRef:
+          type: object
+          description: Optional hero media reference.
+          nullable: true
+        publicationStatus:
+          type: string
+          description: Blog post publication state.
+          enum:
+            - draft
+            - published
+        tagKeys:
+          description: Ordered tag keys assigned to the post.
+          type: array
+          items:
+            type: string
+        tags:
+          description: Expanded tag records.
+          type: array
+          items:
+            $ref: "#/components/schemas/TagResponseDto"
+        translations:
+          type: object
+          description: Localized translations keyed by locale code.
+          additionalProperties:
+            $ref: "#/components/schemas/BlogAdminTranslationResponseDto"
+        translationAvailability:
+          description: Per-locale public availability diagnostics.
+          type: array
+          items:
+            $ref: "#/components/schemas/BlogTranslationAvailabilityResponseDto"
+        audit:
+          description: Audit metadata for create, update, and publish operations.
+          allOf:
+            - $ref: "#/components/schemas/AuditMetadataDto"
+      required:
+        - id
+        - name
+        - slug
+        - publicationStatus
+        - tagKeys
+        - tags
+        - translations
+        - translationAvailability
+        - audit
+    CreateBlogPostTranslationDto:
+      type: object
+      properties:
+        languageCode:
+          type: string
+          description: Locale code for this blog translation.
+          example: en
+          pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+        publicationStatus:
+          type: string
+          description: Publication state of the localized blog translation.
+          enum:
+            - published
+            - unpublished
+          example: published
+        title:
+          type: string
+          description: Localized title. Required before the translation can be published.
+          example: Barcelona Historic Center Guide
+          maxLength: 255
+        summary:
+          type: string
+          description: Localized summary or excerpt.
+          example: A walking guide to the historic center of Barcelona.
+        htmlContent:
+          type: string
+          description: Localized HTML body. Required before the translation can be published.
+          example: <p>Walk through centuries of history.</p>
+        seoTitle:
+          type: string
+          description: Optional SEO title override.
+          example: Historic Center Guide | Walk and Tour
+          maxLength: 255
+        seoDescription:
+          type: string
+          description: Optional SEO meta description override.
+          example: Discover the best historic landmarks in Barcelona.
+        imageRefs:
+          description: Localized image references used by the article.
+          example:
+            - media/blog/historic-center/hero.jpg
+          type: array
+          items:
+            type: string
+      required:
+        - languageCode
+        - publicationStatus
+    CreateBlogPostDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Non-localized admin-facing name used to identify the blog post.
+          example: Barcelona Historic Center SEO Article
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          description: Stable public slug for the blog post.
+          example: barcelona-historic-center-guide
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 150
+        heroMediaRef:
+          type: string
+          description: Optional hero media reference.
+          example: media/blog/historic-center/hero.jpg
+          maxLength: 255
+        publicationStatus:
+          type: string
+          description: Top-level publication state of the blog post.
+          enum:
+            - draft
+            - published
+          example: draft
+        tagKeys:
+          description: Assigned tag keys.
+          example:
+            - history
+            - city-guide
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        translations:
+          description: Localized translations keyed by locale through an array of translation objects.
+          uniqueItems: true
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateBlogPostTranslationDto"
+      required:
+        - name
+        - slug
+        - publicationStatus
+    UpdateBlogPostDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated non-localized admin-facing name.
+          example: Barcelona Historic Center SEO Article
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          description: Updated public slug.
+          example: barcelona-historic-center-guide
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 150
+        heroMediaRef:
+          type: object
+          description: Updated hero media reference. Set `null` to clear the current value.
+          example: media/blog/historic-center/hero.jpg
+          maxLength: 255
+          nullable: true
+        publicationStatus:
+          type: string
+          description: Updated top-level publication state.
+          enum:
+            - draft
+            - published
+          example: published
+        tagKeys:
+          description: Replacement tag key list.
+          example:
+            - history
+            - architecture
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        translations:
+          description: Translations to merge into the existing set by locale code.
+          uniqueItems: true
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateBlogPostTranslationDto"
+    PublicTagResponseDto:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Stable internal tag key.
+          example: history
+        label:
+          type: object
+          description: Localized tag label for the requested locale, or `null` if the label is missing.
+          example: History
+          nullable: true
+      required:
+        - key
+    PublicBlogTranslationResponseDto:
+      type: object
+      properties:
+        locale:
+          type: string
+          description: Requested locale code.
+          example: en
+        title:
+          type: string
+          description: Published localized title.
+          example: Barcelona Historic Center Guide
+        summary:
+          type: object
+          description: Published localized summary.
+          nullable: true
+        htmlContent:
+          type: string
+          description: Published localized HTML body.
+        seoTitle:
+          type: object
+          description: SEO title override.
+          nullable: true
+        seoDescription:
+          type: object
+          description: SEO description override.
+          nullable: true
+        imageRefs:
+          description: Published localized image references.
+          type: array
+          items:
+            type: string
+      required:
+        - locale
+        - title
+        - htmlContent
+        - imageRefs
+    PublicBlogResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Blog post UUID.
+          format: uuid
+        slug:
+          type: string
+          description: Stable public slug.
+          example: barcelona-historic-center-guide
+        heroMediaRef:
+          type: object
+          description: Optional hero media reference.
+          nullable: true
+        tags:
+          description: Localized tag labels for the requested locale.
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicTagResponseDto"
+        translation:
+          description: Published localized blog translation selected for the requested locale.
+          allOf:
+            - $ref: "#/components/schemas/PublicBlogTranslationResponseDto"
+        publishedAt:
+          type: string
+          description: Publication timestamp of the parent blog post.
+          format: date-time
+      required:
+        - id
+        - slug
+        - tags
+        - translation
+        - publishedAt
+    HealthFoundationDto:
+      type: object
+      properties:
+        adminRoles:
+          type: array
+          description: Configured admin roles available in the platform.
+          items:
+            type: string
+            enum:
+              - super_admin
+              - editor
+              - marketing
+        supportedLanguageCodes:
+          type: array
+          description: Supported language codes defined in the shared domain vocabulary.
+          items:
+            type: string
+            enum:
+              - en
+              - es
+              - it
+        tourTypes:
+          type: array
+          description: Supported tour commercial models.
+          items:
+            type: string
+            enum:
+              - private
+              - group
+              - tip_based
+        tourCommuteModes:
+          type: array
+          description: Supported commute modes between itinerary stops.
+          items:
+            type: string
+            enum:
+              - walk
+              - bike
+              - bus
+              - train
+              - metro
+              - tram
+              - ferry
+              - private-transport
+              - boat
+              - other
+        blogPublicationStatuses:
+          type: array
+          description: Top-level publication states available for blog posts.
+          items:
+            type: string
+            enum:
+              - draft
+              - published
+        newsletterSubscriptionStatuses:
+          type: array
+          description: Newsletter subscription lifecycle states reserved by the domain model.
+          items:
+            type: string
+            enum:
+              - pending_confirmation
+              - subscribed
+              - unsubscribed
+      required:
+        - adminRoles
+        - supportedLanguageCodes
+        - tourTypes
+        - tourCommuteModes
+        - blogPublicationStatuses
+        - newsletterSubscriptionStatuses
+    HealthResponseDto:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Service health status.
+          example: ok
+        app:
+          type: string
+          description: Configured application name.
+          example: walk-and-tour-backend
+        environment:
+          type: string
+          description: Current runtime environment.
+          example: development
+        foundation:
+          description: Shared domain constants exported by the backend foundation layer.
+          allOf:
+            - $ref: "#/components/schemas/HealthFoundationDto"
+      required:
+        - status
+        - app
+        - environment
+        - foundation
+    LanguageResponseDto:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Locale code used throughout the API and translation tables.
+          example: en
+        name:
+          type: string
+          description: Human-readable language name.
+          example: English
+        isEnabled:
+          type: boolean
+          description: Whether the locale is enabled for public content APIs.
+          example: true
+        sortOrder:
+          type: number
+          description: Ordering index used when listing languages.
+          example: 1
+        createdAt:
+          type: string
+          description: Creation timestamp.
+          format: date-time
+        updatedAt:
+          type: string
+          description: Last update timestamp.
+          format: date-time
+      required:
+        - code
+        - name
+        - isEnabled
+        - sortOrder
+        - createdAt
+        - updatedAt
+    CreateLanguageDto:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Locale code used throughout translation-aware endpoints.
+          example: en
+          pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+        name:
+          type: string
+          description: Human-readable display name for the locale.
+          example: English
+          minLength: 1
+          maxLength: 100
+        isEnabled:
+          type: boolean
+          description: Whether the locale is enabled for public APIs.
+          example: true
+          default: true
+        sortOrder:
+          type: number
+          description: Ordering index used when listing locales in admin and public selectors.
+          example: 1
+          minimum: 0
+      required:
+        - code
+        - name
+        - sortOrder
+    UpdateLanguageDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated display name for the locale.
+          example: English (US)
+          maxLength: 100
+        isEnabled:
+          type: boolean
+          description: Whether the locale remains publicly enabled.
+          example: true
+        sortOrder:
+          type: number
+          description: Updated ordering index for admin/public locale lists.
+          example: 2
+          minimum: 0
+    SubscribeNewsletterDto:
+      type: object
+      properties:
+        email:
+          type: string
+          description: Subscriber email address. Duplicate subscribe attempts are normalized by email.
+          example: subscriber@example.com
+        preferredLocale:
+          type: string
+          description: Optional preferred locale for future newsletter targeting.
+          example: en
+          pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+        consentSource:
+          type: string
+          description: Optional source identifier for consent capture, such as `footer_form`.
+          example: footer_form
+          maxLength: 100
+        sourceMetadata:
+          type: object
+          description: Optional additional source metadata stored for audit and operational context.
+          additionalProperties: true
+          example:
+            page: /blog/barcelona-historic-center-guide
+            campaign: spring-2026
+      required:
+        - email
+    NewsletterSubscriptionRequestedResponseDto:
+      type: object
+      properties:
+        email:
+          type: string
+          description: Normalized subscriber email address.
+          example: subscriber@example.com
+        subscriptionStatus:
+          type: string
+          description: Current subscription state after the subscribe request.
+          enum:
+            - pending_confirmation
+            - subscribed
+            - unsubscribed
+          example: pending_confirmation
+        alreadySubscribed:
+          type: boolean
+          description: Whether the email was already actively subscribed before this request.
+          example: false
+        nextAction:
+          type: string
+          description: What the subscriber must do next.
+          enum:
+            - confirm_email
+            - none
+          example: confirm_email
+        preferredLocale:
+          type: object
+          description: Optional preferred locale retained for the subscriber.
+          example: en
+          nullable: true
+        consentedAt:
+          type: string
+          description: Timestamp at which consent was captured for this subscription attempt.
+          format: date-time
+      required:
+        - email
+        - subscriptionStatus
+        - alreadySubscribed
+        - nextAction
+        - consentedAt
+    NewsletterTokenDto:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Opaque token delivered through confirmation or unsubscribe links.
+          example: 0123456789abcdef0123456789abcdef0123456789abcdef
+          pattern: ^[a-f0-9]{48}$
+      required:
+        - token
+    NewsletterSubscriptionConfirmedResponseDto:
+      type: object
+      properties:
+        email:
+          type: string
+          description: Normalized subscriber email address.
+          example: subscriber@example.com
+        subscriptionStatus:
+          type: string
+          description: Current subscription state after confirmation.
+          enum:
+            - pending_confirmation
+            - subscribed
+            - unsubscribed
+          example: subscribed
+        confirmedAt:
+          type: string
+          description: Timestamp at which double opt-in confirmation was completed.
+          format: date-time
+      required:
+        - email
+        - subscriptionStatus
+        - confirmedAt
+    NewsletterUnsubscribedResponseDto:
+      type: object
+      properties:
+        email:
+          type: string
+          description: Normalized subscriber email address.
+          example: subscriber@example.com
+        subscriptionStatus:
+          type: string
+          description: Current subscription state after unsubscription.
+          enum:
+            - pending_confirmation
+            - subscribed
+            - unsubscribed
+          example: unsubscribed
+        unsubscribedAt:
+          type: string
+          description: Timestamp at which the subscriber was unsubscribed.
+          format: date-time
+          nullable: true
+      required:
+        - email
+        - subscriptionStatus
+    NewsletterSubscriberAdminResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Newsletter subscriber UUID.
+          format: uuid
+        email:
+          type: string
+          description: Normalized subscriber email address.
+          example: subscriber@example.com
+        subscriptionStatus:
+          type: string
+          description: Current newsletter subscription lifecycle state.
+          enum:
+            - pending_confirmation
+            - subscribed
+            - unsubscribed
+        preferredLocale:
+          type: object
+          description: Optional preferred locale captured during subscription.
+          example: en
+          nullable: true
+        consentSource:
+          type: object
+          description: Optional consent source identifier, such as `footer_form`.
+          example: footer_form
+          nullable: true
+        sourceMetadata:
+          type: object
+          description: Stored source metadata captured during subscription.
+          additionalProperties: true
+          example:
+            page: /blog/barcelona-historic-center-guide
+            campaign: spring-2026
+        consentedAt:
+          type: string
+          description: Timestamp at which consent was captured.
+          format: date-time
+        confirmedAt:
+          type: string
+          description: Timestamp at which the subscriber confirmed the double opt-in email.
+          format: date-time
+          nullable: true
+        unsubscribedAt:
+          type: string
+          description: Timestamp at which the subscriber unsubscribed.
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          description: Creation timestamp.
+          format: date-time
+        updatedAt:
+          type: string
+          description: Last update timestamp.
+          format: date-time
+      required:
+        - id
+        - email
+        - subscriptionStatus
+        - sourceMetadata
+        - consentedAt
+        - createdAt
+        - updatedAt
+    NewsletterSubscriberAdminListResponseDto:
+      type: object
+      properties:
+        items:
+          description: Paginated subscriber records.
+          type: array
+          items:
+            $ref: "#/components/schemas/NewsletterSubscriberAdminResponseDto"
+        total:
+          type: number
+          description: Total number of matching records before pagination.
+          example: 1250
+        page:
+          type: number
+          description: 1-based page number.
+          example: 1
+        limit:
+          type: number
+          description: Page size used for the response.
+          example: 50
+      required:
+        - items
+        - total
+        - page
+        - limit
+    CreateTagDto:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Stable tag identifier used across tours and blog posts.
+          example: history
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 100
+        labels:
+          type: object
+          description: >-
+            Localized tag labels keyed by locale code. Every key must reference a registered language and each label can
+            be at most 100 characters long.
+          additionalProperties:
+            type: string
+            maxLength: 100
+          example:
+            en: History
+            es: Historia
+      required:
+        - key
+        - labels
+    UpdateTagDto:
+      type: object
+      properties:
+        labels:
+          type: object
+          description: Replacement localized labels keyed by locale code. Each label can be at most 100 characters long.
+          additionalProperties:
+            type: string
+            maxLength: 100
+          example:
+            en: History
+            es: Historia
+    TourMediaAssetResponseDto:
+      type: object
+      properties:
+        ref:
+          type: string
+          description: Media reference path.
+          example: media/tours/historic-center/cover.jpg
+        altText:
+          type: object
+          description: Optional localized alt text keyed by locale code.
+          additionalProperties:
+            type: string
+          nullable: true
+          example:
+            en: View of the cathedral facade
+            es: Vista de la fachada de la catedral
+      required:
+        - ref
+    PriceResponseDto:
+      type: object
+      properties:
+        amount:
+          type: number
+          description: Fixed price amount.
+          example: 25
+        currency:
+          type: string
+          description: Currency code paired with the fixed price amount.
+          example: EUR
+      required:
+        - amount
+        - currency
+    GeoCoordinatesDto:
+      type: object
+      properties:
+        lat:
+          type: number
+          description: Latitude in decimal degrees.
+          example: 41.3874
+        lng:
+          type: number
+          description: Longitude in decimal degrees.
+          example: 2.1686
+      required:
+        - lat
+        - lng
+    SharedPointResponseDto:
+      type: object
+      properties:
+        coordinates:
+          description: Coordinates shared across all locales for the point.
+          allOf:
+            - $ref: "#/components/schemas/GeoCoordinatesDto"
+    PublicPointResponseDto:
+      type: object
+      properties:
+        shared:
+          description: Shared point metadata defined at the tour level.
+          allOf:
+            - $ref: "#/components/schemas/SharedPointResponseDto"
+        localized:
+          type: object
+          description: Localized point metadata from the selected translation payload.
+          additionalProperties: true
+          nullable: true
+          example:
+            label: Town Hall
+      required:
+        - shared
+    PublicTourTranslationResponseDto:
+      type: object
+      properties:
+        locale:
+          type: string
+          description: Requested locale code.
+          example: en
+        bookingReferenceId:
+          type: object
+          description: External booking reference associated with the published locale.
+          nullable: true
+        cancellationType:
+          type: string
+          description: Localized cancellation policy text.
+          example: Free cancellation up to 24 hours before the start time.
+        highlights:
+          description: Localized highlight bullets in display order.
+          example:
+            - Gothic Quarter landmarks
+            - Roman walls
+          type: array
+          items:
+            type: string
+        included:
+          description: Localized inclusions list in display order.
+          example:
+            - Local guide
+            - City map
+          type: array
+          items:
+            type: string
+        notIncluded:
+          description: Localized exclusions list in display order.
+          example:
+            - Hotel pickup
+            - Food and drinks
+          type: array
+          items:
+            type: string
+        payload:
+          type: object
+          description: Published localized payload for the requested locale.
+          additionalProperties: true
+      required:
+        - locale
+        - cancellationType
+        - highlights
+        - included
+        - notIncluded
+        - payload
+    TourNextConnectionResponseDto:
+      type: object
+      properties:
+        durationMinutes:
+          type: object
+          description: Travel time to the next stop in minutes.
+          example: 8
+          nullable: true
+        commuteMode:
+          type: string
+          description: Commute mode used between this stop and the next stop.
+          enum:
+            - walk
+            - bike
+            - bus
+            - train
+            - metro
+            - tram
+            - ferry
+            - private-transport
+            - boat
+            - other
+      required:
+        - commuteMode
+    PublicTourStopResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Stable stop identifier shared across translations.
+          example: stop-1
+        durationMinutes:
+          type: object
+          description: Planned stop duration in minutes.
+          example: 15
+          nullable: true
+        coordinates:
+          description: Optional stop coordinates.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/GeoCoordinatesDto"
+        nextConnection:
+          description: Transport information to the next stop. The final stop must keep this field `null`.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/TourNextConnectionResponseDto"
+        title:
+          type: object
+          description: Localized stop title from the selected translation.
+          example: City Hall
+          nullable: true
+        description:
+          type: object
+          description: Localized stop description from the selected translation.
+          example: Meet at the main square.
+          nullable: true
+      required:
+        - id
+    PublicTourItineraryResponseDto:
+      type: object
+      properties:
+        variant:
+          type: string
+          description: Whether the itinerary is modeled as ordered localized stops or a localized description.
+          enum:
+            - description
+            - stops
+          example: description
+        stops:
+          description: Ordered localized itinerary stops. Present for `stops` itineraries.
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicTourStopResponseDto"
+        itineraryDescription:
+          type: object
+          description: Localized itinerary narrative. Present for `description` itineraries.
+          example: Walk through the old city and discover Roman, medieval, and modern landmarks.
+          nullable: true
+      required:
+        - variant
+    PublicTourResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Tour UUID.
+          format: uuid
+        slug:
+          type: string
+          description: Stable public slug.
+          example: historic-center
+        coverMediaRef:
+          description: Optional cover media asset.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/TourMediaAssetResponseDto"
+        galleryMediaRefs:
+          description: Public gallery media assets.
+          type: array
+          items:
+            $ref: "#/components/schemas/TourMediaAssetResponseDto"
+        price:
+          description: Fixed price data. `null` for tip-based tours.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/PriceResponseDto"
+        rating:
+          type: number
+          description: Average rating normalized to a numeric value.
+          example: 4.8
+        reviewCount:
+          type: number
+          description: Total review count.
+          example: 120
+        tourType:
+          type: string
+          description: Tour commercial model.
+          enum:
+            - private
+            - group
+            - tip_based
+        durationMinutes:
+          type: number
+          description: Total duration in minutes.
+          example: 120
+        startPoint:
+          description: Start point data split into shared and localized portions.
+          allOf:
+            - $ref: "#/components/schemas/PublicPointResponseDto"
+        endPoint:
+          description: End point data split into shared and localized portions.
+          allOf:
+            - $ref: "#/components/schemas/PublicPointResponseDto"
+        tags:
+          description: Localized tag labels for the requested locale.
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicTagResponseDto"
+        translation:
+          description: Published localized translation payload selected for the requested locale.
+          allOf:
+            - $ref: "#/components/schemas/PublicTourTranslationResponseDto"
+        itinerary:
+          description: Localized itinerary returned for the requested locale.
+          allOf:
+            - $ref: "#/components/schemas/PublicTourItineraryResponseDto"
+      required:
+        - id
+        - slug
+        - galleryMediaRefs
+        - rating
+        - reviewCount
+        - tourType
+        - durationMinutes
+        - startPoint
+        - endPoint
+        - tags
+        - translation
+        - itinerary
+    TourAdminItineraryStopResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Stable stop identifier shared across translations.
+          example: stop-1
+        durationMinutes:
+          type: object
+          description: Planned stop duration in minutes.
+          example: 15
+          nullable: true
+        coordinates:
+          description: Optional stop coordinates.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/GeoCoordinatesDto"
+        nextConnection:
+          description: Transport information to the next stop. The final stop must keep this field `null`.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/TourNextConnectionResponseDto"
+      required:
+        - id
+    TourAdminItineraryResponseDto:
+      type: object
+      properties:
+        variant:
+          type: string
+          description: Whether the itinerary is modeled as shared ordered stops or a free-form description.
+          enum:
+            - description
+            - stops
+          example: stops
+        stops:
+          description: Ordered shared itinerary stops. Empty for `description` itineraries.
+          type: array
+          items:
+            $ref: "#/components/schemas/TourAdminItineraryStopResponseDto"
+      required:
+        - variant
+        - stops
+    TourTranslationAvailabilityResponseDto:
+      type: object
+      properties:
+        languageCode:
+          type: string
+          description: Locale code being evaluated.
+          example: en
+        isReady:
+          type: boolean
+          description: Whether the translation currently satisfies all required completeness rules.
+          example: true
+        isPublished:
+          type: boolean
+          description: Whether the translation is configured to be publicly exposed.
+          example: true
         missingRequiredLists:
+          description: Required localized list fields that are missing or malformed.
+          example: []
           type: array
           items:
             type: string
         missingStopTranslations:
+          description: Shared stop identifiers that still lack localized title/description pairs.
+          example: []
           type: array
           items:
             type: string
         isSchemaValid:
           type: boolean
+          description: Whether the localized payload currently validates against the required schema.
+          example: true
         publiclyAvailable:
           type: boolean
+          description: Whether the translation is currently exposed by `public/tours` for its locale.
+          example: true
       required:
         - languageCode
-        - translationStatus
-        - publicationStatus
+        - isReady
+        - isPublished
         - missingRequiredLists
         - missingStopTranslations
         - isSchemaValid
         - publiclyAvailable
-    AdminTranslation:
+    RecordAuditMetadataDto:
       type: object
       properties:
-        languageCode:
-          $ref: "#/components/schemas/LocaleCode"
-        translationStatus:
-          $ref: "#/components/schemas/TranslationStatus"
-        publicationStatus:
-          $ref: "#/components/schemas/TranslationPublicationStatus"
-        payload:
+        createdBy:
           type: object
-          additionalProperties: true
-        bookingReferenceId:
-          type: [string, "null"]
-      required: [languageCode, translationStatus, publicationStatus, payload]
-    AdminTour:
-      type: object
-      properties:
-        id:
-          type: string
+          description: UUID of the admin that originally created the record.
           format: uuid
-        name:
-          type: string
-        slug:
-          type: string
-        category:
-          type: [string, "null"]
-        publicationStatus:
-          $ref: "#/components/schemas/PublicationStatus"
-        tourType:
-          $ref: "#/components/schemas/TourType"
-        cancellationType:
-          $ref: "#/components/schemas/CancellationType"
-        durationMinutes:
-          type: integer
-        price:
-          type: [number, "null"]
-        rating:
-          type: number
-        reviewCount:
-          type: integer
-        tagKeys:
-          type: array
-          items:
-            type: string
-        tags:
-          type: array
-          items:
-            $ref: "#/components/schemas/Tag"
-        translations:
+          nullable: true
+        updatedBy:
           type: object
-          additionalProperties:
-            $ref: "#/components/schemas/AdminTranslation"
-        translationAvailability:
-          type: array
-          items:
-            $ref: "#/components/schemas/TranslationAvailability"
-        audit:
-          $ref: "#/components/schemas/AuditMetadata"
-      required:
-        - id
-        - name
-        - slug
-        - category
-        - publicationStatus
-        - tourType
-        - cancellationType
-        - durationMinutes
-        - price
-        - rating
-        - reviewCount
-        - tagKeys
-        - tags
-        - translations
-        - translationAvailability
-        - audit
-    AdminTourUpsert:
-      type: object
-      properties:
-        name:
-          type: string
-        slug:
-          type: string
-        category:
-          type: [string, "null"]
-        publicationStatus:
-          $ref: "#/components/schemas/PublicationStatus"
-        contentSchema:
-          type: object
-          additionalProperties: true
-        price:
-          type: [number, "null"]
-        rating:
-          type: number
-        reviewCount:
-          type: integer
-        tourType:
-          $ref: "#/components/schemas/TourType"
-        cancellationType:
-          $ref: "#/components/schemas/CancellationType"
-        durationMinutes:
-          type: integer
-        itinerary:
-          type: object
-          additionalProperties: true
-        tagKeys:
-          type: array
-          items:
-            type: string
-        translations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AdminTranslation"
-      required:
-        - name
-        - slug
-        - publicationStatus
-        - contentSchema
-        - rating
-        - reviewCount
-        - tourType
-        - cancellationType
-        - durationMinutes
-        - itinerary
-        - tagKeys
-    AdminTourPatch:
-      type: object
-      properties:
-        name:
-          type: string
-        slug:
-          type: string
-        category:
-          type: [string, "null"]
-        publicationStatus:
-          $ref: "#/components/schemas/PublicationStatus"
-        contentSchema:
-          type: object
-          additionalProperties: true
-        price:
-          type: [number, "null"]
-        rating:
-          type: number
-        reviewCount:
-          type: integer
-        tourType:
-          $ref: "#/components/schemas/TourType"
-        cancellationType:
-          $ref: "#/components/schemas/CancellationType"
-        durationMinutes:
-          type: integer
-        itinerary:
-          type: object
-          additionalProperties: true
-        tagKeys:
-          type: array
-          items:
-            type: string
-        translations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AdminTranslation"
-    AdminBlogTranslation:
-      type: object
-      properties:
-        languageCode:
-          $ref: "#/components/schemas/LocaleCode"
-        publicationStatus:
-          $ref: "#/components/schemas/TranslationPublicationStatus"
-        title:
-          type: [string, "null"]
-        summary:
-          type: [string, "null"]
-        htmlContent:
-          type: [string, "null"]
-        seoTitle:
-          type: [string, "null"]
-        seoDescription:
-          type: [string, "null"]
-      required: [languageCode, publicationStatus, title, summary, htmlContent, seoTitle, seoDescription]
-    AdminBlogPost:
-      type: object
-      properties:
-        id:
-          type: string
+          description: UUID of the admin that most recently updated the record.
           format: uuid
-        name:
-          type: string
-        slug:
-          type: string
-        heroMediaRef:
-          type: [string, "null"]
-        category:
-          type: [string, "null"]
-        publicationStatus:
-          $ref: "#/components/schemas/PublicationStatus"
-        tags:
-          type: array
-          items:
-            $ref: "#/components/schemas/Tag"
-        translations:
-          type: object
-          additionalProperties:
-            $ref: "#/components/schemas/AdminBlogTranslation"
-        translationAvailability:
-          type: array
-          items:
-            $ref: "#/components/schemas/TranslationAvailability"
-        audit:
-          $ref: "#/components/schemas/AuditMetadata"
-      required:
-        - id
-        - name
-        - slug
-        - heroMediaRef
-        - category
-        - publicationStatus
-        - tags
-        - translations
-        - translationAvailability
-        - audit
-    AdminBlogPostUpsert:
-      type: object
-      properties:
-        name:
-          type: string
-        slug:
-          type: string
-        heroMediaRef:
-          type: [string, "null"]
-        category:
-          type: [string, "null"]
-        publicationStatus:
-          $ref: "#/components/schemas/PublicationStatus"
-        tagKeys:
-          type: array
-          items:
-            type: string
-        translations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AdminBlogTranslation"
-      required: [name, slug, publicationStatus]
-    AdminBlogPostPatch:
-      type: object
-      properties:
-        name:
-          type: string
-        slug:
-          type: string
-        heroMediaRef:
-          type: [string, "null"]
-        category:
-          type: [string, "null"]
-        publicationStatus:
-          $ref: "#/components/schemas/PublicationStatus"
-        tagKeys:
-          type: array
-          items:
-            type: string
-        translations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AdminBlogTranslation"
-    NewsletterSubscriber:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        email:
-          type: string
-          format: email
-        subscriptionStatus:
-          $ref: "#/components/schemas/NewsletterSubscriptionStatus"
-        preferredLocale:
-          type: [string, "null"]
-        consentSource:
-          type: [string, "null"]
-        sourceMetadata:
-          type: [object, "null"]
-          additionalProperties: true
-        consentedAt:
-          type: [string, "null"]
-        confirmedAt:
-          type: [string, "null"]
-        unsubscribedAt:
-          type: [string, "null"]
+          nullable: true
         createdAt:
           type: string
+          description: Creation timestamp.
+          format: date-time
         updatedAt:
           type: string
+          description: Last update timestamp.
+          format: date-time
       required:
-        - id
-        - email
-        - subscriptionStatus
-        - preferredLocale
-        - consentSource
-        - sourceMetadata
-        - consentedAt
-        - confirmedAt
-        - unsubscribedAt
         - createdAt
         - updatedAt
-    PaginatedNewsletterSubscribers:
+    TourAdminResponseDto:
       type: object
       properties:
-        items:
+        id:
+          type: string
+          description: Tour UUID.
+          format: uuid
+        name:
+          type: string
+          description: Non-localized admin-facing name for the tour.
+          example: Barcelona Historic Center Main Tour
+        slug:
+          type: string
+          description: Stable public slug.
+          example: historic-center
+        coverMediaRef:
+          description: Optional cover media asset.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/TourMediaAssetResponseDto"
+        galleryMediaRefs:
+          description: Additional gallery media assets.
           type: array
           items:
-            $ref: "#/components/schemas/NewsletterSubscriber"
-        total:
-          type: integer
-        page:
-          type: integer
-        limit:
-          type: integer
-      required: [items, total, page, limit]
-    PublicTour:
-      type: object
-      properties:
-        slug:
-          type: string
-        category:
-          type: [string, "null"]
-        publicationStatus:
-          $ref: "#/components/schemas/PublicationStatus"
-        translation:
+            $ref: "#/components/schemas/TourMediaAssetResponseDto"
+        contentSchema:
           type: object
+          description: Shared JSON Schema that localized translation payloads must satisfy.
           additionalProperties: true
+          nullable: true
+        price:
+          description: Fixed price data. `null` for tip-based tours.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/PriceResponseDto"
+        rating:
+          type: object
+          description: Average rating normalized to a numeric value.
+          example: 4.8
+          nullable: true
+        reviewCount:
+          type: object
+          description: Total review count.
+          example: 120
+          nullable: true
+        tourType:
+          type: string
+          description: Tour commercial model.
+          enum:
+            - private
+            - group
+            - tip_based
+        durationMinutes:
+          type: object
+          description: Total duration in minutes.
+          example: 120
+          nullable: true
+        startPoint:
+          description: Shared start point object.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/SharedPointResponseDto"
+        endPoint:
+          description: Shared end point object.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/SharedPointResponseDto"
         itinerary:
+          description: Shared itinerary structure.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/TourAdminItineraryResponseDto"
+        tagKeys:
+          description: Ordered tag keys assigned to the tour.
+          example:
+            - history
+          type: array
+          items:
+            type: string
+        tags:
+          description: Expanded tag records.
+          type: array
+          items:
+            $ref: "#/components/schemas/TagResponseDto"
+        translations:
           type: object
-          additionalProperties: true
-        publishedAt:
-          type: [string, "null"]
-      required: [slug, category, publicationStatus, translation, itinerary, publishedAt]
-    PublicBlogPost:
+          description: Localized translation records keyed by locale code.
+          additionalProperties:
+            $ref: "#/components/schemas/TourAdminTranslationResponseDto"
+        translationAvailability:
+          description: Per-locale publishability diagnostics derived from the shared schema and itinerary.
+          type: array
+          items:
+            $ref: "#/components/schemas/TourTranslationAvailabilityResponseDto"
+        audit:
+          description: Audit metadata for create and update operations.
+          allOf:
+            - $ref: "#/components/schemas/RecordAuditMetadataDto"
+      required:
+        - id
+        - name
+        - slug
+        - galleryMediaRefs
+        - tourType
+        - tagKeys
+        - tags
+        - translations
+        - translationAvailability
+        - audit
+    CreateTourDto:
       type: object
       properties:
+        name:
+          type: string
+          description: Non-localized admin-facing name used to identify the tour.
+          example: Barcelona Historic Center Main Tour
+          minLength: 1
+          maxLength: 255
         slug:
           type: string
-        category:
-          type: [string, "null"]
-        translation:
+          description: Stable public slug for the tour.
+          example: historic-center
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 150
+        tourType:
+          type: string
+          description: Commercial model of the tour. Required during minimal creation.
+          enum:
+            - private
+            - group
+            - tip_based
+          example: group
+      required:
+        - name
+        - slug
+        - tourType
+    TourMediaAssetDto:
+      type: object
+      properties:
+        altText:
           type: object
-          additionalProperties: true
-        publishedAt:
-          type: [string, "null"]
-      required: [slug, category, translation, publishedAt]
-    NewsletterSubscribeRequest:
+          description: Optional localized alt text keyed by locale code.
+          additionalProperties:
+            type: string
+            maxLength: 255
+          example:
+            en: View of the cathedral facade
+            es: Vista de la fachada de la catedral
+        ref:
+          type: string
+          description: Media reference path.
+          example: media/tours/historic-center/cover.jpg
+          maxLength: 255
+      required:
+        - ref
+    PriceDto:
       type: object
       properties:
-        email:
+        amount:
+          type: number
+          description: Fixed price amount. Only valid for non-tip-based tours.
+          example: 25
+          minimum: 0
+        currency:
           type: string
-          format: email
-        preferredLocale:
-          $ref: "#/components/schemas/LocaleCode"
-        consentSource:
+          description: Currency code paired with the fixed amount.
+          example: EUR
+          maxLength: 10
+      required:
+        - amount
+        - currency
+    TourCoordinatesDto:
+      type: object
+      properties:
+        lat:
+          type: number
+          description: Latitude in decimal degrees.
+          example: 41.3874
+        lng:
+          type: number
+          description: Longitude in decimal degrees.
+          example: 2.1686
+      required:
+        - lat
+        - lng
+    SharedPointDto:
+      type: object
+      properties:
+        coordinates:
+          description: Optional shared coordinates for the point.
+          allOf:
+            - $ref: "#/components/schemas/TourCoordinatesDto"
+    TourItineraryConnectionDto:
+      type: object
+      properties:
+        durationMinutes:
+          type: number
+          description: Travel time in minutes to the next stop.
+          example: 8
+          minimum: 0
+        commuteMode:
           type: string
-        sourceMetadata:
+          description: Commute mode used to move to the next stop.
+          enum:
+            - walk
+            - bike
+            - bus
+            - train
+            - metro
+            - tram
+            - ferry
+            - private-transport
+            - boat
+            - other
+          example: walk
+      required:
+        - commuteMode
+    TourItineraryStopDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Stable stop identifier shared across translations.
+          example: stop-1
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 100
+        durationMinutes:
+          type: number
+          description: Duration spent at the stop in minutes.
+          example: 15
+          minimum: 0
+        coordinates:
+          description: Optional stop coordinates.
+          allOf:
+            - $ref: "#/components/schemas/TourCoordinatesDto"
+        nextConnection:
+          description: Transport information to the next stop. The final stop must omit this field.
+          allOf:
+            - $ref: "#/components/schemas/TourItineraryConnectionDto"
+      required:
+        - id
+    TourItineraryDto:
+      type: object
+      properties:
+        variant:
+          type: string
+          description: Whether the itinerary is modeled as a localized description or shared ordered stops.
+          enum:
+            - description
+            - stops
+          example: description
+        stops:
+          description: Ordered shared stop list. Required when `variant` is `stops` and forbidden for `description` itineraries.
+          type: array
+          items:
+            $ref: "#/components/schemas/TourItineraryStopDto"
+      required:
+        - variant
+    UpdateTourDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated non-localized admin-facing name.
+          example: Barcelona Historic Center Main Tour
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          description: Updated public slug.
+          example: historic-center
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 150
+        coverMediaRef:
+          description: Updated cover media asset. Set `null` to clear the value.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/TourMediaAssetDto"
+        galleryMediaRefs:
+          description: Replacement gallery media assets.
+          type: array
+          items:
+            $ref: "#/components/schemas/TourMediaAssetDto"
+        contentSchema:
           type: object
+          description: Updated shared JSON Schema for localized payload validation.
           additionalProperties: true
-      required: [email]
-    NewsletterSubscribeResponse:
-      type: object
-      properties:
-        alreadySubscribed:
-          type: boolean
-        subscriptionStatus:
-          $ref: "#/components/schemas/NewsletterSubscriptionStatus"
-      required: [alreadySubscribed, subscriptionStatus]
-    TokenRequest:
-      type: object
-      properties:
-        token:
+        price:
+          description: Updated fixed price. Set `null` to remove price data.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/PriceDto"
+        rating:
+          type: number
+          description: Updated average rating.
+          example: 4.9
+          minimum: 1
+          maximum: 5
+        reviewCount:
+          type: number
+          description: Updated review count.
+          example: 135
+          minimum: 0
+        tourType:
           type: string
-      required: [token]
-    TokenResult:
+          description: Updated commercial model.
+          enum:
+            - private
+            - group
+            - tip_based
+          example: group
+        durationMinutes:
+          type: number
+          description: Updated duration in minutes.
+          example: 150
+          minimum: 0
+        startPoint:
+          description: Replacement shared start point metadata.
+          allOf:
+            - $ref: "#/components/schemas/SharedPointDto"
+        endPoint:
+          description: Replacement shared end point metadata.
+          allOf:
+            - $ref: "#/components/schemas/SharedPointDto"
+        itinerary:
+          description: Replacement itinerary definition. For stop-based itineraries the full ordered list should be provided.
+          allOf:
+            - $ref: "#/components/schemas/TourItineraryDto"
+        tagKeys:
+          description: Replacement ordered tag key list.
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+    CreateTourTranslationDto:
       type: object
       properties:
-        success:
+        languageCode:
+          type: string
+          description: Locale code for this tour translation.
+          example: en
+          pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+        bookingReferenceId:
+          type: object
+          description: Optional external booking reference for this locale. Set `null` to clear it on update.
+          example: booking-ref-123
+          nullable: true
+        payload:
+          type: object
+          description: Localized payload validated against the shared tour content schema when available.
+          additionalProperties: true
+          example:
+            title: Historic Center
+            cancellationType: Free cancellation up to 24 hours before the start time.
+            highlights:
+              - Gothic Quarter landmarks
+              - Roman walls
+            included:
+              - Local guide
+              - City map
+            notIncluded:
+              - Hotel pickup
+              - Food and drinks
+            startPoint:
+              label: Town Hall
+            endPoint:
+              label: Cathedral
+            itineraryDescription: Walk through the center.
+      required:
+        - languageCode
+        - payload
+    UpdateTourTranslationDto:
+      type: object
+      properties:
+        bookingReferenceId:
+          type: object
+          description: Updated external booking reference for this locale. Set `null` to clear it.
+          example: booking-ref-123
+          nullable: true
+        payload:
+          type: object
+          description: Replacement localized payload. Omit to keep the existing payload.
+          additionalProperties: true
+    PublishTourTranslationDto:
+      type: object
+      properties:
+        bookingReferenceId:
+          type: object
+          description: Optional external booking reference override applied before publishing. Set `null` to clear it.
+          example: booking-ref-123
+          nullable: true
+    TourAdminTranslationResponseDto:
+      type: object
+      properties:
+        isReady:
           type: boolean
-        subscriptionStatus:
-          $ref: "#/components/schemas/NewsletterSubscriptionStatus"
-      required: [success, subscriptionStatus]
+          description: Whether the translation currently satisfies all required completeness rules.
+          example: true
+        isPublished:
+          type: boolean
+          description: Whether the translation is configured to be publicly exposed.
+          example: true
+        bookingReferenceId:
+          type: object
+          description: External booking reference for the locale, if any.
+          nullable: true
+          example: booking-ref-123
+        cancellationType:
+          type: object
+          description: Localized cancellation policy text, or `null` when the translation is incomplete.
+          example: Free cancellation up to 24 hours before the start time.
+          nullable: true
+        highlights:
+          description: Localized highlight bullets in admin-defined order, or `null` when the translation is incomplete.
+          example:
+            - Gothic Quarter landmarks
+            - Roman walls
+          nullable: true
+          type: array
+          items:
+            type: string
+        included:
+          description: Localized inclusions list in admin-defined order, or `null` when the translation is incomplete.
+          example:
+            - Local guide
+            - City map
+          nullable: true
+          type: array
+          items:
+            type: string
+        notIncluded:
+          description: Localized exclusions list in admin-defined order, or `null` when the translation is incomplete.
+          example:
+            - Hotel pickup
+            - Food and drinks
+          nullable: true
+          type: array
+          items:
+            type: string
+        payload:
+          type: object
+          description: Localized payload validated against the shared content schema.
+          additionalProperties: true
+      required:
+        - isReady
+        - isPublished
+        - payload
+    BlogAdminTranslationResponseDto:
+      type: object
+      properties:
+        publicationStatus:
+          type: string
+          description: Translation publication state.
+          enum:
+            - published
+            - unpublished
+        title:
+          type: string
+          description: Localized title.
+          example: Barcelona Historic Center Guide
+        summary:
+          type: object
+          description: Localized summary copy.
+          nullable: true
+        htmlContent:
+          type: string
+          description: Localized rendered HTML body.
+          example: <p>Walk through centuries of history.</p>
+        seoTitle:
+          type: object
+          description: SEO title override.
+          nullable: true
+        seoDescription:
+          type: object
+          description: SEO description override.
+          nullable: true
+        imageRefs:
+          description: Localized image references.
+          type: array
+          items:
+            type: string
+      required:
+        - publicationStatus
+        - title
+        - htmlContent
+        - imageRefs

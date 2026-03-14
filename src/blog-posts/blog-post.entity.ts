@@ -28,9 +28,6 @@ export class BlogPostEntity {
   @Column({ name: 'hero_media_ref', type: 'varchar', length: 255, nullable: true })
   heroMediaRef!: string | null;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  category!: string | null;
-
   @Column({ name: 'publication_status', type: 'varchar', length: 20 })
   publicationStatus!: string;
 
