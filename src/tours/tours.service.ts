@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,12 +10,16 @@ import { In, Repository } from 'typeorm';
 
 import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface';
 import { LanguageEntity } from '../languages/language.entity';
+import { MediaAssetEntity } from '../media/media-asset.entity';
+import { getProviderConfig } from '../shared/config/provider.config';
 import { TOUR_TYPES } from '../shared/domain';
 import { TagEntity } from '../tags/tag.entity';
+import { CreateTourDto } from './dto/create-tour.dto';
 import {
-  CreateTourDto,
-  TourMediaAssetDto,
-} from './dto/create-tour.dto';
+  AttachTourMediaDto,
+  SetTourCoverMediaDto,
+  UpdateTourMediaDto,
+} from './dto/tour-media.dto';
 import {
   CreateTourTranslationDto,
   PublishTourTranslationDto,
@@ -22,22 +27,29 @@ import {
 } from './dto/tour-translation.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { TourItineraryStopEntity } from './entities/tour-itinerary-stop.entity';
+import { TourMediaEntity } from './entities/tour-media.entity';
 import { TourTranslationEntity } from './entities/tour-translation.entity';
 import { TourEntity } from './entities/tour.entity';
 import { TourPayloadValidationService } from './tour-payload-validation.service';
 import { TourSchemaPolicyService } from './tour-schema-policy.service';
 
+const LOCALE_CODE_PATTERN = /^[a-z]{2}(?:-[A-Z]{2})?$/;
 const REQUIRED_LOCALIZED_LIST_FIELDS = [
   'highlights',
   'included',
   'notIncluded',
 ] as const;
 
+interface TourMediaAttachmentInput {
+  mediaId: string;
+  orderIndex: number;
+  altText: Record<string, string> | null;
+  media: MediaAssetEntity;
+}
+
 interface TourSharedInput {
   name: string;
   slug: string;
-  coverMediaRef: Record<string, unknown> | null;
-  galleryMediaRefs: Record<string, unknown>[];
   contentSchema: Record<string, unknown> | null;
   price: { amount: number; currency: string } | null;
   rating: number | null;
@@ -67,11 +79,6 @@ interface JsonPoint {
   coordinates?: JsonCoordinates;
 }
 
-interface JsonMediaAsset extends Record<string, unknown> {
-  ref: string;
-  altText?: Record<string, string>;
-}
-
 @Injectable()
 export class ToursService {
   constructor(
@@ -81,6 +88,10 @@ export class ToursService {
     private readonly stopsRepository: Repository<TourItineraryStopEntity>,
     @InjectRepository(TourTranslationEntity)
     private readonly translationsRepository: Repository<TourTranslationEntity>,
+    @InjectRepository(TourMediaEntity)
+    private readonly tourMediaRepository: Repository<TourMediaEntity>,
+    @InjectRepository(MediaAssetEntity)
+    private readonly mediaAssetsRepository: Repository<MediaAssetEntity>,
     @InjectRepository(TagEntity)
     private readonly tagsRepository: Repository<TagEntity>,
     @InjectRepository(LanguageEntity)
@@ -92,6 +103,10 @@ export class ToursService {
   async findAll(): Promise<unknown[]> {
     const tours = await this.toursRepository.find({
       relations: {
+        coverMedia: true,
+        mediaItems: {
+          media: true,
+        },
         tags: true,
         stops: true,
         translations: true,
@@ -133,8 +148,7 @@ export class ToursService {
     const tour = this.toursRepository.create({
       name: dto.name.trim(),
       slug: dto.slug,
-      coverMediaRef: null,
-      galleryMediaRefs: [],
+      coverMediaId: null,
       contentSchema: null,
       priceAmount: null,
       priceCurrency: null,
@@ -177,8 +191,6 @@ export class ToursService {
 
     existing.name = aggregate.name;
     existing.slug = aggregate.slug;
-    existing.coverMediaRef = aggregate.coverMediaRef;
-    existing.galleryMediaRefs = aggregate.galleryMediaRefs;
     existing.contentSchema = aggregate.contentSchema;
     existing.priceAmount = aggregate.price ? aggregate.price.amount.toFixed(2) : null;
     existing.priceCurrency = aggregate.price?.currency ?? null;
@@ -328,6 +340,126 @@ export class ToursService {
     await this.touchTour(tour, actor);
   }
 
+  async listMedia(id: string): Promise<{ items: unknown[] }> {
+    const tour = await this.findEntityOrThrow(id);
+    return {
+      items: [...(tour.mediaItems ?? [])]
+        .sort((left, right) => left.orderIndex - right.orderIndex)
+        .map((item) => this.toAdminMediaItemResponse(tour, item)),
+    };
+  }
+
+  async attachMedia(
+    id: string,
+    dto: AttachTourMediaDto,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    const tour = await this.findEntityOrThrow(id);
+    this.validateLocalizedAltText(dto.altText ?? null, 'Tour media altText');
+
+    const existingAttachment = tour.mediaItems.find((item) => item.mediaId === dto.mediaId);
+    if (existingAttachment) {
+      throw new ConflictException(
+        `Media asset "${dto.mediaId}" is already attached to tour "${id}".`,
+      );
+    }
+
+    const mediaAsset = await this.getMediaAssetOrThrow(dto.mediaId);
+    const orderIndex =
+      dto.orderIndex ?? this.getNextMediaOrderIndex(tour.mediaItems ?? []);
+    await this.assertOrderIndexAvailable(id, orderIndex, dto.mediaId);
+
+    await this.tourMediaRepository.save(
+      this.tourMediaRepository.create({
+        tourId: id,
+        mediaId: mediaAsset.id,
+        orderIndex,
+        altText: dto.altText ?? null,
+      }),
+    );
+    await this.touchTour(tour, actor);
+
+    return this.findOne(id);
+  }
+
+  async updateMedia(
+    id: string,
+    mediaId: string,
+    dto: UpdateTourMediaDto,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    const tour = await this.findEntityOrThrow(id);
+    const attachment = this.findTourMediaOrThrow(tour, mediaId);
+
+    if ('altText' in dto) {
+      this.validateLocalizedAltText(dto.altText ?? null, 'Tour media altText');
+      attachment.altText = dto.altText ?? null;
+    }
+
+    if (dto.orderIndex !== undefined && dto.orderIndex !== attachment.orderIndex) {
+      await this.assertOrderIndexAvailable(id, dto.orderIndex, mediaId);
+      attachment.orderIndex = dto.orderIndex;
+    }
+
+    await this.tourMediaRepository.save(attachment);
+    await this.touchTour(tour, actor);
+
+    return this.findOne(id);
+  }
+
+  async detachMedia(
+    id: string,
+    mediaId: string,
+    actor: AuthenticatedAdmin,
+  ): Promise<void> {
+    const tour = await this.findEntityOrThrow(id);
+    this.findTourMediaOrThrow(tour, mediaId);
+
+    await this.tourMediaRepository.delete({ tourId: id, mediaId });
+
+    if (tour.coverMediaId === mediaId) {
+      await this.toursRepository.update({ id }, { coverMediaId: null, updatedBy: actor.id });
+    }
+
+    await this.touchTour(tour, actor);
+  }
+
+  async setCoverMedia(
+    id: string,
+    dto: SetTourCoverMediaDto,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    const tour = await this.findEntityOrThrow(id);
+    const attachment = this.findTourMediaOrThrow(tour, dto.mediaId);
+
+    if (attachment.media.mediaType !== 'image') {
+      throw new BadRequestException('Tour cover media must reference an image asset.');
+    }
+
+    await this.toursRepository.update(
+      { id },
+      {
+        coverMediaId: dto.mediaId,
+        updatedBy: actor.id,
+      },
+    );
+
+    return this.findOne(id);
+  }
+
+  async clearCoverMedia(id: string, actor: AuthenticatedAdmin): Promise<unknown> {
+    await this.findEntityOrThrow(id);
+    await this.toursRepository.update(
+      { id },
+      {
+        coverMediaId: null,
+        updatedBy: actor.id,
+      },
+    );
+
+    return this.findOne(id);
+  }
+
   private async buildSharedAggregate(
     source: UpdateTourDto,
     existing?: TourEntity,
@@ -362,13 +494,6 @@ export class ToursService {
     const aggregate: TourSharedInput = {
       name: source.name ?? existing?.name ?? '',
       slug: source.slug ?? existing?.slug ?? '',
-      coverMediaRef:
-        'coverMediaRef' in source
-          ? (source.coverMediaRef ? this.toJsonMediaAsset(source.coverMediaRef) : null)
-          : (existing?.coverMediaRef ?? null),
-      galleryMediaRefs: source.galleryMediaRefs
-        ? source.galleryMediaRefs.map((asset) => this.toJsonMediaAsset(asset))
-        : (existing?.galleryMediaRefs ?? []),
       contentSchema,
       price:
         source.price === null
@@ -410,14 +535,6 @@ export class ToursService {
     if (!aggregate.name || aggregate.name.trim().length === 0) {
       throw new BadRequestException('Tour name is required.');
     }
-
-    if (aggregate.coverMediaRef) {
-      this.validateMediaAsset(aggregate.coverMediaRef, 'coverMediaRef');
-    }
-
-    aggregate.galleryMediaRefs.forEach((asset, index) => {
-      this.validateMediaAsset(asset, `galleryMediaRefs[${index}]`);
-    });
 
     if (!TOUR_TYPES.includes(aggregate.tourType as (typeof TOUR_TYPES)[number])) {
       throw new BadRequestException(`Tour type "${aggregate.tourType}" is invalid.`);
@@ -695,10 +812,50 @@ export class ToursService {
     };
   }
 
+  private getNextMediaOrderIndex(items: TourMediaEntity[]): number {
+    if (items.length === 0) {
+      return 0;
+    }
+
+    return Math.max(...items.map((item) => item.orderIndex)) + 1;
+  }
+
+  private async assertOrderIndexAvailable(
+    tourId: string,
+    orderIndex: number,
+    excludedMediaId?: string,
+  ): Promise<void> {
+    const existing = await this.tourMediaRepository.findOne({
+      where: { tourId, orderIndex },
+    });
+
+    if (existing && existing.mediaId !== excludedMediaId) {
+      throw new ConflictException(
+        `Tour media orderIndex "${orderIndex}" is already in use for tour "${tourId}".`,
+      );
+    }
+  }
+
+  private async getMediaAssetOrThrow(id: string): Promise<MediaAssetEntity> {
+    const mediaAsset = await this.mediaAssetsRepository.findOne({
+      where: { id },
+    });
+
+    if (!mediaAsset) {
+      throw new BadRequestException(`Unknown media asset ID: ${id}`);
+    }
+
+    return mediaAsset;
+  }
+
   private async findEntityOrThrow(id: string): Promise<TourEntity> {
     const tour = await this.toursRepository.findOne({
       where: { id },
       relations: {
+        coverMedia: true,
+        mediaItems: {
+          media: true,
+        },
         tags: true,
         stops: true,
         translations: true,
@@ -710,6 +867,18 @@ export class ToursService {
     }
 
     return tour;
+  }
+
+  private findTourMediaOrThrow(tour: TourEntity, mediaId: string): TourMediaEntity {
+    const attachment = (tour.mediaItems ?? []).find((item) => item.mediaId === mediaId);
+
+    if (!attachment) {
+      throw new NotFoundException(
+        `Tour media "${mediaId}" was not found for tour "${tour.id}".`,
+      );
+    }
+
+    return attachment;
   }
 
   private findTranslationOrThrow(
@@ -742,6 +911,9 @@ export class ToursService {
 
   private toAdminResponse(tour: TourEntity): unknown {
     const orderedStops = [...tour.stops].sort((left, right) => left.orderIndex - right.orderIndex);
+    const orderedMedia = [...(tour.mediaItems ?? [])].sort(
+      (left, right) => left.orderIndex - right.orderIndex,
+    );
 
     const translations = Object.fromEntries(
       tour.translations.map((translation) => [
@@ -789,8 +961,8 @@ export class ToursService {
       id: tour.id,
       name: tour.name,
       slug: tour.slug,
-      coverMediaRef: this.toResponseMediaAsset(tour.coverMediaRef),
-      galleryMediaRefs: tour.galleryMediaRefs.map((asset) => this.toResponseMediaAsset(asset)),
+      coverMediaId: tour.coverMediaId,
+      mediaItems: orderedMedia.map((item) => this.toAdminMediaItemResponse(tour, item)),
       contentSchema: tour.contentSchema,
       price:
         tour.priceAmount && tour.priceCurrency
@@ -906,58 +1078,6 @@ export class ToursService {
     return [...value];
   }
 
-  private toJsonMediaAsset(asset: TourMediaAssetDto): Record<string, unknown> {
-    const normalized: JsonMediaAsset = {
-      ref: asset.ref,
-    };
-
-    if (asset.altText) {
-      normalized.altText = asset.altText;
-    }
-
-    return normalized;
-  }
-
-  private validateMediaAsset(asset: Record<string, unknown>, path: string): void {
-    const ref = asset.ref;
-
-    if (typeof ref !== 'string' || ref.trim().length === 0) {
-      throw new BadRequestException(`Tour ${path}.ref is required.`);
-    }
-
-    if (ref.length > 255) {
-      throw new BadRequestException(`Tour ${path}.ref must be at most 255 characters long.`);
-    }
-
-    const altText = asset.altText;
-
-    if (altText === undefined) {
-      return;
-    }
-
-    if (typeof altText !== 'object' || altText === null || Array.isArray(altText)) {
-      throw new BadRequestException(`Tour ${path}.altText must be a locale-to-string object.`);
-    }
-
-    for (const [locale, value] of Object.entries(altText)) {
-      if (!/^[a-z]{2}(?:-[A-Z]{2})?$/.test(locale)) {
-        throw new BadRequestException(`Tour ${path}.altText locale "${locale}" is invalid.`);
-      }
-
-      if (typeof value !== 'string' || value.trim().length === 0) {
-        throw new BadRequestException(
-          `Tour ${path}.altText["${locale}"] must be a non-empty string.`,
-        );
-      }
-
-      if (value.length > 255) {
-        throw new BadRequestException(
-          `Tour ${path}.altText["${locale}"] must be at most 255 characters long.`,
-        );
-      }
-    }
-  }
-
   private getStringField(payload: Record<string, unknown>, key: string): string | null {
     const value = payload[key];
 
@@ -977,16 +1097,61 @@ export class ToursService {
     };
   }
 
-  private toResponseMediaAsset(
-    asset: Record<string, unknown> | null,
-  ): { ref: string; altText: Record<string, string> | null } | null {
-    if (!asset) {
-      return null;
+  private validateLocalizedAltText(
+    altText: Record<string, string> | null,
+    path: string,
+  ): void {
+    if (altText === null) {
+      return;
     }
 
+    if (typeof altText !== 'object' || Array.isArray(altText)) {
+      throw new BadRequestException(`${path} must be a locale-to-string object.`);
+    }
+
+    for (const [locale, value] of Object.entries(altText)) {
+      if (!LOCALE_CODE_PATTERN.test(locale)) {
+        throw new BadRequestException(`${path} locale "${locale}" is invalid.`);
+      }
+
+      if (typeof value !== 'string' || value.trim().length === 0) {
+        throw new BadRequestException(`${path}["${locale}"] must be a non-empty string.`);
+      }
+
+      if (value.length > 255) {
+        throw new BadRequestException(
+          `${path}["${locale}"] must be at most 255 characters long.`,
+        );
+      }
+    }
+  }
+
+  private toAdminMediaItemResponse(tour: TourEntity, item: TourMediaEntity): {
+    mediaId: string;
+    mediaType: 'image' | 'video';
+    storagePath: string;
+    contentUrl: string;
+    contentType: string;
+    size: number;
+    originalFilename: string;
+    altText: Record<string, string> | null;
+    orderIndex: number;
+  } {
     return {
-      ref: asset.ref as string,
-      altText: (asset.altText as Record<string, string> | undefined) ?? null,
+      mediaId: item.mediaId,
+      mediaType: item.media.mediaType,
+      storagePath: item.media.storagePath,
+      contentUrl: this.buildAdminMediaContentUrl(item.mediaId),
+      contentType: item.media.contentType,
+      size: item.media.size,
+      originalFilename: item.media.originalFilename,
+      altText: item.altText ?? null,
+      orderIndex: item.orderIndex,
     };
+  }
+
+  private buildAdminMediaContentUrl(mediaId: string): string {
+    const { appBaseUrl } = getProviderConfig();
+    return `${appBaseUrl.replace(/\/$/, '')}/api/admin/media/${mediaId}/content`;
   }
 }

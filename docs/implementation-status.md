@@ -20,14 +20,13 @@ Completed in this step:
 - Added application-level email-provider abstractions with `console` and Resend-backed implementations.
 - Wired newsletter subscribe flows to dispatch provider-backed confirmation emails containing direct confirmation and unsubscribe links.
 - Added application-level storage abstractions with local-filesystem and Supabase-backed implementations behind one shared contract.
-- Added an admin image upload endpoint backed by the shared storage abstraction for reusable tour media assets.
+- Added an admin media asset API backed by the shared storage abstraction for reusable tour and future content media.
 - Added direct-link GET confirmation and unsubscribe endpoints to support email-driven tokenized flows without changing subscriber persistence.
 - Added configuration, Swagger updates, and unit coverage for provider and storage adapters.
 
 This layer intentionally does **not** include:
 
 - Campaign authoring or sending workflows
-- File-management delete APIs or richer media library management
 - Booking or customer-account features
 
 ## Next Layer
@@ -61,8 +60,11 @@ The six planned backend layers are now implemented. The next step, if requested,
 - Tours and blog posts now persist a shared non-localized `name` field for admin-side identification in addition to slugs and localized translation titles.
 - Tours and blog posts no longer persist or expose a `category` field; the latest migration removes it from both tables and API contracts.
 - Tour `cancellationType` is now a localized free-text translation field, not a shared persisted tour column.
-- Tour media assets now support optional localized alt-text maps on the cover asset and each gallery asset.
-- Admin image uploads now return reusable media refs and preview metadata through `POST /api/admin/media/upload`.
+- Tour media is now stored through reusable `media_assets` records plus per-tour `tour_media` attachments, with localized alt text on each attachment and cover assignment managed through dedicated cover routes.
+- Admin media now supports paginated library browsing through `GET /api/admin/media`, single-asset retrieval through `GET /api/admin/media/:id`, authenticated byte streaming through `GET /api/admin/media/:id/content`, image/video upload through `POST /api/admin/media`, and deletion through `DELETE /api/admin/media/:id`.
+- Tours now manage media associations through dedicated nested endpoints instead of embedding media changes in `PATCH /api/admin/tours/:id`.
+- Blog posts now attach and clear shared hero media through dedicated media endpoints and return resolved `heroMedia` objects instead of raw hero storage refs.
+- Public media is exposed only through tour/blog-scoped routes, not a direct `/media/...` path.
 - Admin tag deletion now performs an application-level cascade by removing tag associations from tours and blog posts before deleting the tag record.
 - Tour writes are now split: shared tour data is saved through base-tour endpoints, translations are saved through nested translation endpoints, and translation publish/unpublish is only available through dedicated translation routes.
 - Tour translations can now be permanently removed through a dedicated nested delete endpoint.

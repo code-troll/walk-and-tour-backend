@@ -39,17 +39,6 @@ export class UpdateBlogPostDto {
   slug?: string;
 
   @ApiPropertyOptional({
-    description: 'Updated hero media reference. Set `null` to clear the current value.',
-    example: 'media/blog/historic-center/hero.jpg',
-    maxLength: 255,
-    nullable: true,
-  })
-  @IsString()
-  @MaxLength(255)
-  @IsOptional()
-  heroMediaRef?: string | null;
-
-  @ApiPropertyOptional({
     description: 'Updated top-level publication state.',
     enum: ['draft', 'published'],
     example: 'published',

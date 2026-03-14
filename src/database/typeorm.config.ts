@@ -6,8 +6,10 @@ import { RoleEntity } from '../admin-users/role.entity';
 import { BlogPostTranslationEntity } from '../blog-posts/blog-post-translation.entity';
 import { BlogPostEntity } from '../blog-posts/blog-post.entity';
 import { LanguageEntity } from '../languages/language.entity';
+import { MediaAssetEntity } from '../media/media-asset.entity';
 import { NewsletterSubscriberEntity } from '../newsletter-subscribers/newsletter-subscriber.entity';
 import { TagEntity } from '../tags/tag.entity';
+import { TourMediaEntity } from '../tours/entities/tour-media.entity';
 import { TourItineraryStopEntity } from '../tours/entities/tour-itinerary-stop.entity';
 import { TourTranslationEntity } from '../tours/entities/tour-translation.entity';
 import { TourEntity } from '../tours/entities/tour.entity';
@@ -31,7 +33,9 @@ export function getTypeOrmOptions(): TypeOrmModuleOptions {
       LanguageEntity,
       NewsletterSubscriberEntity,
       TagEntity,
+      MediaAssetEntity,
       TourEntity,
+      TourMediaEntity,
       TourItineraryStopEntity,
       TourTranslationEntity,
     ],

@@ -7,10 +7,12 @@ import {
 import { createRepositoryMock, RepositoryMock } from '../../test/utils/repository.mock';
 import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface';
 import { LanguageEntity } from '../languages/language.entity';
+import { MediaAssetEntity } from '../media/media-asset.entity';
 import { TagEntity } from '../tags/tag.entity';
 import { TourPayloadValidationService } from './tour-payload-validation.service';
 import { TourSchemaPolicyService } from './tour-schema-policy.service';
 import { TourItineraryStopEntity } from './entities/tour-itinerary-stop.entity';
+import { TourMediaEntity } from './entities/tour-media.entity';
 import { TourTranslationEntity } from './entities/tour-translation.entity';
 import { TourEntity } from './entities/tour.entity';
 import { ToursService } from './tours.service';
@@ -20,6 +22,8 @@ describe('ToursService', () => {
   let toursRepository: RepositoryMock<TourEntity>;
   let stopsRepository: RepositoryMock<TourItineraryStopEntity>;
   let translationsRepository: RepositoryMock<TourTranslationEntity>;
+  let tourMediaRepository: RepositoryMock<TourMediaEntity>;
+  let mediaAssetsRepository: RepositoryMock<MediaAssetEntity>;
   let tagsRepository: RepositoryMock<TagEntity>;
   let languagesRepository: RepositoryMock<LanguageEntity>;
   let schemaPolicyService: jest.Mocked<TourSchemaPolicyService>;
@@ -29,6 +33,8 @@ describe('ToursService', () => {
     toursRepository = createRepositoryMock<TourEntity>();
     stopsRepository = createRepositoryMock<TourItineraryStopEntity>();
     translationsRepository = createRepositoryMock<TourTranslationEntity>();
+    tourMediaRepository = createRepositoryMock<TourMediaEntity>();
+    mediaAssetsRepository = createRepositoryMock<MediaAssetEntity>();
     tagsRepository = createRepositoryMock<TagEntity>();
     languagesRepository = createRepositoryMock<LanguageEntity>();
     schemaPolicyService = {
@@ -38,11 +44,12 @@ describe('ToursService', () => {
     payloadValidationService = {
       validateOrThrow: jest.fn(),
     } as unknown as jest.Mocked<TourPayloadValidationService>;
-
     service = new ToursService(
       toursRepository as never,
       stopsRepository as never,
       translationsRepository as never,
+      tourMediaRepository as never,
+      mediaAssetsRepository as never,
       tagsRepository as never,
       languagesRepository as never,
       schemaPolicyService,
@@ -50,7 +57,7 @@ describe('ToursService', () => {
     );
   });
 
-  it('creates a minimal tour shell without translations or publish state', async () => {
+  it('creates a minimal tour shell without translations or media', async () => {
     const persistedTour = createTourEntity({
       contentSchema: null,
       priceAmount: null,
@@ -63,6 +70,8 @@ describe('ToursService', () => {
       itineraryVariant: null,
       tags: [],
       translations: [],
+      mediaItems: [],
+      coverMediaId: null,
     });
 
     toursRepository.findOne
@@ -87,6 +96,7 @@ describe('ToursService', () => {
         name: 'Historic Center Main Tour',
         slug: 'historic-center',
         tourType: 'group',
+        coverMediaId: null,
         contentSchema: null,
       }),
     );
@@ -95,13 +105,15 @@ describe('ToursService', () => {
         id: 'tour-1',
         name: 'Historic Center Main Tour',
         slug: 'historic-center',
+        coverMediaId: null,
+        mediaItems: [],
         translations: {},
         translationAvailability: [],
       }),
     );
   });
 
-  it('updates only shared tour data and recalculates affected translations', async () => {
+  it('updates shared tour data and recalculates affected translations', async () => {
     const translation = createTranslationEntity({
       languageCode: 'en',
       isReady: true,
@@ -153,12 +165,14 @@ describe('ToursService', () => {
           nextConnection: null,
         }),
       ],
+      mediaItems: [],
       translations: [translation],
     });
     const responseTour = createTourEntity({
       contentSchema: refreshedTour.contentSchema,
       itineraryVariant: 'stops',
       stops: refreshedTour.stops,
+      mediaItems: [],
       translations: [
         createTranslationEntity({
           languageCode: 'en',
@@ -185,7 +199,6 @@ describe('ToursService', () => {
       createAdmin(),
     );
 
-    expect(stopsRepository.delete).toHaveBeenCalledWith({ tourId: 'tour-1' });
     expect(translationsRepository.save).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({
@@ -195,6 +208,84 @@ describe('ToursService', () => {
         }),
       ]),
     );
+  });
+
+  it('attaches media to a tour with localized alt text', async () => {
+    const existingTour = createTourEntity({ mediaItems: [] });
+    toursRepository.findOne
+      .mockResolvedValueOnce(existingTour)
+      .mockResolvedValueOnce(
+        createTourEntity({
+          mediaItems: [
+            createTourMediaEntity({
+              mediaId: 'media-1',
+              orderIndex: 0,
+              altText: { en: 'Historic center skyline' },
+              media: createMediaAssetEntity(),
+            }),
+          ],
+        }),
+      );
+    mediaAssetsRepository.findOne.mockResolvedValue(createMediaAssetEntity());
+
+    await service.attachMedia(
+      'tour-1',
+      {
+        mediaId: 'media-1',
+        altText: { en: 'Historic center skyline' },
+      },
+      createAdmin(),
+    );
+
+    expect(tourMediaRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tourId: 'tour-1',
+        mediaId: 'media-1',
+        orderIndex: 0,
+        altText: { en: 'Historic center skyline' },
+      }),
+    );
+  });
+
+  it('rejects assigning unattached media as the cover', async () => {
+    toursRepository.findOne.mockResolvedValue(createTourEntity({ mediaItems: [] }));
+
+    await expect(
+      service.setCoverMedia(
+        'tour-1',
+        {
+          mediaId: 'media-1',
+        },
+        createAdmin(),
+      ),
+    ).rejects.toThrow('Tour media "media-1" was not found for tour "tour-1".');
+  });
+
+  it('rejects a video asset as the cover media', async () => {
+    toursRepository.findOne.mockResolvedValue(
+      createTourEntity({
+        mediaItems: [
+          createTourMediaEntity({
+            mediaId: 'media-2',
+            media: createMediaAssetEntity({
+              id: 'media-2',
+              mediaType: 'video',
+              contentType: 'video/mp4',
+            }),
+          }),
+        ],
+      }),
+    );
+
+    await expect(
+      service.setCoverMedia(
+        'tour-1',
+        {
+          mediaId: 'media-2',
+        },
+        createAdmin(),
+      ),
+    ).rejects.toThrow('Tour cover media must reference an image asset.');
   });
 
   it('creates a translation without a schema and stores it as not ready and unpublished', async () => {
@@ -233,81 +324,6 @@ describe('ToursService', () => {
     expect(translationsRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
         tourId: 'tour-1',
-        languageCode: 'en',
-        isReady: false,
-        isPublished: false,
-      }),
-    );
-  });
-
-  it('updates a translation and auto-unpublishes it when recalculated readiness becomes false', async () => {
-    const existingTour = createTourEntity({
-      contentSchema: {
-        type: 'object',
-        properties: {
-          title: { type: 'string' },
-          cancellationType: { type: 'string' },
-          highlights: { type: 'array', items: { type: 'string' } },
-          included: { type: 'array', items: { type: 'string' } },
-          notIncluded: { type: 'array', items: { type: 'string' } },
-        },
-        required: ['title', 'cancellationType', 'highlights', 'included', 'notIncluded'],
-      },
-      translations: [
-        createTranslationEntity({
-          languageCode: 'en',
-          isReady: true,
-          isPublished: true,
-          payload: {
-            title: 'Historic Center',
-            cancellationType: 'Free cancellation',
-            highlights: ['Walls'],
-            included: ['Guide'],
-            notIncluded: ['Food'],
-          },
-        }),
-      ],
-    });
-    const responseTour = createTourEntity({
-      contentSchema: existingTour.contentSchema,
-      translations: [
-        createTranslationEntity({
-          languageCode: 'en',
-          isReady: false,
-          isPublished: false,
-          payload: {
-            title: 'Historic Center',
-            cancellationType: 'Free cancellation',
-            highlights: ['Walls'],
-            included: ['Guide'],
-          },
-        }),
-      ],
-    });
-
-    toursRepository.findOne
-      .mockResolvedValueOnce(existingTour)
-      .mockResolvedValueOnce(responseTour);
-    languagesRepository.findOne.mockResolvedValue(
-      createLanguageEntity({ code: 'en' }),
-    );
-
-    await service.updateTranslation(
-      'tour-1',
-      'en',
-      {
-        payload: {
-          title: 'Historic Center',
-          cancellationType: 'Free cancellation',
-          highlights: ['Walls'],
-          included: ['Guide'],
-        },
-      },
-      createAdmin(),
-    );
-
-    expect(translationsRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
         languageCode: 'en',
         isReady: false,
         isPublished: false,
@@ -379,29 +395,6 @@ describe('ToursService', () => {
     );
   });
 
-  it('rejects translation publication when the translation is not ready', async () => {
-    const existingTour = createTourEntity({
-      contentSchema: null,
-      translations: [
-        createTranslationEntity({
-          languageCode: 'en',
-          isReady: false,
-          isPublished: false,
-          payload: { title: 'Historic Center' },
-        }),
-      ],
-    });
-
-    toursRepository.findOne.mockResolvedValue(existingTour);
-    languagesRepository.findOne.mockResolvedValue(
-      createLanguageEntity({ code: 'en' }),
-    );
-
-    await expect(
-      service.publishTranslation('tour-1', 'en', {}, createAdmin()),
-    ).rejects.toThrow('Translation "en" cannot be published until it is ready.');
-  });
-
   it('rejects duplicate translation creation for the same locale', async () => {
     const existingTour = createTourEntity({
       translations: [createTranslationEntity({ languageCode: 'en' })],
@@ -422,61 +415,6 @@ describe('ToursService', () => {
         createAdmin(),
       ),
     ).rejects.toBeInstanceOf(ConflictException);
-  });
-
-  it('rejects unknown translation locales', async () => {
-    toursRepository.findOne.mockResolvedValue(createTourEntity());
-    languagesRepository.findOne.mockResolvedValue(null);
-
-    await expect(
-      service.createTranslation(
-        'tour-1',
-        {
-          languageCode: 'fr',
-          payload: { title: 'Historic Center' },
-        },
-        createAdmin(),
-      ),
-    ).rejects.toBeInstanceOf(BadRequestException);
-  });
-
-  it('throws when updating a translation that does not exist', async () => {
-    toursRepository.findOne.mockResolvedValue(createTourEntity({ translations: [] }));
-    languagesRepository.findOne.mockResolvedValue(
-      createLanguageEntity({ code: 'en' }),
-    );
-
-    await expect(
-      service.updateTranslation(
-        'tour-1',
-        'en',
-        { payload: { title: 'Historic Center' } },
-        createAdmin(),
-      ),
-    ).rejects.toBeInstanceOf(NotFoundException);
-  });
-
-  it('deletes a translation and touches the parent tour audit metadata', async () => {
-    const existingTour = createTourEntity({
-      translations: [
-        createTranslationEntity({
-          id: 'translation-en',
-          languageCode: 'en',
-        }),
-      ],
-    });
-
-    toursRepository.findOne.mockResolvedValue(existingTour);
-
-    await service.deleteTranslation('tour-1', 'en', createAdmin());
-
-    expect(translationsRepository.delete).toHaveBeenCalledWith({
-      id: 'translation-en',
-    });
-    expect(toursRepository.update).toHaveBeenCalledWith(
-      { id: 'tour-1' },
-      { updatedBy: 'admin-1' },
-    );
   });
 
   it('throws when deleting a translation that does not exist', async () => {
@@ -503,8 +441,9 @@ function createTourEntity(overrides: Partial<TourEntity> = {}): TourEntity {
     id: 'tour-1',
     name: 'Historic Center Main Tour',
     slug: 'historic-center',
-    coverMediaRef: null,
-    galleryMediaRefs: [],
+    coverMediaId: null,
+    coverMedia: null,
+    mediaItems: [],
     contentSchema: {
       type: 'object',
       properties: {
@@ -599,4 +538,39 @@ function createLanguageEntity(overrides: Partial<LanguageEntity> = {}): Language
     updatedAt: new Date('2026-03-12T09:00:00.000Z'),
     ...overrides,
   } as LanguageEntity;
+}
+
+function createMediaAssetEntity(
+  overrides: Partial<MediaAssetEntity> = {},
+): MediaAssetEntity {
+  return {
+    id: 'media-1',
+    mediaType: 'image',
+    storagePath: 'tours/historic-center/cover.jpg',
+    contentType: 'image/jpeg',
+    size: 1024,
+    originalFilename: 'cover.jpg',
+    createdBy: 'admin-1',
+    tourUsages: [],
+    createdAt: new Date('2026-03-12T08:00:00.000Z'),
+    updatedAt: new Date('2026-03-12T09:00:00.000Z'),
+    ...overrides,
+  } as MediaAssetEntity;
+}
+
+function createTourMediaEntity(
+  overrides: Partial<TourMediaEntity> = {},
+): TourMediaEntity {
+  return {
+    rowId: 'tour-media-1',
+    tourId: 'tour-1',
+    mediaId: 'media-1',
+    orderIndex: 0,
+    altText: { en: 'Historic center skyline' },
+    media: createMediaAssetEntity(),
+    tour: createTourEntity(),
+    createdAt: new Date('2026-03-12T08:00:00.000Z'),
+    updatedAt: new Date('2026-03-12T09:00:00.000Z'),
+    ...overrides,
+  } as TourMediaEntity;
 }

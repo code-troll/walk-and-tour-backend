@@ -31,8 +31,17 @@ import { CurrentAdmin } from '../admin-auth/decorators/current-admin.decorator';
 import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
 import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
-import { ErrorResponseDto, TourAdminResponseDto } from '../swagger/swagger.models';
+import {
+  ErrorResponseDto,
+  TourAdminResponseDto,
+  TourMediaListResponseDto,
+} from '../swagger/swagger.models';
 import { CreateTourDto } from './dto/create-tour.dto';
+import {
+  AttachTourMediaDto,
+  SetTourCoverMediaDto,
+  UpdateTourMediaDto,
+} from './dto/tour-media.dto';
 import {
   CreateTourTranslationDto,
   PublishTourTranslationDto,
@@ -133,6 +142,167 @@ export class ToursController {
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     return this.toursService.update(id, dto, admin);
+  }
+
+  @ApiOperation({
+    summary: 'List attached tour media',
+    description: 'Returns only the media assets currently attached to the tour.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Tour UUID.',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description: 'Attached tour media items.',
+    type: TourMediaListResponseDto,
+  })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Get(':id/media')
+  listMedia(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.toursService.listMedia(id);
+  }
+
+  @ApiOperation({
+    summary: 'Attach media to a tour',
+    description: 'Attaches one existing media asset to the tour with optional localized alt text and order.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Tour UUID.',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description: 'Updated admin tour record.',
+    type: TourAdminResponseDto,
+  })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiConflictResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post(':id/media')
+  attachMedia(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: AttachTourMediaDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.toursService.attachMedia(id, dto, admin);
+  }
+
+  @ApiOperation({
+    summary: 'Update tour media metadata',
+    description: 'Updates only the per-tour metadata for one attached media asset.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Tour UUID.',
+    format: 'uuid',
+  })
+  @ApiParam({
+    name: 'mediaId',
+    description: 'Attached media asset UUID.',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description: 'Updated admin tour record.',
+    type: TourAdminResponseDto,
+  })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiConflictResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Patch(':id/media/:mediaId')
+  updateMedia(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('mediaId', new ParseUUIDPipe()) mediaId: string,
+    @Body() dto: UpdateTourMediaDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.toursService.updateMedia(id, mediaId, dto, admin);
+  }
+
+  @ApiOperation({
+    summary: 'Detach media from a tour',
+    description: 'Removes one media attachment from the tour and clears the cover if necessary.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Tour UUID.',
+    format: 'uuid',
+  })
+  @ApiParam({
+    name: 'mediaId',
+    description: 'Attached media asset UUID.',
+    format: 'uuid',
+  })
+  @ApiNoContentResponse({
+    description: 'Media detached successfully.',
+  })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':id/media/:mediaId')
+  async detachMedia(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('mediaId', new ParseUUIDPipe()) mediaId: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    await this.toursService.detachMedia(id, mediaId, admin);
+  }
+
+  @ApiOperation({
+    summary: 'Set tour cover media',
+    description: 'Marks one attached image asset as the tour cover.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Tour UUID.',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description: 'Updated admin tour record.',
+    type: TourAdminResponseDto,
+  })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post(':id/cover-media')
+  setCoverMedia(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: SetTourCoverMediaDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.toursService.setCoverMedia(id, dto, admin);
+  }
+
+  @ApiOperation({
+    summary: 'Clear tour cover media',
+    description: 'Removes the current cover media assignment from the tour.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Tour UUID.',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description: 'Updated admin tour record.',
+    type: TourAdminResponseDto,
+  })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Delete(':id/cover-media')
+  clearCoverMedia(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.toursService.clearCoverMedia(id, admin);
   }
 
   @ApiOperation({

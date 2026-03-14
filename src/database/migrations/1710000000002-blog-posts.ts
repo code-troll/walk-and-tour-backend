@@ -10,7 +10,7 @@ export class BlogPosts1710000000002 implements MigrationInterface {
                 "id" uuid NOT NULL DEFAULT gen_random_uuid(),
                 "slug"               character varying(150) NOT NULL,
                 "name"               character varying(255) NOT NULL,
-                "hero_media_ref"     character varying(255),
+                "hero_media_id"      uuid,
                 "publication_status" character varying(20)  NOT NULL,
                 "created_by" uuid,
                 "updated_by" uuid,
@@ -50,6 +50,11 @@ export class BlogPosts1710000000002 implements MigrationInterface {
             )
         `);
         await queryRunner.query(`
+            ALTER TABLE "blog_posts"
+                ADD CONSTRAINT "FK_blog_posts_hero_media"
+                    FOREIGN KEY ("hero_media_id") REFERENCES "media_assets" ("id") ON DELETE RESTRICT
+        `);
+        await queryRunner.query(`
             ALTER TABLE "blog_post_translations"
                 ADD CONSTRAINT "FK_blog_post_translations_blog_post"
                     FOREIGN KEY ("blog_post_id") REFERENCES "blog_posts" ("id") ON DELETE CASCADE
@@ -72,6 +77,10 @@ export class BlogPosts1710000000002 implements MigrationInterface {
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(
+            `ALTER TABLE "blog_posts"
+                DROP CONSTRAINT "FK_blog_posts_hero_media"`,
+        );
         await queryRunner.query(
             `ALTER TABLE "blog_post_tags"
                 DROP CONSTRAINT "FK_blog_post_tags_tag"`,

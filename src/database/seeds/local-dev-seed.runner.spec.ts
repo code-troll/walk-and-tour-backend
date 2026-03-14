@@ -11,15 +11,37 @@ describe('LocalDevSeedRunner', () => {
         auth0UserId: null,
       }),
     };
+    const mediaAssetsRepository = {
+      save: jest.fn(async (values: Array<Record<string, unknown>>) =>
+        values.map((value, index) => ({
+          id: `media-${index + 1}`,
+          mediaType: 'image' as const,
+          storagePath: `seeded-${index + 1}.jpg`,
+          contentType: 'image/jpeg',
+          size: 1024,
+          originalFilename: `seeded-${index + 1}.jpg`,
+          createdBy: 'admin-1',
+          tourUsages: [],
+          createdAt: new Date('2026-03-14T10:00:00.000Z'),
+          updatedAt: new Date('2026-03-14T10:00:00.000Z'),
+          ...value,
+        })),
+      ),
+    };
     const newsletterSubscribersRepository = { save: jest.fn() };
     const tagsService = { create: jest.fn() };
     const toursService = {
       create: jest.fn().mockResolvedValue({ id: 'tour-1' }),
       update: jest.fn(),
+      attachMedia: jest.fn(),
       createTranslation: jest.fn(),
       publishTranslation: jest.fn(),
+      setCoverMedia: jest.fn(),
     };
-    const blogPostsService = { create: jest.fn() };
+    const blogPostsService = {
+      create: jest.fn().mockResolvedValue({ id: 'blog-1' }),
+      setHeroMedia: jest.fn(),
+    };
     const newsletterTokenService = {
       hashToken: jest.fn((token: string) => `hash:${token}`),
     };
@@ -28,6 +50,7 @@ describe('LocalDevSeedRunner', () => {
       dataSource,
       languagesRepository,
       adminUsersRepository,
+      mediaAssetsRepository,
       newsletterSubscribersRepository,
       tagsService,
       toursService,
@@ -55,6 +78,8 @@ describe('LocalDevSeedRunner', () => {
     expect(tagsService.create).toHaveBeenCalledTimes(constants.tags.length);
     expect(toursService.create).toHaveBeenCalledTimes(constants.tours.length);
     expect(toursService.update).toHaveBeenCalledTimes(constants.tours.length);
+    expect(toursService.attachMedia).toHaveBeenCalled();
+    expect(toursService.setCoverMedia).toHaveBeenCalled();
     expect(toursService.createTranslation).toHaveBeenCalledTimes(
       constants.tours.flatMap((tour) => tour.translations).length,
     );
@@ -64,6 +89,7 @@ describe('LocalDevSeedRunner', () => {
         .filter((translation) => translation.isPublished).length,
     );
     expect(blogPostsService.create).toHaveBeenCalledTimes(constants.blogPosts.length);
+    expect(blogPostsService.setHeroMedia).toHaveBeenCalled();
     expect(newsletterSubscribersRepository.save).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({
@@ -103,18 +129,41 @@ describe('LocalDevSeedRunner', () => {
         auth0UserId: 'google-oauth2|115126832227190392506',
       }),
     };
+    const mediaAssetsRepository = {
+      save: jest.fn(async (values: Array<Record<string, unknown>>) =>
+        values.map((value, index) => ({
+          id: `media-${index + 1}`,
+          mediaType: 'image' as const,
+          storagePath: `seeded-${index + 1}.jpg`,
+          contentType: 'image/jpeg',
+          size: 1024,
+          originalFilename: `seeded-${index + 1}.jpg`,
+          createdBy: 'admin-1',
+          tourUsages: [],
+          createdAt: new Date('2026-03-14T10:00:00.000Z'),
+          updatedAt: new Date('2026-03-14T10:00:00.000Z'),
+          ...value,
+        })),
+      ),
+    };
     const toursService = {
       create: jest.fn().mockResolvedValue({ id: 'tour-1' }),
       update: jest.fn(),
+      attachMedia: jest.fn(),
       createTranslation: jest.fn(),
       publishTranslation: jest.fn(),
+      setCoverMedia: jest.fn(),
     };
-    const blogPostsService = { create: jest.fn() };
+    const blogPostsService = {
+      create: jest.fn().mockResolvedValue({ id: 'blog-1' }),
+      setHeroMedia: jest.fn(),
+    };
 
     const runner = new LocalDevSeedRunner({
       dataSource: { query: jest.fn() },
       languagesRepository: { save: jest.fn() },
       adminUsersRepository,
+      mediaAssetsRepository,
       newsletterSubscribersRepository: { save: jest.fn() },
       tagsService: { create: jest.fn() },
       toursService,
@@ -148,6 +197,24 @@ describe('LocalDevSeedRunner', () => {
         id: '11111111-1111-1111-1111-111111111111',
       }),
     );
+    expect(toursService.attachMedia).toHaveBeenCalledWith(
+      'tour-1',
+      expect.objectContaining({
+        mediaId: expect.any(String),
+      }),
+      expect.objectContaining({
+        id: '11111111-1111-1111-1111-111111111111',
+      }),
+    );
+    expect(toursService.setCoverMedia).toHaveBeenCalledWith(
+      'tour-1',
+      {
+        mediaId: expect.any(String),
+      },
+      expect.objectContaining({
+        id: '11111111-1111-1111-1111-111111111111',
+      }),
+    );
     expect(toursService.createTranslation).toHaveBeenCalledWith(
       'tour-1',
       expect.objectContaining({
@@ -176,6 +243,15 @@ describe('LocalDevSeedRunner', () => {
         name: 'Barcelona Historic Center Guide Article',
         slug: 'barcelona-historic-center-guide',
       }),
+      expect.objectContaining({
+        id: '11111111-1111-1111-1111-111111111111',
+      }),
+    );
+    expect(blogPostsService.setHeroMedia).toHaveBeenCalledWith(
+      'blog-1',
+      {
+        mediaId: expect.any(String),
+      },
       expect.objectContaining({
         id: '11111111-1111-1111-1111-111111111111',
       }),

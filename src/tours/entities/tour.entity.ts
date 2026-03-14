@@ -2,15 +2,19 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
+import { MediaAssetEntity } from '../../media/media-asset.entity';
 import { TagEntity } from '../../tags/tag.entity';
+import { TourMediaEntity } from './tour-media.entity';
 import { TourItineraryStopEntity } from './tour-itinerary-stop.entity';
 import { TourTranslationEntity } from './tour-translation.entity';
 
@@ -26,11 +30,12 @@ export class TourEntity {
   @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Column({ name: 'cover_media_ref', type: 'jsonb', nullable: true })
-  coverMediaRef!: Record<string, unknown> | null;
+  @Column({ name: 'cover_media_id', type: 'uuid', nullable: true })
+  coverMediaId!: string | null;
 
-  @Column({ name: 'gallery_media_refs', type: 'jsonb', default: [] })
-  galleryMediaRefs!: Record<string, unknown>[];
+  @ManyToOne(() => MediaAssetEntity, { nullable: true })
+  @JoinColumn({ name: 'cover_media_id' })
+  coverMedia!: MediaAssetEntity | null;
 
   @Column({ name: 'content_schema', type: 'jsonb', nullable: true })
   contentSchema!: Record<string, unknown> | null;
@@ -85,6 +90,11 @@ export class TourEntity {
     cascade: false,
   })
   translations!: TourTranslationEntity[];
+
+  @OneToMany(() => TourMediaEntity, (tourMedia) => tourMedia.tour, {
+    cascade: false,
+  })
+  mediaItems!: TourMediaEntity[];
 
   @Column({ name: 'created_by', type: 'uuid', nullable: true })
   createdBy!: string | null;

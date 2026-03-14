@@ -32,7 +32,7 @@ Implementation tracking lives in `docs/implementation-status.md`.
 - `src/tours`: admin and public tour APIs with schema-driven localized content
 - `src/blog-posts`: admin and public blog APIs
 - `src/newsletter-subscribers`: subscribe, confirm, unsubscribe, admin list/detail/export
-- `src/admin-media`: admin image upload API backed by the shared storage abstraction
+- `src/admin-media`: admin media asset API backed by the shared storage abstraction
 - `src/providers/email`: console and Resend-backed email delivery adapters
 - `src/storage`: local-filesystem and Supabase-backed storage adapters
 
@@ -114,7 +114,22 @@ Tour admin write flow:
 
 Admin media upload:
 
-- `POST /api/admin/media/upload`
+- `GET /api/admin/media`
+- `GET /api/admin/media/:id`
+- `GET /api/admin/media/:id/content`
+- `POST /api/admin/media`
+- `DELETE /api/admin/media/:id`
+- `GET /api/admin/tours/:id/media`
+- `POST /api/admin/tours/:id/media`
+- `PATCH /api/admin/tours/:id/media/:mediaId`
+- `DELETE /api/admin/tours/:id/media/:mediaId`
+- `POST /api/admin/tours/:id/cover-media`
+- `DELETE /api/admin/tours/:id/cover-media`
+- `GET /api/admin/blog-posts/:id/media`
+- `POST /api/admin/blog-posts/:id/hero-media`
+- `DELETE /api/admin/blog-posts/:id/hero-media`
+- `GET /api/public/tours/:slug/media/:mediaId`
+- `GET /api/public/blog-posts/:slug/media/:mediaId`
 
 ## Auth0 Setup
 
@@ -396,8 +411,10 @@ Testing notes and the current coverage scope live in `docs/testing.md`.
 - Tour localized content is schema-driven. Each tour stores a JSON Schema that validates localized translation payloads.
 - Tours and blog posts also carry a shared non-localized `name` field for admin-side identification; localized public-facing titles remain on translations.
 - Tours store `cancellationType` as localized free-text policy text inside each translation payload rather than on the shared tour record.
-- Tour media assets can optionally include localized alt text maps on `coverMediaRef` and each `galleryMediaRefs` entry.
-- Admin image uploads are exposed through `POST /api/admin/media/upload`; use the returned `ref` in tour media assets.
+- Tours no longer embed raw media refs. They attach reusable uploaded media assets through dedicated nested admin endpoints, keep per-tour localized alt text on the attachment row, and assign the cover separately.
+- Blog posts also use the shared media library, but hero media is now attached and cleared through dedicated blog media endpoints rather than core blog create/update payloads.
+- Media bytes are no longer assumed to be reachable at `/media/...`. Admin clients fetch them through `GET /api/admin/media/:id/content`, while public clients fetch them only through tour/blog-scoped media routes.
+- Admin media assets can be browsed through `GET /api/admin/media` and `GET /api/admin/media/:id`, created through `POST /api/admin/media`, and deleted through `DELETE /api/admin/media/:id`.
 - Tags can be deleted through the admin API; deletion removes the tag from tours and blog posts before deleting the shared tag record.
 - Public tour visibility is strict: no locale fallback, no unpublished tours, no unpublished translations, and no invalid localized payloads.
 - Blog posts use shared metadata plus per-locale HTML translations.

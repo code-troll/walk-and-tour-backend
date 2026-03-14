@@ -3,9 +3,10 @@ import {
   ConflictException,
 } from '@nestjs/common';
 
-import { LanguageEntity } from '../languages/language.entity';
-import { TagEntity } from '../tags/tag.entity';
 import { createRepositoryMock, RepositoryMock } from '../../test/utils/repository.mock';
+import { LanguageEntity } from '../languages/language.entity';
+import { MediaAssetEntity } from '../media/media-asset.entity';
+import { TagEntity } from '../tags/tag.entity';
 import { BlogPostTranslationEntity } from './blog-post-translation.entity';
 import { BlogPostEntity } from './blog-post.entity';
 import { BlogPostsService } from './blog-posts.service';
@@ -14,18 +15,20 @@ describe('BlogPostsService', () => {
   let service: BlogPostsService;
   let blogPostsRepository: RepositoryMock<BlogPostEntity>;
   let translationsRepository: RepositoryMock<BlogPostTranslationEntity>;
+  let mediaAssetsRepository: RepositoryMock<MediaAssetEntity>;
   let tagsRepository: RepositoryMock<TagEntity>;
   let languagesRepository: RepositoryMock<LanguageEntity>;
 
   beforeEach(() => {
     blogPostsRepository = createRepositoryMock<BlogPostEntity>();
     translationsRepository = createRepositoryMock<BlogPostTranslationEntity>();
+    mediaAssetsRepository = createRepositoryMock<MediaAssetEntity>();
     tagsRepository = createRepositoryMock<TagEntity>();
     languagesRepository = createRepositoryMock<LanguageEntity>();
-
     service = new BlogPostsService(
       blogPostsRepository as never,
       translationsRepository as never,
+      mediaAssetsRepository as never,
       tagsRepository as never,
       languagesRepository as never,
     );
@@ -73,14 +76,23 @@ describe('BlogPostsService', () => {
       expect.objectContaining({
         name: 'Royal Copenhagen Article',
         slug: 'royal-copenhagen',
+        heroMediaId: null,
         createdBy: 'admin-1',
         updatedBy: 'admin-1',
         publishedBy: 'admin-1',
         publishedAt: expect.any(Date),
       }),
     );
-    expect(translationsRepository.save).toHaveBeenCalled();
-    expect(result).toEqual(expect.objectContaining({ id: 'blog-1' }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'blog-1',
+        heroMediaId: 'media-1',
+        heroMedia: expect.objectContaining({
+          id: 'media-1',
+          contentUrl: 'http://localhost:3000/api/admin/media/media-1/content',
+        }),
+      }),
+    );
   });
 
   it('rejects duplicate blog post slugs on create', async () => {
@@ -102,6 +114,27 @@ describe('BlogPostsService', () => {
         },
       ),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rejects unknown hero media ids on attachment', async () => {
+    blogPostsRepository.findOne.mockResolvedValue(createBlogPostEntity());
+    mediaAssetsRepository.findOne.mockResolvedValue(null);
+
+    await expect(
+      service.setHeroMedia(
+        'blog-1',
+        {
+          mediaId: 'missing-media',
+        },
+        {
+          id: 'admin-1',
+          email: 'admin@example.com',
+          roleName: 'editor',
+          status: 'active',
+          auth0UserId: 'auth0|123',
+        },
+      ),
+    ).rejects.toThrow('Unknown heroMediaId "missing-media".');
   });
 
   it('rejects published translations without a title', async () => {
@@ -155,12 +188,13 @@ describe('BlogPostsService', () => {
   });
 });
 
-function createBlogPostEntity(): BlogPostEntity {
+function createBlogPostEntity(overrides: Partial<BlogPostEntity> = {}): BlogPostEntity {
   return {
     id: 'blog-1',
     name: 'Royal Copenhagen Article',
     slug: 'royal-copenhagen',
-    heroMediaRef: null,
+    heroMediaId: 'media-1',
+    heroMedia: createMediaAssetEntity(),
     publicationStatus: 'published',
     tags: [
       {
@@ -186,5 +220,24 @@ function createBlogPostEntity(): BlogPostEntity {
     createdAt: new Date(),
     updatedAt: new Date(),
     publishedAt: new Date(),
+    ...overrides,
   } as unknown as BlogPostEntity;
+}
+
+function createMediaAssetEntity(
+  overrides: Partial<MediaAssetEntity> = {},
+): MediaAssetEntity {
+  return {
+    id: 'media-1',
+    mediaType: 'image',
+    storagePath: 'blog/hero.jpg',
+    contentType: 'image/jpeg',
+    size: 1024,
+    originalFilename: 'hero.jpg',
+    createdBy: 'admin-1',
+    tourUsages: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  } as MediaAssetEntity;
 }

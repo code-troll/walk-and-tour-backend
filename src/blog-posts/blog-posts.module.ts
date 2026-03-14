@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { LanguageEntity } from '../languages/language.entity';
+import { MediaAssetEntity } from '../media/media-asset.entity';
+import { StorageModule } from '../storage/storage.module';
 import { TagEntity } from '../tags/tag.entity';
 import { BlogPostTranslationEntity } from './blog-post-translation.entity';
 import { BlogPostEntity } from './blog-post.entity';
@@ -11,9 +13,11 @@ import { PublicBlogPostsService } from './public-blog-posts.service';
 
 @Module({
   imports: [
+    StorageModule,
     TypeOrmModule.forFeature([
       BlogPostEntity,
       BlogPostTranslationEntity,
+      MediaAssetEntity,
       TagEntity,
       LanguageEntity,
     ]),

@@ -2,14 +2,17 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
+import { MediaAssetEntity } from '../media/media-asset.entity';
 import { TagEntity } from '../tags/tag.entity';
 import { BlogPostTranslationEntity } from './blog-post-translation.entity';
 
@@ -25,8 +28,12 @@ export class BlogPostEntity {
   @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Column({ name: 'hero_media_ref', type: 'varchar', length: 255, nullable: true })
-  heroMediaRef!: string | null;
+  @Column({ name: 'hero_media_id', type: 'uuid', nullable: true })
+  heroMediaId!: string | null;
+
+  @ManyToOne(() => MediaAssetEntity, { nullable: true })
+  @JoinColumn({ name: 'hero_media_id' })
+  heroMedia!: MediaAssetEntity | null;
 
   @Column({ name: 'publication_status', type: 'varchar', length: 20 })
   publicationStatus!: string;

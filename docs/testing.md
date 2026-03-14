@@ -25,7 +25,7 @@ The current suite focuses on branch-heavy and contract-heavy logic:
 - tour service creation and shared-tour update flows, including stop-based itinerary replacement, split translation create/update/publish flows, automatic translation readiness recalculation, and required localized list validation for `highlights`, `included`, and `notIncluded`
 - translation deletion behavior and controller delegation for nested tour-translation routes
 - localized tour cancellation policy validation and response mapping
-- tour media asset validation, including localized alt-text maps
+- tour media attachment validation, including localized alt-text maps, cover image rules, and referenced media asset deletion blocking
 - admin media upload controller/service behavior and storage delegation
 - shared non-localized `name` handling for tours and blog posts in admin create/update flows
 - admin and public tour response shapes for descriptive and stop-based itineraries

@@ -30,13 +30,14 @@
     "slug": {
       "type": "string"
     },
-    "coverMediaRef": {
-      "$ref": "#/$defs/MediaAsset"
+    "coverMediaId": {
+      "type": "string",
+      "format": "uuid"
     },
-    "galleryMediaRefs": {
+    "mediaItems": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/MediaAsset"
+        "$ref": "#/$defs/TourMediaItem"
       }
     },
     "price": {
@@ -175,16 +176,21 @@
         }
       }
     },
-    "MediaAsset": {
+    "TourMediaItem": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "ref"
+        "mediaId",
+        "orderIndex"
       ],
       "properties": {
-        "ref": {
+        "mediaId": {
           "type": "string",
-          "maxLength": 255
+          "format": "uuid"
+        },
+        "orderIndex": {
+          "type": "integer",
+          "minimum": 0
         },
         "altText": {
           "type": "object",

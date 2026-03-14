@@ -447,34 +447,31 @@ export class PublicPointResponseDto {
   localized!: Record<string, unknown> | null;
 }
 
-export class TourMediaAssetResponseDto {
+export class MediaAssetResponseDto {
   @ApiProperty({
-    description: 'Media reference path.',
+    description: 'Media asset UUID.',
+    format: 'uuid',
+  })
+  id!: string;
+
+  @ApiProperty({
+    description: 'Stored media type.',
+    enum: ['image', 'video'],
+    example: 'image',
+  })
+  mediaType!: 'image' | 'video';
+
+  @ApiProperty({
+    description: 'Media storage path.',
     example: 'media/tours/historic-center/cover.jpg',
   })
-  ref!: string;
+  storagePath!: string;
 
-  @ApiPropertyOptional({
-    description: 'Optional localized alt text keyed by locale code.',
-    type: 'object',
-    additionalProperties: {
-      type: 'string',
-    },
-    nullable: true,
-    example: {
-      en: 'View of the cathedral facade',
-      es: 'Vista de la fachada de la catedral',
-    },
-  })
-  altText!: Record<string, string> | null;
-}
-
-export class UploadedMediaResponseDto extends TourMediaAssetResponseDto {
   @ApiProperty({
-    description: 'Public URL resolved by the configured storage driver.',
-    example: 'http://api.dev.walkandtour.dk:3000/media/tours/historic-center/uuid-cover.jpg',
+    description: 'API URL used to fetch the stored media bytes.',
+    example: 'http://api.dev.walkandtour.dk:3000/api/admin/media/uuid/content',
   })
-  publicUrl!: string;
+  contentUrl!: string;
 
   @ApiProperty({
     description: 'Detected content type of the uploaded object.',
@@ -487,6 +484,100 @@ export class UploadedMediaResponseDto extends TourMediaAssetResponseDto {
     example: 248193,
   })
   size!: number;
+
+  @ApiProperty({
+    description: 'Original uploaded filename.',
+    example: 'cover.jpg',
+  })
+  originalFilename!: string;
+}
+
+export class UploadedMediaResponseDto extends MediaAssetResponseDto {}
+
+export class AdminMediaAssetResponseDto extends MediaAssetResponseDto {
+  @ApiProperty({
+    description: 'Creation timestamp of the media asset record.',
+    type: String,
+    format: 'date-time',
+  })
+  createdAt!: string;
+
+  @ApiProperty({
+    description: 'Last update timestamp of the media asset record.',
+    type: String,
+    format: 'date-time',
+  })
+  updatedAt!: string;
+}
+
+export class AdminMediaAssetListResponseDto {
+  @ApiProperty({
+    description: 'Paginated media asset results.',
+    type: () => [AdminMediaAssetResponseDto],
+  })
+  items!: AdminMediaAssetResponseDto[];
+
+  @ApiProperty({
+    description: 'Current page number.',
+    example: 1,
+  })
+  page!: number;
+
+  @ApiProperty({
+    description: 'Current page size.',
+    example: 20,
+  })
+  limit!: number;
+
+  @ApiProperty({
+    description: 'Total matching media assets.',
+    example: 42,
+  })
+  total!: number;
+}
+
+export class BlogMediaListResponseDto {
+  @ApiProperty({
+    description: 'Attached blog media assets.',
+    type: () => [MediaAssetResponseDto],
+  })
+  items!: MediaAssetResponseDto[];
+}
+
+export class TourMediaItemResponseDto extends MediaAssetResponseDto {
+  @ApiProperty({
+    description: 'Attached media asset UUID.',
+    format: 'uuid',
+  })
+  mediaId!: string;
+
+  @ApiPropertyOptional({
+    description: 'Optional localized alt text keyed by locale code for this tour usage.',
+    type: 'object',
+    additionalProperties: {
+      type: 'string',
+    },
+    nullable: true,
+    example: {
+      en: 'View of the cathedral facade',
+      es: 'Vista de la fachada de la catedral',
+    },
+  })
+  altText!: Record<string, string> | null;
+
+  @ApiProperty({
+    description: 'Display order among the attached media items.',
+    example: 0,
+  })
+  orderIndex!: number;
+}
+
+export class TourMediaListResponseDto {
+  @ApiProperty({
+    description: 'Attached tour media assets in display order.',
+    type: () => [TourMediaItemResponseDto],
+  })
+  items!: TourMediaItemResponseDto[];
 }
 
 export class PriceResponseDto {
@@ -773,17 +864,17 @@ export class TourAdminResponseDto {
   slug!: string;
 
   @ApiPropertyOptional({
-    description: 'Optional cover media asset.',
-    type: () => TourMediaAssetResponseDto,
+    description: 'Attached image asset UUID used as the tour cover.',
+    format: 'uuid',
     nullable: true,
   })
-  coverMediaRef!: TourMediaAssetResponseDto | null;
+  coverMediaId!: string | null;
 
   @ApiProperty({
-    description: 'Additional gallery media assets.',
-    type: () => [TourMediaAssetResponseDto],
+    description: 'Ordered attached media items with per-tour localized alt text.',
+    type: () => [TourMediaItemResponseDto],
   })
-  galleryMediaRefs!: TourMediaAssetResponseDto[];
+  mediaItems!: TourMediaItemResponseDto[];
 
   @ApiPropertyOptional({
     description: 'Shared JSON Schema that localized translation payloads must satisfy.',
@@ -895,17 +986,17 @@ export class PublicTourResponseDto {
   slug!: string;
 
   @ApiPropertyOptional({
-    description: 'Optional cover media asset.',
-    type: () => TourMediaAssetResponseDto,
+    description: 'Optional cover media item selected from the attached assets.',
+    type: () => TourMediaItemResponseDto,
     nullable: true,
   })
-  coverMediaRef!: TourMediaAssetResponseDto | null;
+  coverMedia!: TourMediaItemResponseDto | null;
 
   @ApiProperty({
-    description: 'Public gallery media assets.',
-    type: () => [TourMediaAssetResponseDto],
+    description: 'Public gallery media items excluding the selected cover.',
+    type: () => [TourMediaItemResponseDto],
   })
-  galleryMediaRefs!: TourMediaAssetResponseDto[];
+  galleryMedia!: TourMediaItemResponseDto[];
 
   @ApiPropertyOptional({
     description: 'Fixed price data. `null` for tip-based tours.',
@@ -1054,10 +1145,18 @@ export class BlogAdminResponseDto {
   slug!: string;
 
   @ApiPropertyOptional({
-    description: 'Optional hero media reference.',
+    description: 'Optional hero media asset UUID.',
+    format: 'uuid',
     nullable: true,
   })
-  heroMediaRef!: string | null;
+  heroMediaId!: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Resolved hero media asset.',
+    type: () => MediaAssetResponseDto,
+    nullable: true,
+  })
+  heroMedia!: MediaAssetResponseDto | null;
 
   @ApiProperty({
     description: 'Blog post publication state.',
@@ -1154,10 +1253,11 @@ export class PublicBlogResponseDto {
   slug!: string;
 
   @ApiPropertyOptional({
-    description: 'Optional hero media reference.',
+    description: 'Resolved hero media asset.',
+    type: () => MediaAssetResponseDto,
     nullable: true,
   })
-  heroMediaRef!: string | null;
+  heroMedia!: MediaAssetResponseDto | null;
 
   @ApiProperty({
     description: 'Localized tag labels for the requested locale.',
@@ -1390,7 +1490,10 @@ export const SWAGGER_EXTRA_MODELS = [
   GeoCoordinatesDto,
   SharedPointResponseDto,
   PublicPointResponseDto,
-  TourMediaAssetResponseDto,
+  MediaAssetResponseDto,
+  AdminMediaAssetResponseDto,
+  AdminMediaAssetListResponseDto,
+  TourMediaItemResponseDto,
   UploadedMediaResponseDto,
   PriceResponseDto,
   TourNextConnectionResponseDto,

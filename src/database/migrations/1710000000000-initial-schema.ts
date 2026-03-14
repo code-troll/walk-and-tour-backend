@@ -33,8 +33,7 @@ export class InitialSchema1710000000000 implements MigrationInterface {
                 "id" uuid NOT NULL DEFAULT gen_random_uuid(),
                 "slug"              character varying(150) NOT NULL,
                 "name"              character varying(255) NOT NULL,
-                "cover_media_ref" jsonb,
-                "gallery_media_refs" jsonb NOT NULL DEFAULT '[]'::jsonb,
+                "cover_media_id" uuid,
                 "content_schema" jsonb,
                 "price_amount"      numeric(10, 2),
                 "price_currency"    character varying(10),
@@ -51,6 +50,22 @@ export class InitialSchema1710000000000 implements MigrationInterface {
                 "updated_at"        TIMESTAMP              NOT NULL DEFAULT now(),
                 CONSTRAINT "UQ_tours_slug" UNIQUE ("slug"),
                 CONSTRAINT "PK_tours_id" PRIMARY KEY ("id")
+            )
+        `);
+        await queryRunner.query(`
+            CREATE TABLE "media_assets"
+            (
+                "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+                "media_type" character varying(20) NOT NULL,
+                "storage_path" character varying(255) NOT NULL,
+                "content_type" character varying(100) NOT NULL,
+                "size" integer NOT NULL,
+                "original_filename" character varying(255) NOT NULL,
+                "created_by" uuid,
+                "created_at" TIMESTAMP NOT NULL DEFAULT now(),
+                "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
+                CONSTRAINT "UQ_media_assets_storage_path" UNIQUE ("storage_path"),
+                CONSTRAINT "PK_media_assets_id" PRIMARY KEY ("id")
             )
         `);
         await queryRunner.query(`
@@ -85,12 +100,32 @@ export class InitialSchema1710000000000 implements MigrationInterface {
             )
         `);
         await queryRunner.query(`
+            CREATE TABLE "tour_media"
+            (
+                "row_id" uuid NOT NULL DEFAULT gen_random_uuid(),
+                "tour_id" uuid NOT NULL,
+                "media_id" uuid NOT NULL,
+                "order_index" integer NOT NULL,
+                "alt_text" jsonb,
+                "created_at" TIMESTAMP NOT NULL DEFAULT now(),
+                "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
+                CONSTRAINT "UQ_tour_media_attachment" UNIQUE ("tour_id", "media_id"),
+                CONSTRAINT "UQ_tour_media_order" UNIQUE ("tour_id", "order_index"),
+                CONSTRAINT "PK_tour_media_row_id" PRIMARY KEY ("row_id")
+            )
+        `);
+        await queryRunner.query(`
             CREATE TABLE "tour_tags"
             (
                 "tour_id" uuid NOT NULL,
                 "tag_key" character varying(100) NOT NULL,
                 CONSTRAINT "PK_tour_tags" PRIMARY KEY ("tour_id", "tag_key")
             )
+        `);
+        await queryRunner.query(`
+            ALTER TABLE "tours"
+                ADD CONSTRAINT "FK_tours_cover_media"
+                    FOREIGN KEY ("cover_media_id") REFERENCES "media_assets" ("id") ON DELETE RESTRICT
         `);
         await queryRunner.query(`
             ALTER TABLE "tour_itinerary_stops"
@@ -106,6 +141,16 @@ export class InitialSchema1710000000000 implements MigrationInterface {
             ALTER TABLE "tour_translations"
                 ADD CONSTRAINT "FK_tour_translations_language"
                     FOREIGN KEY ("language_code") REFERENCES "languages" ("code") ON DELETE RESTRICT
+        `);
+        await queryRunner.query(`
+            ALTER TABLE "tour_media"
+                ADD CONSTRAINT "FK_tour_media_tour"
+                    FOREIGN KEY ("tour_id") REFERENCES "tours" ("id") ON DELETE CASCADE
+        `);
+        await queryRunner.query(`
+            ALTER TABLE "tour_media"
+                ADD CONSTRAINT "FK_tour_media_media"
+                    FOREIGN KEY ("media_id") REFERENCES "media_assets" ("id") ON DELETE RESTRICT
         `);
         await queryRunner.query(`
             ALTER TABLE "tour_tags"
@@ -130,6 +175,10 @@ export class InitialSchema1710000000000 implements MigrationInterface {
             DROP CONSTRAINT "FK_tour_tags_tag"`);
         await queryRunner.query(`ALTER TABLE "tour_tags"
             DROP CONSTRAINT "FK_tour_tags_tour"`);
+        await queryRunner.query(`ALTER TABLE "tour_media"
+            DROP CONSTRAINT "FK_tour_media_media"`);
+        await queryRunner.query(`ALTER TABLE "tour_media"
+            DROP CONSTRAINT "FK_tour_media_tour"`);
         await queryRunner.query(
             `ALTER TABLE "tour_translations"
                 DROP CONSTRAINT "FK_tour_translations_language"`,
@@ -142,9 +191,13 @@ export class InitialSchema1710000000000 implements MigrationInterface {
             `ALTER TABLE "tour_itinerary_stops"
                 DROP CONSTRAINT "FK_tour_itinerary_stops_tour"`,
         );
+        await queryRunner.query(`ALTER TABLE "tours"
+            DROP CONSTRAINT "FK_tours_cover_media"`);
         await queryRunner.query(`DROP TABLE "tour_tags"`);
+        await queryRunner.query(`DROP TABLE "tour_media"`);
         await queryRunner.query(`DROP TABLE "tour_translations"`);
         await queryRunner.query(`DROP TABLE "tour_itinerary_stops"`);
+        await queryRunner.query(`DROP TABLE "media_assets"`);
         await queryRunner.query(`DROP TABLE "tours"`);
         await queryRunner.query(`DROP TABLE "tags"`);
         await queryRunner.query(`DROP TABLE "languages"`);

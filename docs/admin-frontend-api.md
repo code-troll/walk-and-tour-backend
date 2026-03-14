@@ -380,11 +380,22 @@ Routes:
 
 | Method | Path | Roles |
 | --- | --- | --- |
-| `POST` | `/api/admin/media/upload` | `super_admin`, `editor` |
+| `GET` | `/api/admin/media` | `super_admin`, `editor` |
+| `GET` | `/api/admin/media/:id` | `super_admin`, `editor` |
+| `GET` | `/api/admin/media/:id/content` | `super_admin`, `editor` |
+| `POST` | `/api/admin/media` | `super_admin`, `editor` |
+| `DELETE` | `/api/admin/media/:id` | `super_admin`, `editor` |
 
 Purpose:
 
-- Upload one image to the configured storage backend and receive a reusable media asset descriptor.
+- Browse, inspect, upload, and delete reusable media assets for tours and blog posts.
+
+List query:
+
+- `page?`
+- `limit?`
+- `mediaType?`
+- `search?`
 
 Request:
 
@@ -394,18 +405,24 @@ Request:
 
 Response:
 
-- `ref`
-- `altText`
-- `publicUrl`
+- `id`
+- `mediaType`
+- `storagePath`
+- `contentUrl`
 - `contentType`
 - `size`
+- `originalFilename`
 
 Frontend notes:
 
-- Upload does not modify a tour directly.
-- Use the returned `ref` in `coverMediaRef` or `galleryMediaRefs`.
-- `altText` returns as `null` from upload and is edited separately on the tour form.
-- Only image uploads are accepted.
+- Upload does not modify a tour or blog directly.
+- Use `GET /api/admin/media` to browse existing assets and attach them by ID.
+- Use `GET /api/admin/media/:id/content` to render or preview the stored file in admin flows.
+- Tours attach media through `/api/admin/tours/:id/media` and assign the cover through `/api/admin/tours/:id/cover-media`.
+- Blogs attach media through `/api/admin/blog-posts/:id/hero-media`.
+- Alt text is not part of the media asset upload response; it is edited on the tour attachment itself.
+- The endpoint accepts images and videos.
+- `DELETE /api/admin/media/:id` returns `204` and is rejected with `409` when the media asset is still attached to a tour or blog post.
 
 ### 6.3 Admin Users
 
@@ -541,8 +558,6 @@ Patch request shape:
 
 - `name`
 - `slug`
-- `coverMediaRef?`
-- `galleryMediaRefs?`
 - `contentSchema`
 - `price?`
 - `rating`
@@ -553,6 +568,15 @@ Patch request shape:
 - `endPoint`
 - `itinerary`
 - `tagKeys`
+
+Tour media routes:
+
+- `GET /api/admin/tours/:id/media`
+- `POST /api/admin/tours/:id/media`
+- `PATCH /api/admin/tours/:id/media/:mediaId`
+- `DELETE /api/admin/tours/:id/media/:mediaId`
+- `POST /api/admin/tours/:id/cover-media`
+- `DELETE /api/admin/tours/:id/cover-media`
 
 Translation create request shape:
 
@@ -588,11 +612,6 @@ Key DTO rules:
 - `slug` pattern: `^[a-z0-9]+(?:-[a-z0-9]+)*$`
 - `slug` max length: `150`
 - `tourType` is required on create
-- `coverMediaRef` uses `{ ref, altText? }`
-- `galleryMediaRefs` is an array of `{ ref, altText? }`
-- media `ref` max length: `255`
-- media `altText` is optional and keyed by locale code
-- media `altText` values must be non-empty strings with max length `255`
 - `rating` must be between `1` and `5`
 - `reviewCount` must be `>= 0`
 - `durationMinutes` must be `>= 0`
@@ -637,6 +656,8 @@ Frontend notes:
 - Do not keep a frontend-owned `isReady`; always read the backend-calculated value from responses.
 - `cancellationType`, `highlights`, `included`, and `notIncluded` are translation-owned fields.
 - `payload` is intentionally schema-driven and should be edited against the tour's `contentSchema`.
+- Tour media attachment metadata lives outside `PATCH /api/admin/tours/:id`; use the dedicated media routes.
+- Attached media responses now include `contentUrl`, which points to the admin or public content endpoint rather than `/media/...`.
 
 ### 6.8 Blog Posts
 
@@ -660,10 +681,15 @@ Top-level request shape:
 
 - `name`
 - `slug`
-- `heroMediaRef?`
 - `publicationStatus`
 - `tagKeys?`
 - `translations?`
+
+Blog media routes:
+
+- `GET /api/admin/blog-posts/:id/media`
+- `POST /api/admin/blog-posts/:id/hero-media`
+- `DELETE /api/admin/blog-posts/:id/hero-media`
 
 Translation request shape:
 
@@ -686,7 +712,6 @@ Key DTO rules:
 - `name` is required on create and max length `255`
 - `slug` pattern: `^[a-z0-9]+(?:-[a-z0-9]+)*$`
 - `slug` max length: `150`
-- `heroMediaRef` max length: `255`
 - `tagKeys` must be unique
 - `translations` must be unique by `languageCode`
 - `title` max length: `255`
@@ -697,6 +722,7 @@ Publication behavior:
 - blog posts have top-level publication state
 - each translation has its own publication state
 - public routes only expose locales where both parent and translation are published
+- Hero media attachment is managed separately from create/update through the dedicated blog media routes.
 
 Admin response shape includes:
 

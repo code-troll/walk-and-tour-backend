@@ -5,6 +5,7 @@
 /tmp
 /coverage
 /.eslintcache
+/storage
 
 # Logs
 logs

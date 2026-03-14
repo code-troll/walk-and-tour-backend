@@ -6,13 +6,13 @@ import {
   IsInt,
   IsNumber,
   IsObject,
-  IsOptional,
   IsString,
   Matches,
   MaxLength,
   Min,
-  IsNotEmpty,
   ValidateNested,
+  IsOptional,
+  IsNotEmpty,
 } from 'class-validator';
 
 import { TOUR_COMMUTE_MODES, TOUR_TYPES } from '../../shared/domain';
@@ -62,17 +62,6 @@ export class LocalizedAltTextDto {
   @IsObject()
   @IsOptional()
   altText?: Record<string, string>;
-}
-
-export class TourMediaAssetDto extends LocalizedAltTextDto {
-  @ApiProperty({
-    description: 'Media reference path.',
-    example: 'media/tours/historic-center/cover.jpg',
-    maxLength: 255,
-  })
-  @IsString()
-  @MaxLength(255)
-  ref!: string;
 }
 
 export class PriceDto {

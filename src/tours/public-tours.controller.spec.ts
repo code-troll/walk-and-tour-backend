@@ -9,6 +9,11 @@ describe('PublicToursController', () => {
     publicToursService = {
       findAll: jest.fn(),
       findOneBySlug: jest.fn(),
+      getMediaContent: jest.fn().mockResolvedValue({
+        content: Buffer.from('content'),
+        contentType: 'image/jpeg',
+        originalFilename: 'cover.jpg',
+      }),
     } as unknown as jest.Mocked<PublicToursService>;
 
     controller = new PublicToursController(publicToursService);
@@ -27,5 +32,23 @@ describe('PublicToursController', () => {
       'historic-center',
       'en',
     );
+  });
+
+  it('delegates public tour media fetch by slug and media id', async () => {
+    const response = {
+      setHeader: jest.fn(),
+    };
+
+    await controller.getMediaContent(
+      'historic-center',
+      'f5ee9301-9226-4072-8b8d-76f4452e78c4',
+      response as never,
+    );
+
+    expect(publicToursService.getMediaContent).toHaveBeenCalledWith(
+      'historic-center',
+      'f5ee9301-9226-4072-8b8d-76f4452e78c4',
+    );
+    expect(response.setHeader).toHaveBeenCalledWith('Content-Type', 'image/jpeg');
   });
 });

@@ -1,11 +1,24 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { BlogPostEntity } from '../blog-posts/blog-post.entity';
+import { MediaAssetEntity } from '../media/media-asset.entity';
 import { StorageModule } from '../storage/storage.module';
+import { TourEntity } from '../tours/entities/tour.entity';
+import { TourMediaEntity } from '../tours/entities/tour-media.entity';
 import { AdminMediaController } from './admin-media.controller';
 import { AdminMediaService } from './admin-media.service';
 
 @Module({
-  imports: [StorageModule],
+  imports: [
+    StorageModule,
+    TypeOrmModule.forFeature([
+      MediaAssetEntity,
+      TourEntity,
+      TourMediaEntity,
+      BlogPostEntity,
+    ]),
+  ],
   controllers: [AdminMediaController],
   providers: [AdminMediaService],
 })

@@ -117,16 +117,6 @@ export class CreateBlogPostDto {
   @MaxLength(150)
   slug!: string;
 
-  @ApiPropertyOptional({
-    description: 'Optional hero media reference.',
-    example: 'media/blog/historic-center/hero.jpg',
-    maxLength: 255,
-  })
-  @IsString()
-  @MaxLength(255)
-  @IsOptional()
-  heroMediaRef?: string;
-
   @ApiProperty({
     description: 'Top-level publication state of the blog post.',
     enum: BLOG_PUBLICATION_STATUSES,

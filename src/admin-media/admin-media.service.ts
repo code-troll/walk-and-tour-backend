@@ -1,13 +1,28 @@
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
 
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
+import { BlogPostEntity } from '../blog-posts/blog-post.entity';
+import { MediaAssetEntity } from '../media/media-asset.entity';
+import { getAppConfig } from '../shared/config/app.config';
+import { getProviderConfig } from '../shared/config/provider.config';
 import { STORAGE_SERVICE, StorageService } from '../storage/storage-service.interface';
+import { TourEntity } from '../tours/entities/tour.entity';
+import { TourMediaEntity } from '../tours/entities/tour-media.entity';
+import { ListMediaDto } from './dto/list-media.dto';
 
-const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
-const DEFAULT_FOLDER = 'tours';
+const DEFAULT_FOLDER = 'media';
 const IMAGE_MIME_TYPE_PATTERN = /^image\/[a-z0-9.+-]+$/i;
+const VIDEO_MIME_TYPE_PATTERN = /^video\/[a-z0-9.+-]+$/i;
 
 export interface UploadMediaInput {
   file: {
@@ -16,24 +31,102 @@ export interface UploadMediaInput {
     size: number;
     buffer: Buffer;
   };
+  actorId: string;
   folder?: string;
 }
 
 @Injectable()
 export class AdminMediaService {
   constructor(
+    @InjectRepository(MediaAssetEntity)
+    private readonly mediaAssetsRepository: Repository<MediaAssetEntity>,
+    @InjectRepository(TourEntity)
+    private readonly toursRepository: Repository<TourEntity>,
+    @InjectRepository(TourMediaEntity)
+    private readonly tourMediaRepository: Repository<TourMediaEntity>,
+    @InjectRepository(BlogPostEntity)
+    private readonly blogPostsRepository: Repository<BlogPostEntity>,
     @Inject(STORAGE_SERVICE)
     private readonly storageService: StorageService,
   ) {}
 
-  async upload(input: UploadMediaInput): Promise<{
-    ref: string;
-    altText: null;
-    publicUrl: string;
+  async findAll(query: ListMediaDto): Promise<{
+    items: Array<{
+      id: string;
+      mediaType: 'image' | 'video';
+      storagePath: string;
+      contentUrl: string;
+      contentType: string;
+      size: number;
+      originalFilename: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+    page: number;
+    limit: number;
+    total: number;
+  }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where = this.buildWhere(query);
+    const [items, total] = await this.mediaAssetsRepository.findAndCount({
+      where,
+      order: {
+        createdAt: 'DESC',
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      items: items.map((item) => this.toAdminMediaResponse(item)),
+      page,
+      limit,
+      total,
+    };
+  }
+
+  async findOne(id: string): Promise<{
+    id: string;
+    mediaType: 'image' | 'video';
+    storagePath: string;
+    contentUrl: string;
     contentType: string;
     size: number;
+    originalFilename: string;
+    createdAt: Date;
+    updatedAt: Date;
   }> {
-    this.validateFile(input.file);
+    const mediaAsset = await this.getMediaAssetOrThrow(id);
+    return this.toAdminMediaResponse(mediaAsset);
+  }
+
+  async getContent(id: string): Promise<{
+    content: Buffer;
+    contentType: string;
+    originalFilename: string;
+  }> {
+    const mediaAsset = await this.getMediaAssetOrThrow(id);
+    const stored = await this.storageService.getObject(mediaAsset.storagePath);
+
+    return {
+      content: stored.content,
+      contentType: stored.contentType ?? mediaAsset.contentType,
+      originalFilename: mediaAsset.originalFilename,
+    };
+  }
+
+  async upload(input: UploadMediaInput): Promise<{
+    id: string;
+    mediaType: 'image' | 'video';
+    storagePath: string;
+    contentUrl: string;
+    contentType: string;
+    size: number;
+    originalFilename: string;
+  }> {
+    const mediaType = this.detectMediaType(input.file.mimetype);
+    this.validateFile(input.file, mediaType);
 
     const path = this.buildStoragePath(input.file.originalname, input.folder);
     const stored = await this.storageService.putObject({
@@ -42,31 +135,80 @@ export class AdminMediaService {
       contentType: input.file.mimetype,
     });
 
+    const mediaAsset = await this.mediaAssetsRepository.save(
+      this.mediaAssetsRepository.create({
+        mediaType,
+        storagePath: stored.path,
+        contentType: stored.contentType,
+        size: stored.size,
+        originalFilename: input.file.originalname,
+        createdBy: input.actorId,
+      }),
+    );
+
     return {
-      ref: stored.path,
-      altText: null,
-      publicUrl: stored.publicUrl,
+      id: mediaAsset.id,
+      mediaType,
+      storagePath: stored.path,
+      contentUrl: this.buildAdminContentUrl(mediaAsset.id),
       contentType: stored.contentType,
       size: stored.size,
+      originalFilename: input.file.originalname,
     };
   }
 
-  private validateFile(file: UploadMediaInput['file']): void {
-    if (!file) {
-      throw new BadRequestException('Media file is required.');
+  async remove(id: string): Promise<void> {
+    const mediaAsset = await this.getMediaAssetOrThrow(id);
+    const [tourMediaReferences, coverReferences, blogHeroReferences] = await Promise.all([
+      this.tourMediaRepository.count({
+        where: { mediaId: id },
+      }),
+      this.toursRepository.count({
+        where: { coverMediaId: id },
+      }),
+      this.blogPostsRepository.count({
+        where: { heroMediaId: id },
+      }),
+    ]);
+
+    if (tourMediaReferences > 0 || coverReferences > 0 || blogHeroReferences > 0) {
+      throw new ConflictException(
+        `Media asset "${id}" cannot be deleted while it is attached to content.`,
+      );
     }
 
-    if (!IMAGE_MIME_TYPE_PATTERN.test(file.mimetype)) {
-      throw new BadRequestException('Only image uploads are supported.');
+    await this.storageService.deleteObject(mediaAsset.storagePath);
+    await this.mediaAssetsRepository.delete({ id });
+  }
+
+  private detectMediaType(contentType: string): 'image' | 'video' {
+    if (IMAGE_MIME_TYPE_PATTERN.test(contentType)) {
+      return 'image';
+    }
+
+    if (VIDEO_MIME_TYPE_PATTERN.test(contentType)) {
+      return 'video';
+    }
+
+    throw new BadRequestException('Only image and video uploads are supported.');
+  }
+
+  private validateFile(file: UploadMediaInput['file'], mediaType: 'image' | 'video'): void {
+    if (!file) {
+      throw new BadRequestException('Media file is required.');
     }
 
     if (file.size <= 0) {
       throw new BadRequestException('Uploaded file must not be empty.');
     }
 
-    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+    const { mediaImageMaxUploadBytes, mediaVideoMaxUploadBytes } = getAppConfig();
+    const maxUploadSizeBytes =
+      mediaType === 'image' ? mediaImageMaxUploadBytes : mediaVideoMaxUploadBytes;
+
+    if (file.size > maxUploadSizeBytes) {
       throw new BadRequestException(
-        `Uploaded file must be at most ${MAX_UPLOAD_SIZE_BYTES} bytes.`,
+        `Uploaded file must be at most ${maxUploadSizeBytes} bytes.`,
       );
     }
 
@@ -90,5 +232,67 @@ export class AdminMediaService {
     }
 
     return extension;
+  }
+
+  private buildWhere(query: ListMediaDto): FindOptionsWhere<MediaAssetEntity>[] | FindOptionsWhere<MediaAssetEntity> {
+    const baseWhere = query.mediaType ? { mediaType: query.mediaType } : {};
+
+    if (!query.search || query.search.trim().length === 0) {
+      return baseWhere;
+    }
+
+    const search = `%${query.search.trim()}%`;
+
+    return [
+      {
+        ...baseWhere,
+        originalFilename: ILike(search),
+      },
+      {
+        ...baseWhere,
+        storagePath: ILike(search),
+      },
+    ];
+  }
+
+  private toAdminMediaResponse(mediaAsset: MediaAssetEntity): {
+    id: string;
+    mediaType: 'image' | 'video';
+    storagePath: string;
+    contentUrl: string;
+    contentType: string;
+    size: number;
+    originalFilename: string;
+    createdAt: Date;
+    updatedAt: Date;
+  } {
+    return {
+      id: mediaAsset.id,
+      mediaType: mediaAsset.mediaType,
+      storagePath: mediaAsset.storagePath,
+      contentUrl: this.buildAdminContentUrl(mediaAsset.id),
+      contentType: mediaAsset.contentType,
+      size: mediaAsset.size,
+      originalFilename: mediaAsset.originalFilename,
+      createdAt: mediaAsset.createdAt,
+      updatedAt: mediaAsset.updatedAt,
+    };
+  }
+
+  private async getMediaAssetOrThrow(id: string): Promise<MediaAssetEntity> {
+    const mediaAsset = await this.mediaAssetsRepository.findOne({
+      where: { id },
+    });
+
+    if (!mediaAsset) {
+      throw new NotFoundException(`Media asset "${id}" was not found.`);
+    }
+
+    return mediaAsset;
+  }
+
+  private buildAdminContentUrl(mediaId: string): string {
+    const { appBaseUrl } = getProviderConfig();
+    return `${appBaseUrl.replace(/\/$/, '')}/api/admin/media/${mediaId}/content`;
   }
 }

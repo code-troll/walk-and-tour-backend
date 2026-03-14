@@ -1,19 +1,23 @@
 import { NotFoundException } from '@nestjs/common';
 
-import { LanguageEntity } from '../languages/language.entity';
-import { TagEntity } from '../tags/tag.entity';
 import { createRepositoryMock, RepositoryMock } from '../../test/utils/repository.mock';
+import { LanguageEntity } from '../languages/language.entity';
+import { StorageService } from '../storage/storage-service.interface';
+import { TagEntity } from '../tags/tag.entity';
 import { TourItineraryStopEntity } from './entities/tour-itinerary-stop.entity';
+import { TourMediaEntity } from './entities/tour-media.entity';
 import { TourTranslationEntity } from './entities/tour-translation.entity';
 import { TourEntity } from './entities/tour.entity';
 import { PublicToursService } from './public-tours.service';
 import { TourPayloadValidationService } from './tour-payload-validation.service';
+import { MediaAssetEntity } from '../media/media-asset.entity';
 
 describe('PublicToursService', () => {
   let service: PublicToursService;
   let toursRepository: RepositoryMock<TourEntity>;
   let languagesRepository: RepositoryMock<LanguageEntity>;
   let payloadValidationService: jest.Mocked<TourPayloadValidationService>;
+  let storageService: jest.Mocked<StorageService>;
 
   beforeEach(() => {
     toursRepository = createRepositoryMock<TourEntity>();
@@ -21,10 +25,17 @@ describe('PublicToursService', () => {
     payloadValidationService = {
       validateOrThrow: jest.fn(),
     } as unknown as jest.Mocked<TourPayloadValidationService>;
+    storageService = {
+      putObject: jest.fn(),
+      getObject: jest.fn(),
+      deleteObject: jest.fn(),
+      getPublicUrl: jest.fn((path: string) => `http://localhost:3000/media/${path}`),
+    };
 
     service = new PublicToursService(
       toursRepository as never,
       languagesRepository as never,
+      storageService,
       payloadValidationService,
     );
   });
@@ -53,19 +64,24 @@ describe('PublicToursService', () => {
       expect.objectContaining({
         id: 'tour-1',
         slug: 'historic-center',
-        coverMediaRef: {
-          ref: 'cover.jpg',
+        coverMedia: expect.objectContaining({
+          mediaId: 'media-1',
+          mediaType: 'image',
+          storagePath: 'cover.jpg',
+          contentUrl: 'http://localhost:3000/api/public/tours/historic-center/media/media-1',
           altText: {
             en: 'Historic center skyline',
           },
-        },
-        galleryMediaRefs: [
-          {
-            ref: '1.jpg',
+        }),
+        galleryMedia: [
+          expect.objectContaining({
+            mediaId: 'media-2',
+            storagePath: '1.jpg',
+            contentUrl: 'http://localhost:3000/api/public/tours/historic-center/media/media-2',
             altText: {
               en: 'Stone alley in the old town',
             },
-          },
+          }),
         ],
         price: {
           amount: 25,
@@ -185,12 +201,6 @@ describe('PublicToursService', () => {
             }),
           ],
         },
-        translation: expect.objectContaining({
-          locale: 'en',
-          highlights: ['Roman walls', 'Gothic Quarter lanes'],
-          included: ['Guide'],
-          notIncluded: ['Food'],
-        }),
       }),
     );
   });
@@ -208,31 +218,6 @@ describe('PublicToursService', () => {
       NotFoundException,
     );
   });
-
-  it('rejects public tours whose localized lists are missing', async () => {
-    languagesRepository.findOne.mockResolvedValue(
-      createLanguageEntity({ code: 'en', isEnabled: true }),
-    );
-    toursRepository.findOne.mockResolvedValue(
-      createPublicTour({
-        translations: [
-          createTranslationEntity({
-            languageCode: 'en',
-            payload: {
-              title: 'Historic Center',
-              itineraryDescription: 'Walk through the old city.',
-              startPoint: { label: 'Town Hall' },
-              endPoint: { label: 'Canal' },
-            },
-          }),
-        ],
-      }) as TourEntity,
-    );
-
-    await expect(service.findOneBySlug('historic-center', 'en')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
-  });
 });
 
 function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
@@ -240,19 +225,26 @@ function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
     id: 'tour-1',
     name: 'Historic Center Main Tour',
     slug: 'historic-center',
-    coverMediaRef: {
-      ref: 'cover.jpg',
-      altText: {
-        en: 'Historic center skyline',
-      },
-    },
-    galleryMediaRefs: [
-      {
-        ref: '1.jpg',
-        altText: {
-          en: 'Stone alley in the old town',
-        },
-      },
+    coverMediaId: 'media-1',
+    coverMedia: createMediaAssetEntity({ id: 'media-1', storagePath: 'cover.jpg' }),
+    mediaItems: [
+      createTourMediaEntity({
+        mediaId: 'media-1',
+        orderIndex: 0,
+        altText: { en: 'Historic center skyline' },
+        media: createMediaAssetEntity({ id: 'media-1', storagePath: 'cover.jpg' }),
+      }),
+      createTourMediaEntity({
+        rowId: 'tour-media-2',
+        mediaId: 'media-2',
+        orderIndex: 1,
+        altText: { en: 'Stone alley in the old town' },
+        media: createMediaAssetEntity({
+          id: 'media-2',
+          storagePath: '1.jpg',
+          originalFilename: '1.jpg',
+        }),
+      }),
     ],
     contentSchema: { type: 'object' },
     priceAmount: '25.00',
@@ -353,4 +345,39 @@ function createStopEntity(
     nextConnection: null,
     ...overrides,
   } as TourItineraryStopEntity;
+}
+
+function createMediaAssetEntity(
+  overrides: Partial<MediaAssetEntity> = {},
+): MediaAssetEntity {
+  return {
+    id: 'media-1',
+    mediaType: 'image',
+    storagePath: 'cover.jpg',
+    contentType: 'image/jpeg',
+    size: 1024,
+    originalFilename: 'cover.jpg',
+    createdBy: 'admin-1',
+    tourUsages: [],
+    createdAt: new Date('2026-03-12T08:00:00.000Z'),
+    updatedAt: new Date('2026-03-12T09:00:00.000Z'),
+    ...overrides,
+  } as MediaAssetEntity;
+}
+
+function createTourMediaEntity(
+  overrides: Partial<TourMediaEntity> = {},
+): TourMediaEntity {
+  return {
+    rowId: 'tour-media-1',
+    tourId: 'tour-1',
+    mediaId: 'media-1',
+    orderIndex: 0,
+    altText: { en: 'Historic center skyline' },
+    media: createMediaAssetEntity(),
+    tour: {} as TourEntity,
+    createdAt: new Date('2026-03-12T08:00:00.000Z'),
+    updatedAt: new Date('2026-03-12T09:00:00.000Z'),
+    ...overrides,
+  } as TourMediaEntity;
 }

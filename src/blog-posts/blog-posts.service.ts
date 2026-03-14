@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,11 +10,14 @@ import { In, Repository } from 'typeorm';
 
 import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface';
 import { LanguageEntity } from '../languages/language.entity';
+import { MediaAssetEntity } from '../media/media-asset.entity';
+import { getProviderConfig } from '../shared/config/provider.config';
 import {
   BLOG_PUBLICATION_STATUSES,
   BLOG_TRANSLATION_PUBLICATION_STATUSES,
 } from '../shared/domain';
 import { TagEntity } from '../tags/tag.entity';
+import { SetBlogPostHeroMediaDto } from './dto/blog-post-media.dto';
 import { CreateBlogPostDto, CreateBlogPostTranslationDto } from './dto/create-blog-post.dto';
 import { UpdateBlogPostDto } from './dto/update-blog-post.dto';
 import { BlogPostTranslationEntity } from './blog-post-translation.entity';
@@ -22,7 +26,6 @@ import { BlogPostEntity } from './blog-post.entity';
 interface BlogAggregateInput {
   name: string;
   slug: string;
-  heroMediaRef?: string | null;
   publicationStatus: string;
   tagKeys: string[];
   translations: CreateBlogPostTranslationDto[];
@@ -35,6 +38,8 @@ export class BlogPostsService {
     private readonly blogPostsRepository: Repository<BlogPostEntity>,
     @InjectRepository(BlogPostTranslationEntity)
     private readonly translationsRepository: Repository<BlogPostTranslationEntity>,
+    @InjectRepository(MediaAssetEntity)
+    private readonly mediaAssetsRepository: Repository<MediaAssetEntity>,
     @InjectRepository(TagEntity)
     private readonly tagsRepository: Repository<TagEntity>,
     @InjectRepository(LanguageEntity)
@@ -44,6 +49,7 @@ export class BlogPostsService {
   async findAll(): Promise<unknown[]> {
     const blogPosts = await this.blogPostsRepository.find({
       relations: {
+        heroMedia: true,
         tags: true,
         translations: true,
       },
@@ -76,7 +82,7 @@ export class BlogPostsService {
     const blogPost = this.blogPostsRepository.create({
       name: aggregate.name,
       slug: aggregate.slug,
-      heroMediaRef: aggregate.heroMediaRef ?? null,
+      heroMediaId: null,
       publicationStatus: aggregate.publicationStatus,
       tags,
       createdBy: actor.id,
@@ -114,7 +120,6 @@ export class BlogPostsService {
 
     existing.name = aggregate.name;
     existing.slug = aggregate.slug;
-    existing.heroMediaRef = aggregate.heroMediaRef ?? null;
     existing.publicationStatus = aggregate.publicationStatus;
     existing.tags = tags;
     existing.updatedBy = actor.id;
@@ -143,10 +148,6 @@ export class BlogPostsService {
     const aggregate: BlogAggregateInput = {
       name: source.name ?? existing?.name ?? '',
       slug: source.slug ?? existing?.slug ?? '',
-      heroMediaRef:
-        'heroMediaRef' in source
-          ? (source.heroMediaRef ?? null)
-          : (existing?.heroMediaRef ?? null),
       publicationStatus:
         source.publicationStatus ??
         existing?.publicationStatus ??
@@ -222,6 +223,44 @@ export class BlogPostsService {
     }
   }
 
+  async listMedia(id: string): Promise<{ items: unknown[] }> {
+    const blogPost = await this.findEntityOrThrow(id);
+    return {
+      items: blogPost.heroMedia ? [this.toMediaResponse(blogPost, blogPost.heroMedia)] : [],
+    };
+  }
+
+  async setHeroMedia(
+    id: string,
+    dto: SetBlogPostHeroMediaDto,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    await this.findEntityOrThrow(id);
+    await this.getMediaAssetOrThrow(dto.mediaId);
+    await this.blogPostsRepository.update(
+      { id },
+      {
+        heroMediaId: dto.mediaId,
+        updatedBy: actor.id,
+      },
+    );
+
+    return this.findOne(id);
+  }
+
+  async clearHeroMedia(id: string, actor: AuthenticatedAdmin): Promise<unknown> {
+    await this.findEntityOrThrow(id);
+    await this.blogPostsRepository.update(
+      { id },
+      {
+        heroMediaId: null,
+        updatedBy: actor.id,
+      },
+    );
+
+    return this.findOne(id);
+  }
+
   private async getTagsOrThrow(keys: string[]): Promise<TagEntity[]> {
     if (keys.length === 0) {
       return [];
@@ -267,40 +306,43 @@ export class BlogPostsService {
 
   private async upsertTranslations(
     blogPostId: string,
-    existingTranslations: BlogPostTranslationEntity[],
-    incomingTranslations: CreateBlogPostTranslationDto[],
+    existing: BlogPostTranslationEntity[],
+    incoming: CreateBlogPostTranslationDto[],
   ): Promise<void> {
-    const existingByCode = new Map(
-      existingTranslations.map((translation) => [translation.languageCode, translation]),
+    const existingByLanguage = new Map(
+      existing.map((translation) => [translation.languageCode, translation]),
     );
 
-    for (const incoming of incomingTranslations) {
-      const existing = existingByCode.get(incoming.languageCode);
+    const upserts = incoming.map((translation) => {
+      const current = existingByLanguage.get(translation.languageCode);
 
-      if (existing) {
-        existing.publicationStatus = incoming.publicationStatus;
-        existing.title = incoming.title ?? '';
-        existing.summary = incoming.summary ?? null;
-        existing.htmlContent = incoming.htmlContent ?? '';
-        existing.seoTitle = incoming.seoTitle ?? null;
-        existing.seoDescription = incoming.seoDescription ?? null;
-        existing.imageRefs = incoming.imageRefs ?? [];
-        await this.translationsRepository.save(existing);
-      } else {
-        await this.translationsRepository.save(
-          this.translationsRepository.create({
-            blogPostId,
-            languageCode: incoming.languageCode,
-            publicationStatus: incoming.publicationStatus,
-            title: incoming.title ?? '',
-            summary: incoming.summary ?? null,
-            htmlContent: incoming.htmlContent ?? '',
-            seoTitle: incoming.seoTitle ?? null,
-            seoDescription: incoming.seoDescription ?? null,
-            imageRefs: incoming.imageRefs ?? [],
-          }),
-        );
+      if (!current) {
+        return this.translationsRepository.create({
+          blogPostId,
+          languageCode: translation.languageCode,
+          publicationStatus: translation.publicationStatus,
+          title: translation.title ?? '',
+          summary: translation.summary ?? null,
+          htmlContent: translation.htmlContent ?? '',
+          seoTitle: translation.seoTitle ?? null,
+          seoDescription: translation.seoDescription ?? null,
+          imageRefs: translation.imageRefs ?? [],
+        });
       }
+
+      current.publicationStatus = translation.publicationStatus;
+      current.title = translation.title ?? current.title;
+      current.summary = translation.summary ?? null;
+      current.htmlContent = translation.htmlContent ?? current.htmlContent;
+      current.seoTitle = translation.seoTitle ?? null;
+      current.seoDescription = translation.seoDescription ?? null;
+      current.imageRefs = translation.imageRefs ?? [];
+
+      return current;
+    });
+
+    if (upserts.length > 0) {
+      await this.translationsRepository.save(upserts);
     }
   }
 
@@ -308,32 +350,46 @@ export class BlogPostsService {
     existing: BlogPostEntity | undefined,
     incoming: CreateBlogPostTranslationDto[] | undefined,
   ): CreateBlogPostTranslationDto[] {
-    const merged = new Map<string, CreateBlogPostTranslationDto>();
+    if (!incoming) {
+      return (
+        existing?.translations.map((translation) => ({
+          languageCode: translation.languageCode,
+          publicationStatus: translation.publicationStatus,
+          title: translation.title,
+          summary: translation.summary ?? undefined,
+          htmlContent: translation.htmlContent,
+          seoTitle: translation.seoTitle ?? undefined,
+          seoDescription: translation.seoDescription ?? undefined,
+          imageRefs: translation.imageRefs,
+        })) ?? []
+      );
+    }
 
-    for (const translation of existing?.translations ?? []) {
-      merged.set(translation.languageCode, {
+    const existingByLanguage = new Map(
+      existing?.translations.map((translation) => [translation.languageCode, translation]) ?? [],
+    );
+
+    return incoming.map((translation) => {
+      const current = existingByLanguage.get(translation.languageCode);
+
+      return {
         languageCode: translation.languageCode,
         publicationStatus: translation.publicationStatus,
-        title: translation.title || undefined,
-        summary: translation.summary ?? undefined,
-        htmlContent: translation.htmlContent || undefined,
-        seoTitle: translation.seoTitle ?? undefined,
-        seoDescription: translation.seoDescription ?? undefined,
-        imageRefs: translation.imageRefs ?? [],
-      });
-    }
-
-    for (const translation of incoming ?? []) {
-      merged.set(translation.languageCode, translation);
-    }
-
-    return [...merged.values()];
+        title: translation.title ?? current?.title,
+        summary: translation.summary ?? current?.summary ?? undefined,
+        htmlContent: translation.htmlContent ?? current?.htmlContent,
+        seoTitle: translation.seoTitle ?? current?.seoTitle ?? undefined,
+        seoDescription: translation.seoDescription ?? current?.seoDescription ?? undefined,
+        imageRefs: translation.imageRefs ?? current?.imageRefs ?? [],
+      };
+    });
   }
 
   private async findEntityOrThrow(id: string): Promise<BlogPostEntity> {
     const blogPost = await this.blogPostsRepository.findOne({
       where: { id },
       relations: {
+        heroMedia: true,
         tags: true,
         translations: true,
       },
@@ -344,6 +400,18 @@ export class BlogPostsService {
     }
 
     return blogPost;
+  }
+
+  private async getMediaAssetOrThrow(id: string): Promise<MediaAssetEntity> {
+    const mediaAsset = await this.mediaAssetsRepository.findOne({
+      where: { id },
+    });
+
+    if (!mediaAsset) {
+      throw new BadRequestException(`Unknown heroMediaId "${id}".`);
+    }
+
+    return mediaAsset;
   }
 
   private toAdminResponse(blogPost: BlogPostEntity): unknown {
@@ -366,7 +434,8 @@ export class BlogPostsService {
       id: blogPost.id,
       name: blogPost.name,
       slug: blogPost.slug,
-      heroMediaRef: blogPost.heroMediaRef,
+      heroMediaId: blogPost.heroMediaId,
+      heroMedia: this.toMediaResponse(blogPost, blogPost.heroMedia),
       publicationStatus: blogPost.publicationStatus,
       tagKeys: blogPost.tags.map((tag) => tag.key),
       tags: blogPost.tags.map((tag) => ({
@@ -390,5 +459,34 @@ export class BlogPostsService {
         publishedAt: blogPost.publishedAt,
       },
     };
+  }
+
+  private toMediaResponse(_blogPost: BlogPostEntity, media: MediaAssetEntity | null): {
+    id: string;
+    mediaType: 'image' | 'video';
+    storagePath: string;
+    contentUrl: string;
+    contentType: string;
+    size: number;
+    originalFilename: string;
+  } | null {
+    if (!media) {
+      return null;
+    }
+
+    return {
+      id: media.id,
+      mediaType: media.mediaType,
+      storagePath: media.storagePath,
+      contentUrl: this.buildAdminContentUrl(media.id),
+      contentType: media.contentType,
+      size: media.size,
+      originalFilename: media.originalFilename,
+    };
+  }
+
+  private buildAdminContentUrl(mediaId: string): string {
+    const { appBaseUrl } = getProviderConfig();
+    return `${appBaseUrl.replace(/\/$/, '')}/api/admin/media/${mediaId}/content`;
   }
 }

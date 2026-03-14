@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from 'fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'fs/promises';
 import { dirname, resolve } from 'path';
 
 import { Injectable } from '@nestjs/common';
@@ -24,6 +24,12 @@ export class LocalFilesystemStorageService implements StorageService {
       contentType: input.contentType,
       size: input.content.length,
       publicUrl: this.getPublicUrl(input.path),
+    };
+  }
+
+  async getObject(path: string): Promise<{ content: Buffer }> {
+    return {
+      content: await readFile(this.resolveStoragePath(path)),
     };
   }
 

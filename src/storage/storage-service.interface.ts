@@ -11,8 +11,14 @@ export interface StoredObjectDescriptor {
   publicUrl: string;
 }
 
+export interface StoredObjectContent {
+  content: Buffer;
+  contentType?: string;
+}
+
 export interface StorageService {
   putObject(input: PutStoredObjectInput): Promise<StoredObjectDescriptor>;
+  getObject(path: string): Promise<StoredObjectContent>;
   deleteObject(path: string): Promise<void>;
   getPublicUrl(path: string): string;
 }

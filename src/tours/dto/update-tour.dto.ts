@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayUnique,
   IsArray,
@@ -12,15 +12,11 @@ import {
   Max,
   MaxLength,
   Min,
+  IsUUID,
   ValidateNested,
 } from 'class-validator';
 
-import {
-  PriceDto,
-  SharedPointDto,
-  TourMediaAssetDto,
-  TourItineraryDto,
-} from './create-tour.dto';
+import { PriceDto, SharedPointDto, TourItineraryDto } from './create-tour.dto';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -47,26 +43,6 @@ export class UpdateTourDto {
   @MaxLength(150)
   @IsOptional()
   slug?: string;
-
-  @ApiPropertyOptional({
-    description: 'Updated cover media asset. Set `null` to clear the value.',
-    type: () => TourMediaAssetDto,
-    nullable: true,
-  })
-  @ValidateNested()
-  @Type(() => TourMediaAssetDto)
-  @IsOptional()
-  coverMediaRef?: TourMediaAssetDto | null;
-
-  @ApiPropertyOptional({
-    description: 'Replacement gallery media assets.',
-    type: () => [TourMediaAssetDto],
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => TourMediaAssetDto)
-  @IsOptional()
-  galleryMediaRefs?: TourMediaAssetDto[];
 
   @ApiPropertyOptional({
     description: 'Updated shared JSON Schema for localized payload validation.',

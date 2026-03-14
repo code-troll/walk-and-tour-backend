@@ -12,6 +12,10 @@ interface FetchLike {
     ok: boolean;
     status: number;
     text(): Promise<string>;
+    arrayBuffer(): Promise<ArrayBuffer>;
+    headers?: {
+      get(name: string): string | null;
+    };
   }>;
 }
 
@@ -84,6 +88,38 @@ export class SupabaseStorageService implements StorageService {
         `Supabase storage delete failed with status ${response.status}: ${await response.text()}`,
       );
     }
+  }
+
+  async getObject(path: string): Promise<{ content: Buffer; contentType?: string }> {
+    const { supabaseUrl, supabaseServiceRoleKey, supabaseBucket } = this.config;
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      throw new Error(
+        'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required when STORAGE_DRIVER=supabase.',
+      );
+    }
+
+    const response = await this.fetchImpl(
+      `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/${supabaseBucket}/${path}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${supabaseServiceRoleKey}`,
+          apikey: supabaseServiceRoleKey,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Supabase storage read failed with status ${response.status}: ${await response.text()}`,
+      );
+    }
+
+    return {
+      content: Buffer.from(await response.arrayBuffer()),
+      contentType: response.headers?.get('content-type') ?? undefined,
+    };
   }
 
   getPublicUrl(path: string): string {

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, Res, StreamableFile } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -67,5 +67,38 @@ export class PublicToursController {
     @Query() query: LocaleQueryDto,
   ) {
     return this.publicToursService.findOneBySlug(slug, query.locale);
+  }
+
+  @ApiOperation({
+    summary: 'Fetch public tour media',
+    description:
+      'Streams one media asset attached to a tour when the tour is publicly available in at least one locale.',
+  })
+  @ApiParam({
+    name: 'slug',
+    description: 'Public tour slug.',
+    example: 'historic-center',
+  })
+  @ApiParam({
+    name: 'mediaId',
+    description: 'Attached media asset UUID.',
+    format: 'uuid',
+  })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @Get(':slug/media/:mediaId')
+  async getMediaContent(
+    @Param('slug') slug: string,
+    @Param('mediaId') mediaId: string,
+    @Res({ passthrough: true })
+    response: { setHeader(name: string, value: string): void },
+  ): Promise<StreamableFile> {
+    const content = await this.publicToursService.getMediaContent(slug, mediaId);
+    response.setHeader('Content-Type', content.contentType);
+    response.setHeader(
+      'Content-Disposition',
+      `inline; filename=\"${content.originalFilename.replace(/"/g, '')}\"`,
+    );
+
+    return new StreamableFile(content.content);
   }
 }

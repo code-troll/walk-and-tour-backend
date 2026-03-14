@@ -8,6 +8,7 @@ import { AdminUserEntity } from '../../admin-users/admin-user.entity';
 import { AppModule } from '../../app.module';
 import { BlogPostsService } from '../../blog-posts/blog-posts.service';
 import { LanguageEntity } from '../../languages/language.entity';
+import { MediaAssetEntity } from '../../media/media-asset.entity';
 import { NewsletterSubscriberEntity } from '../../newsletter-subscribers/newsletter-subscriber.entity';
 import { NewsletterTokenService } from '../../newsletter-subscribers/newsletter-token.service';
 import { TagsService } from '../../tags/tags.service';
@@ -25,6 +26,7 @@ async function bootstrap(): Promise<void> {
       dataSource,
       languagesRepository: dataSource.getRepository(LanguageEntity),
       adminUsersRepository: dataSource.getRepository(AdminUserEntity),
+      mediaAssetsRepository: dataSource.getRepository(MediaAssetEntity),
       newsletterSubscribersRepository:
         dataSource.getRepository(NewsletterSubscriberEntity),
       tagsService: app.get(TagsService),

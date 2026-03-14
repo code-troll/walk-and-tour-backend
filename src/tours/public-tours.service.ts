@@ -1,9 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { LanguageEntity } from '../languages/language.entity';
+import { getProviderConfig } from '../shared/config/provider.config';
+import { STORAGE_SERVICE, StorageService } from '../storage/storage-service.interface';
 import { TagEntity } from '../tags/tag.entity';
+import { TourMediaEntity } from './entities/tour-media.entity';
 import { TourTranslationEntity } from './entities/tour-translation.entity';
 import { TourEntity } from './entities/tour.entity';
 import { TourPayloadValidationService } from './tour-payload-validation.service';
@@ -21,6 +24,8 @@ export class PublicToursService {
     private readonly toursRepository: Repository<TourEntity>,
     @InjectRepository(LanguageEntity)
     private readonly languagesRepository: Repository<LanguageEntity>,
+    @Inject(STORAGE_SERVICE)
+    private readonly storageService: StorageService,
     private readonly payloadValidationService: TourPayloadValidationService,
   ) {}
 
@@ -29,6 +34,9 @@ export class PublicToursService {
 
     const tours = await this.toursRepository.find({
       relations: {
+        mediaItems: {
+          media: true,
+        },
         tags: true,
         stops: true,
         translations: true,
@@ -49,6 +57,9 @@ export class PublicToursService {
     const tour = await this.toursRepository.findOne({
       where: { slug },
       relations: {
+        mediaItems: {
+          media: true,
+        },
         tags: true,
         stops: true,
         translations: true,
@@ -68,6 +79,57 @@ export class PublicToursService {
     }
 
     return response;
+  }
+
+  async getMediaContent(
+    slug: string,
+    mediaId: string,
+  ): Promise<{
+    content: Buffer;
+    contentType: string;
+    originalFilename: string;
+  }> {
+    const tour = await this.toursRepository.findOne({
+      where: { slug },
+      relations: {
+        mediaItems: {
+          media: true,
+        },
+        stops: true,
+        translations: true,
+      },
+    });
+
+    if (!tour || !this.isSharedTourPubliclyValid(tour)) {
+      throw new NotFoundException(`Tour "${slug}" was not found.`);
+    }
+
+    const isPublic = tour.translations.some(
+      (translation) =>
+        translation.isReady &&
+        translation.isPublished &&
+        this.isTranslationPubliclyValid(tour, translation),
+    );
+
+    if (!isPublic) {
+      throw new NotFoundException(`Tour "${slug}" is not publicly available.`);
+    }
+
+    const media = tour.mediaItems.find((item) => item.mediaId === mediaId)?.media;
+
+    if (!media) {
+      throw new NotFoundException(
+        `Media asset "${mediaId}" is not attached to tour "${slug}".`,
+      );
+    }
+
+    const stored = await this.storageService.getObject(media.storagePath);
+
+    return {
+      content: stored.content,
+      contentType: stored.contentType ?? media.contentType,
+      originalFilename: media.originalFilename,
+    };
   }
 
   private async assertPublicLocale(locale: string): Promise<void> {
@@ -100,6 +162,10 @@ export class PublicToursService {
     }
 
     const payload = translation.payload;
+    const orderedMedia = [...tour.mediaItems].sort((left, right) => left.orderIndex - right.orderIndex);
+    const coverMedia =
+      orderedMedia.find((item) => item.mediaId === tour.coverMediaId) ?? null;
+    const galleryMedia = orderedMedia.filter((item) => item.mediaId !== tour.coverMediaId);
     const itinerary =
       tour.itineraryVariant === 'stops'
         ? {
@@ -126,8 +192,8 @@ export class PublicToursService {
     return {
       id: tour.id,
       slug: tour.slug,
-      coverMediaRef: this.toResponseMediaAsset(tour.coverMediaRef),
-      galleryMediaRefs: tour.galleryMediaRefs.map((asset) => this.toResponseMediaAsset(asset)),
+      coverMedia: this.toResponseMediaItem(tour.slug, coverMedia),
+      galleryMedia: galleryMedia.map((item) => this.toResponseMediaItem(tour.slug, item)),
       price:
         tour.priceAmount && tour.priceCurrency
           ? {
@@ -284,16 +350,36 @@ export class PublicToursService {
     return [...value];
   }
 
-  private toResponseMediaAsset(
-    asset: Record<string, unknown> | null,
-  ): { ref: string; altText: Record<string, string> | null } | null {
-    if (!asset) {
+  private toResponseMediaItem(tourSlug: string, item: TourMediaEntity | null): {
+    mediaId: string;
+    mediaType: 'image' | 'video';
+    storagePath: string;
+    contentUrl: string;
+    contentType: string;
+    size: number;
+    originalFilename: string;
+    altText: Record<string, string> | null;
+    orderIndex: number;
+  } | null {
+    if (!item) {
       return null;
     }
 
     return {
-      ref: asset.ref as string,
-      altText: (asset.altText as Record<string, string> | undefined) ?? null,
+      mediaId: item.mediaId,
+      mediaType: item.media.mediaType,
+      storagePath: item.media.storagePath,
+      contentUrl: this.buildContentUrl(tourSlug, item.mediaId),
+      contentType: item.media.contentType,
+      size: item.media.size,
+      originalFilename: item.media.originalFilename,
+      altText: item.altText ?? null,
+      orderIndex: item.orderIndex,
     };
+  }
+
+  private buildContentUrl(tourSlug: string, mediaId: string): string {
+    const { appBaseUrl } = getProviderConfig();
+    return `${appBaseUrl.replace(/\/$/, '')}/api/public/tours/${encodeURIComponent(tourSlug)}/media/${mediaId}`;
   }
 }

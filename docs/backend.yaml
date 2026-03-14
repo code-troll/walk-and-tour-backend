@@ -58,9 +58,79 @@ paths:
       summary: Describe admin logout behavior
       tags:
         - Admin Auth
-  /api/admin/media/upload:
+  /api/admin/media:
+    get:
+      description: Returns paginated reusable media assets for the admin media library.
+      operationId: AdminMediaController_findAll
+      parameters:
+        - name: page
+          required: false
+          in: query
+          description: Pagination page number.
+          schema:
+            minimum: 1
+            example: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          description: Pagination page size.
+          schema:
+            minimum: 1
+            maximum: 100
+            example: 20
+            type: number
+        - name: mediaType
+          required: false
+          in: query
+          description: Optional media type filter.
+          schema:
+            enum:
+              - image
+              - video
+            type: string
+        - name: search
+          required: false
+          in: query
+          description: Optional filename/path search term.
+          schema:
+            maxLength: 100
+            example: historic-center
+            type: string
+      responses:
+        "200":
+          description: Paginated media asset records.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMediaAssetListResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List media assets
+      tags:
+        - Admin Media
     post:
-      description: Uploads one image through the configured storage driver and returns a reusable media asset descriptor.
+      description: >-
+        Uploads one image or video through the configured storage driver and returns a persisted reusable media asset
+        descriptor.
       operationId: AdminMediaController_upload
       parameters: []
       requestBody:
@@ -105,7 +175,134 @@ paths:
                 $ref: "#/components/schemas/ErrorResponseDto"
       security:
         - admin-auth: []
-      summary: Upload an image asset for admin content
+      summary: Upload a media asset for admin content
+      tags:
+        - Admin Media
+  /api/admin/media/{id}:
+    get:
+      description: Returns one reusable media asset by UUID.
+      operationId: AdminMediaController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Media asset UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Media asset record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMediaAssetResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Get a media asset
+      tags:
+        - Admin Media
+    delete:
+      description: Deletes an uploaded media asset and its stored object when it is no longer referenced by any tour.
+      operationId: AdminMediaController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Media asset UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Media asset deleted.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Delete a media asset
+      tags:
+        - Admin Media
+  /api/admin/media/{id}/content:
+    get:
+      description: Streams the stored file bytes for one reusable media asset.
+      operationId: AdminMediaController_fetchContent
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Media asset UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Fetch media content
       tags:
         - Admin Media
   /api/admin/users:
@@ -464,6 +661,142 @@ paths:
       tags:
         - BlogPosts
         - Admin Blog Posts
+  /api/admin/blog-posts/{id}/media:
+    get:
+      description: Returns the hero media attached to the blog post, if any.
+      operationId: BlogPostsController_listAdminMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Blog post UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Attached blog media assets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlogMediaListResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List attached blog media
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
+  /api/admin/blog-posts/{id}/hero-media:
+    post:
+      description: Attaches or replaces the hero media on the blog post.
+      operationId: BlogPostsController_setHeroMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Blog post UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetBlogPostHeroMediaDto"
+      responses:
+        "200":
+          description: Updated admin blog post record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlogAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Set blog hero media
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
+    delete:
+      description: Detaches the current hero media from the blog post.
+      operationId: BlogPostsController_clearHeroMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Blog post UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Hero media cleared successfully.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Clear blog hero media
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
   /api/public/blog-posts:
     get:
       description: Returns only published blog posts whose requested locale also has a published translation.
@@ -544,6 +877,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponseDto"
       summary: Get a public blog post by slug and locale
+      tags:
+        - BlogPosts
+        - Public Blog Posts
+  /api/public/blog-posts/{slug}/media/{mediaId}:
+    get:
+      description: Streams the hero media attached to a publicly available blog post.
+      operationId: BlogPostsController_getPublicMedia
+      parameters:
+        - name: slug
+          required: true
+          in: path
+          description: Public blog post slug.
+          schema:
+            example: barcelona-historic-center-guide
+            type: string
+        - name: mediaId
+          required: true
+          in: path
+          description: Attached media asset UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: Fetch public blog media
       tags:
         - BlogPosts
         - Public Blog Posts
@@ -1287,6 +1650,35 @@ paths:
       summary: Get a public tour by slug and locale
       tags:
         - Public Tours
+  /api/public/tours/{slug}/media/{mediaId}:
+    get:
+      description: Streams one media asset attached to a tour when the tour is publicly available in at least one locale.
+      operationId: PublicToursController_getMediaContent
+      parameters:
+        - name: slug
+          required: true
+          in: path
+          description: Public tour slug.
+          schema:
+            example: historic-center
+            type: string
+        - name: mediaId
+          required: true
+          in: path
+          description: Attached media asset UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: Fetch public tour media
+      tags:
+        - Public Tours
   /api/admin/tours:
     get:
       description: Returns all tours with shared data, translation diagnostics, and audit metadata.
@@ -1467,6 +1859,313 @@ paths:
       security:
         - admin-auth: []
       summary: Update a tour
+      tags:
+        - Admin Tours
+  /api/admin/tours/{id}/media:
+    get:
+      description: Returns only the media assets currently attached to the tour.
+      operationId: ToursController_listMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Attached tour media items.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourMediaListResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List attached tour media
+      tags:
+        - Admin Tours
+    post:
+      description: Attaches one existing media asset to the tour with optional localized alt text and order.
+      operationId: ToursController_attachMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttachTourMediaDto"
+      responses:
+        "200":
+          description: Updated admin tour record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Attach media to a tour
+      tags:
+        - Admin Tours
+  /api/admin/tours/{id}/media/{mediaId}:
+    patch:
+      description: Updates only the per-tour metadata for one attached media asset.
+      operationId: ToursController_updateMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: mediaId
+          required: true
+          in: path
+          description: Attached media asset UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTourMediaDto"
+      responses:
+        "200":
+          description: Updated admin tour record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update tour media metadata
+      tags:
+        - Admin Tours
+    delete:
+      description: Removes one media attachment from the tour and clears the cover if necessary.
+      operationId: ToursController_detachMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: mediaId
+          required: true
+          in: path
+          description: Attached media asset UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Media detached successfully.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Detach media from a tour
+      tags:
+        - Admin Tours
+  /api/admin/tours/{id}/cover-media:
+    post:
+      description: Marks one attached image asset as the tour cover.
+      operationId: ToursController_setCoverMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetTourCoverMediaDto"
+      responses:
+        "200":
+          description: Updated admin tour record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Set tour cover media
+      tags:
+        - Admin Tours
+    delete:
+      description: Removes the current cover media assignment from the tour.
+      operationId: ToursController_clearCoverMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Tour UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Updated admin tour record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TourAdminResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Clear tour cover media
       tags:
         - Admin Tours
   /api/admin/tours/{id}/translations:
@@ -1836,26 +2535,28 @@ components:
           example: client_discard_bearer_token
       required:
         - logoutStrategy
-    UploadedMediaResponseDto:
+    AdminMediaAssetResponseDto:
       type: object
       properties:
-        ref:
+        id:
           type: string
-          description: Media reference path.
+          description: Media asset UUID.
+          format: uuid
+        mediaType:
+          type: string
+          description: Stored media type.
+          enum:
+            - image
+            - video
+          example: image
+        storagePath:
+          type: string
+          description: Media storage path.
           example: media/tours/historic-center/cover.jpg
-        altText:
-          type: object
-          description: Optional localized alt text keyed by locale code.
-          additionalProperties:
-            type: string
-          nullable: true
-          example:
-            en: View of the cathedral facade
-            es: Vista de la fachada de la catedral
-        publicUrl:
+        contentUrl:
           type: string
-          description: Public URL resolved by the configured storage driver.
-          example: http://api.dev.walkandtour.dk:3000/media/tours/historic-center/uuid-cover.jpg
+          description: API URL used to fetch the stored media bytes.
+          example: http://api.dev.walkandtour.dk:3000/api/admin/media/uuid/content
         contentType:
           type: string
           description: Detected content type of the uploaded object.
@@ -1864,11 +2565,95 @@ components:
           type: number
           description: Stored file size in bytes.
           example: 248193
+        originalFilename:
+          type: string
+          description: Original uploaded filename.
+          example: cover.jpg
+        createdAt:
+          type: string
+          description: Creation timestamp of the media asset record.
+          format: date-time
+        updatedAt:
+          type: string
+          description: Last update timestamp of the media asset record.
+          format: date-time
       required:
-        - ref
-        - publicUrl
+        - id
+        - mediaType
+        - storagePath
+        - contentUrl
         - contentType
         - size
+        - originalFilename
+        - createdAt
+        - updatedAt
+    AdminMediaAssetListResponseDto:
+      type: object
+      properties:
+        items:
+          description: Paginated media asset results.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminMediaAssetResponseDto"
+        page:
+          type: number
+          description: Current page number.
+          example: 1
+        limit:
+          type: number
+          description: Current page size.
+          example: 20
+        total:
+          type: number
+          description: Total matching media assets.
+          example: 42
+      required:
+        - items
+        - page
+        - limit
+        - total
+    UploadedMediaResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Media asset UUID.
+          format: uuid
+        mediaType:
+          type: string
+          description: Stored media type.
+          enum:
+            - image
+            - video
+          example: image
+        storagePath:
+          type: string
+          description: Media storage path.
+          example: media/tours/historic-center/cover.jpg
+        contentUrl:
+          type: string
+          description: API URL used to fetch the stored media bytes.
+          example: http://api.dev.walkandtour.dk:3000/api/admin/media/uuid/content
+        contentType:
+          type: string
+          description: Detected content type of the uploaded object.
+          example: image/jpeg
+        size:
+          type: number
+          description: Stored file size in bytes.
+          example: 248193
+        originalFilename:
+          type: string
+          description: Original uploaded filename.
+          example: cover.jpg
+      required:
+        - id
+        - mediaType
+        - storagePath
+        - contentUrl
+        - contentType
+        - size
+        - originalFilename
     RoleResponseDto:
       type: object
       properties:
@@ -2022,6 +2807,48 @@ components:
             - active
             - disabled
           example: disabled
+    MediaAssetResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Media asset UUID.
+          format: uuid
+        mediaType:
+          type: string
+          description: Stored media type.
+          enum:
+            - image
+            - video
+          example: image
+        storagePath:
+          type: string
+          description: Media storage path.
+          example: media/tours/historic-center/cover.jpg
+        contentUrl:
+          type: string
+          description: API URL used to fetch the stored media bytes.
+          example: http://api.dev.walkandtour.dk:3000/api/admin/media/uuid/content
+        contentType:
+          type: string
+          description: Detected content type of the uploaded object.
+          example: image/jpeg
+        size:
+          type: number
+          description: Stored file size in bytes.
+          example: 248193
+        originalFilename:
+          type: string
+          description: Original uploaded filename.
+          example: cover.jpg
+      required:
+        - id
+        - mediaType
+        - storagePath
+        - contentUrl
+        - contentType
+        - size
+        - originalFilename
     TagResponseDto:
       type: object
       properties:
@@ -2120,10 +2947,16 @@ components:
           type: string
           description: Stable public slug.
           example: barcelona-historic-center-guide
-        heroMediaRef:
+        heroMediaId:
           type: object
-          description: Optional hero media reference.
+          description: Optional hero media asset UUID.
+          format: uuid
           nullable: true
+        heroMedia:
+          description: Resolved hero media asset.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/MediaAssetResponseDto"
         publicationStatus:
           type: string
           description: Blog post publication state.
@@ -2226,11 +3059,6 @@ components:
           example: barcelona-historic-center-guide
           pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
           maxLength: 150
-        heroMediaRef:
-          type: string
-          description: Optional hero media reference.
-          example: media/blog/historic-center/hero.jpg
-          maxLength: 255
         publicationStatus:
           type: string
           description: Top-level publication state of the blog post.
@@ -2272,12 +3100,6 @@ components:
           example: barcelona-historic-center-guide
           pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
           maxLength: 150
-        heroMediaRef:
-          type: object
-          description: Updated hero media reference. Set `null` to clear the current value.
-          example: media/blog/historic-center/hero.jpg
-          maxLength: 255
-          nullable: true
         publicationStatus:
           type: string
           description: Updated top-level publication state.
@@ -2300,6 +3122,25 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CreateBlogPostTranslationDto"
+    BlogMediaListResponseDto:
+      type: object
+      properties:
+        items:
+          description: Attached blog media assets.
+          type: array
+          items:
+            $ref: "#/components/schemas/MediaAssetResponseDto"
+      required:
+        - items
+    SetBlogPostHeroMediaDto:
+      type: object
+      properties:
+        mediaId:
+          type: string
+          description: Media asset UUID to attach as the blog hero media.
+          format: uuid
+      required:
+        - mediaId
     PublicTagResponseDto:
       type: object
       properties:
@@ -2361,10 +3202,11 @@ components:
           type: string
           description: Stable public slug.
           example: barcelona-historic-center-guide
-        heroMediaRef:
-          type: object
-          description: Optional hero media reference.
+        heroMedia:
+          description: Resolved hero media asset.
           nullable: true
+          allOf:
+            - $ref: "#/components/schemas/MediaAssetResponseDto"
         tags:
           description: Localized tag labels for the requested locale.
           type: array
@@ -2805,24 +3647,67 @@ components:
           example:
             en: History
             es: Historia
-    TourMediaAssetResponseDto:
+    TourMediaItemResponseDto:
       type: object
       properties:
-        ref:
+        id:
           type: string
-          description: Media reference path.
+          description: Media asset UUID.
+          format: uuid
+        mediaType:
+          type: string
+          description: Stored media type.
+          enum:
+            - image
+            - video
+          example: image
+        storagePath:
+          type: string
+          description: Media storage path.
           example: media/tours/historic-center/cover.jpg
+        contentUrl:
+          type: string
+          description: API URL used to fetch the stored media bytes.
+          example: http://api.dev.walkandtour.dk:3000/api/admin/media/uuid/content
+        contentType:
+          type: string
+          description: Detected content type of the uploaded object.
+          example: image/jpeg
+        size:
+          type: number
+          description: Stored file size in bytes.
+          example: 248193
+        originalFilename:
+          type: string
+          description: Original uploaded filename.
+          example: cover.jpg
+        mediaId:
+          type: string
+          description: Attached media asset UUID.
+          format: uuid
         altText:
           type: object
-          description: Optional localized alt text keyed by locale code.
+          description: Optional localized alt text keyed by locale code for this tour usage.
           additionalProperties:
             type: string
           nullable: true
           example:
             en: View of the cathedral facade
             es: Vista de la fachada de la catedral
+        orderIndex:
+          type: number
+          description: Display order among the attached media items.
+          example: 0
       required:
-        - ref
+        - id
+        - mediaType
+        - storagePath
+        - contentUrl
+        - contentType
+        - size
+        - originalFilename
+        - mediaId
+        - orderIndex
     PriceResponseDto:
       type: object
       properties:
@@ -3015,16 +3900,16 @@ components:
           type: string
           description: Stable public slug.
           example: historic-center
-        coverMediaRef:
-          description: Optional cover media asset.
+        coverMedia:
+          description: Optional cover media item selected from the attached assets.
           nullable: true
           allOf:
-            - $ref: "#/components/schemas/TourMediaAssetResponseDto"
-        galleryMediaRefs:
-          description: Public gallery media assets.
+            - $ref: "#/components/schemas/TourMediaItemResponseDto"
+        galleryMedia:
+          description: Public gallery media items excluding the selected cover.
           type: array
           items:
-            $ref: "#/components/schemas/TourMediaAssetResponseDto"
+            $ref: "#/components/schemas/TourMediaItemResponseDto"
         price:
           description: Fixed price data. `null` for tip-based tours.
           nullable: true
@@ -3073,7 +3958,7 @@ components:
       required:
         - id
         - slug
-        - galleryMediaRefs
+        - galleryMedia
         - rating
         - reviewCount
         - tourType
@@ -3207,16 +4092,16 @@ components:
           type: string
           description: Stable public slug.
           example: historic-center
-        coverMediaRef:
-          description: Optional cover media asset.
+        coverMediaId:
+          type: object
+          description: Attached image asset UUID used as the tour cover.
+          format: uuid
           nullable: true
-          allOf:
-            - $ref: "#/components/schemas/TourMediaAssetResponseDto"
-        galleryMediaRefs:
-          description: Additional gallery media assets.
+        mediaItems:
+          description: Ordered attached media items with per-tour localized alt text.
           type: array
           items:
-            $ref: "#/components/schemas/TourMediaAssetResponseDto"
+            $ref: "#/components/schemas/TourMediaItemResponseDto"
         contentSchema:
           type: object
           description: Shared JSON Schema that localized translation payloads must satisfy.
@@ -3294,7 +4179,7 @@ components:
         - id
         - name
         - slug
-        - galleryMediaRefs
+        - mediaItems
         - tourType
         - tagKeys
         - tags
@@ -3328,25 +4213,6 @@ components:
         - name
         - slug
         - tourType
-    TourMediaAssetDto:
-      type: object
-      properties:
-        altText:
-          type: object
-          description: Optional localized alt text keyed by locale code.
-          additionalProperties:
-            type: string
-            maxLength: 255
-          example:
-            en: View of the cathedral facade
-            es: Vista de la fachada de la catedral
-        ref:
-          type: string
-          description: Media reference path.
-          example: media/tours/historic-center/cover.jpg
-          maxLength: 255
-      required:
-        - ref
     PriceDto:
       type: object
       properties:
@@ -3465,16 +4331,6 @@ components:
           example: historic-center
           pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
           maxLength: 150
-        coverMediaRef:
-          description: Updated cover media asset. Set `null` to clear the value.
-          nullable: true
-          allOf:
-            - $ref: "#/components/schemas/TourMediaAssetDto"
-        galleryMediaRefs:
-          description: Replacement gallery media assets.
-          type: array
-          items:
-            $ref: "#/components/schemas/TourMediaAssetDto"
         contentSchema:
           type: object
           description: Updated shared JSON Schema for localized payload validation.
@@ -3526,6 +4382,65 @@ components:
           type: array
           items:
             type: string
+    TourMediaListResponseDto:
+      type: object
+      properties:
+        items:
+          description: Attached tour media assets in display order.
+          type: array
+          items:
+            $ref: "#/components/schemas/TourMediaItemResponseDto"
+      required:
+        - items
+    AttachTourMediaDto:
+      type: object
+      properties:
+        altText:
+          type: object
+          description: Optional localized alt text keyed by locale code.
+          additionalProperties:
+            type: string
+            maxLength: 255
+          example:
+            en: View of the cathedral facade
+            es: Vista de la fachada de la catedral
+        mediaId:
+          type: string
+          description: Uploaded media asset UUID to attach to the tour.
+          format: uuid
+        orderIndex:
+          type: number
+          description: Optional explicit display order. If omitted, the media is appended to the end.
+          example: 0
+          minimum: 0
+      required:
+        - mediaId
+    UpdateTourMediaDto:
+      type: object
+      properties:
+        altText:
+          type: object
+          description: Optional localized alt text keyed by locale code.
+          additionalProperties:
+            type: string
+            maxLength: 255
+          example:
+            en: View of the cathedral facade
+            es: Vista de la fachada de la catedral
+        orderIndex:
+          type: number
+          description: Optional explicit display order. If omitted, the existing order is preserved.
+          example: 0
+          minimum: 0
+    SetTourCoverMediaDto:
+      type: object
+      properties:
+        mediaId:
+          type: string
+          description: Attached image media asset UUID to use as the tour cover.
+          format: uuid
+      required:
+        - mediaId
     CreateTourTranslationDto:
       type: object
       properties:

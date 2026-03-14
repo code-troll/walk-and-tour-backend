@@ -1,7 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
 
-import { LanguageEntity } from '../languages/language.entity';
 import { createRepositoryMock, RepositoryMock } from '../../test/utils/repository.mock';
+import { LanguageEntity } from '../languages/language.entity';
+import { MediaAssetEntity } from '../media/media-asset.entity';
+import { StorageService } from '../storage/storage-service.interface';
 import { BlogPostEntity } from './blog-post.entity';
 import { PublicBlogPostsService } from './public-blog-posts.service';
 
@@ -9,13 +11,21 @@ describe('PublicBlogPostsService', () => {
   let service: PublicBlogPostsService;
   let blogPostsRepository: RepositoryMock<BlogPostEntity>;
   let languagesRepository: RepositoryMock<LanguageEntity>;
+  let storageService: jest.Mocked<StorageService>;
 
   beforeEach(() => {
     blogPostsRepository = createRepositoryMock<BlogPostEntity>();
     languagesRepository = createRepositoryMock<LanguageEntity>();
+    storageService = {
+      putObject: jest.fn(),
+      getObject: jest.fn(),
+      deleteObject: jest.fn(),
+      getPublicUrl: jest.fn((path: string) => `http://localhost:3000/media/${path}`),
+    };
     service = new PublicBlogPostsService(
       blogPostsRepository as never,
       languagesRepository as never,
+      storageService,
     );
   });
 
@@ -35,6 +45,10 @@ describe('PublicBlogPostsService', () => {
     await expect(service.findAll('en')).resolves.toEqual([
       expect.objectContaining({
         slug: 'royal-copenhagen',
+        heroMedia: expect.objectContaining({
+          id: 'media-1',
+          contentUrl: 'http://localhost:3000/api/public/blog-posts/royal-copenhagen/media/media-1',
+        }),
         translation: expect.objectContaining({
           locale: 'en',
         }),
@@ -81,7 +95,8 @@ function createPublicBlogPost(overrides: Partial<BlogPostEntity> = {}): BlogPost
     id: 'blog-1',
     name: 'Royal Copenhagen Article',
     slug: 'royal-copenhagen',
-    heroMediaRef: 'hero.jpg',
+    heroMediaId: 'media-1',
+    heroMedia: createMediaAssetEntity(),
     publicationStatus: 'published',
     tags: [
       {
@@ -104,4 +119,22 @@ function createPublicBlogPost(overrides: Partial<BlogPostEntity> = {}): BlogPost
     publishedAt: new Date(),
     ...overrides,
   } as unknown as BlogPostEntity;
+}
+
+function createMediaAssetEntity(
+  overrides: Partial<MediaAssetEntity> = {},
+): MediaAssetEntity {
+  return {
+    id: 'media-1',
+    mediaType: 'image',
+    storagePath: 'hero.jpg',
+    contentType: 'image/jpeg',
+    size: 1024,
+    originalFilename: 'hero.jpg',
+    createdBy: 'admin-1',
+    tourUsages: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  } as MediaAssetEntity;
 }

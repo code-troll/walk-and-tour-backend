@@ -1,6 +1,7 @@
 import type { AdminUserEntity } from '../../admin-users/admin-user.entity';
 import type { BlogPostsService } from '../../blog-posts/blog-posts.service';
 import type { LanguageEntity } from '../../languages/language.entity';
+import type { MediaAssetEntity } from '../../media/media-asset.entity';
 import type { NewsletterSubscriberEntity } from '../../newsletter-subscribers/newsletter-subscriber.entity';
 import type { NewsletterTokenService } from '../../newsletter-subscribers/newsletter-token.service';
 import type { TagsService } from '../../tags/tags.service';
@@ -23,9 +24,11 @@ const RESET_SQL = `
     "blog_post_tags",
     "blog_post_translations",
     "blog_posts",
+    "tour_media",
     "tour_tags",
     "tour_translations",
     "tour_itinerary_stops",
+    "media_assets",
     "tours",
     "tags",
     "admin_users"
@@ -609,12 +612,22 @@ export interface LocalDevSeedDependencies {
       values: Array<Partial<NewsletterSubscriberEntity>>,
     ) => Promise<NewsletterSubscriberEntity[] | NewsletterSubscriberEntity>;
   };
+  mediaAssetsRepository: {
+    save: (
+      values: Array<Partial<MediaAssetEntity>>,
+    ) => Promise<MediaAssetEntity[] | MediaAssetEntity>;
+  };
   tagsService: Pick<TagsService, 'create'>;
   toursService: Pick<
     ToursService,
-    'create' | 'update' | 'createTranslation' | 'publishTranslation'
+    | 'attachMedia'
+    | 'create'
+    | 'createTranslation'
+    | 'publishTranslation'
+    | 'setCoverMedia'
+    | 'update'
   >;
-  blogPostsService: Pick<BlogPostsService, 'create'>;
+  blogPostsService: Pick<BlogPostsService, 'create' | 'setHeroMedia'>;
   newsletterTokenService: Pick<NewsletterTokenService, 'hashToken'>;
 }
 
@@ -692,10 +705,39 @@ export class LocalDevSeedRunner {
         slug: _slug,
         tourType: _tourType,
         translations,
+        coverMediaRef,
+        galleryMediaRefs,
         ...updateDto
       } = tour;
 
-      await this.deps.toursService.update(created.id, updateDto, actor);
+      const seededMedia = await this.seedTourMediaAssets(
+        actor.id,
+        tour.slug,
+        coverMediaRef ?? null,
+        galleryMediaRefs ?? [],
+      );
+
+      await this.deps.toursService.update(
+        created.id,
+        updateDto,
+        actor,
+      );
+
+      for (const mediaItem of seededMedia.mediaItems) {
+        await this.deps.toursService.attachMedia(
+          created.id,
+          mediaItem,
+          actor,
+        );
+      }
+
+      if (seededMedia.coverMediaId) {
+        await this.deps.toursService.setCoverMedia(
+          created.id,
+          { mediaId: seededMedia.coverMediaId },
+          actor,
+        );
+      }
 
       for (const translation of translations) {
         await this.deps.toursService.createTranslation(
@@ -725,7 +767,20 @@ export class LocalDevSeedRunner {
 
   private async seedBlogPosts(actor: SeedActor): Promise<void> {
     for (const blogPost of SEEDED_BLOG_POSTS) {
-      await this.deps.blogPostsService.create(blogPost, actor);
+      const { heroMediaRef, ...dto } = blogPost;
+      const heroMediaId = heroMediaRef
+        ? await this.seedStandaloneMediaAsset(actor.id, heroMediaRef)
+        : null;
+
+      const created = await this.deps.blogPostsService.create(dto, actor) as { id: string };
+
+      if (heroMediaId) {
+        await this.deps.blogPostsService.setHeroMedia(
+          created.id,
+          { mediaId: heroMediaId },
+          actor,
+        );
+      }
     }
   }
 
@@ -752,6 +807,76 @@ export class LocalDevSeedRunner {
           : null,
       })),
     );
+  }
+
+  private async seedTourMediaAssets(
+    actorId: string,
+    slug: string,
+    coverMediaRef: { ref: string; altText?: Record<string, string> } | null,
+    galleryMediaRefs: Array<{ ref: string; altText?: Record<string, string> }>,
+  ): Promise<{
+    coverMediaId: string | null;
+    mediaItems: Array<{
+      mediaId: string;
+      altText?: Record<string, string>;
+      orderIndex: number;
+    }>;
+  }> {
+    const seedAssets = [
+      ...(coverMediaRef ? [{ ...coverMediaRef, isCover: true }] : []),
+      ...galleryMediaRefs.map((asset) => ({ ...asset, isCover: false })),
+    ];
+
+    if (seedAssets.length === 0) {
+      return {
+        coverMediaId: null,
+        mediaItems: [],
+      };
+    }
+
+    const savedAssets = await this.deps.mediaAssetsRepository.save(
+      seedAssets.map((asset, index) => ({
+        mediaType: asset.ref.endsWith('.mp4') ? 'video' : 'image',
+        storagePath: asset.ref,
+        contentType: asset.ref.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg',
+        size: 1024 + index,
+        originalFilename: `${slug}-${index + 1}${asset.ref.endsWith('.mp4') ? '.mp4' : '.jpg'}`,
+        createdBy: actorId,
+      })),
+    );
+
+    const normalizedAssets = Array.isArray(savedAssets) ? savedAssets : [savedAssets];
+    const coverMedia = coverMediaRef ? normalizedAssets[0] : null;
+    const mediaItems = normalizedAssets.map((mediaAsset, index) => ({
+      mediaId: mediaAsset.id,
+      altText: seedAssets[index].altText,
+      orderIndex: index,
+    }));
+
+    return {
+      coverMediaId: coverMedia?.id ?? null,
+      mediaItems,
+    };
+  }
+
+  private async seedStandaloneMediaAsset(
+    actorId: string,
+    storagePath: string,
+  ): Promise<string> {
+    const saved = await this.deps.mediaAssetsRepository.save([
+      {
+        mediaType: storagePath.endsWith('.mp4') ? 'video' : 'image',
+        storagePath,
+        contentType: storagePath.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg',
+        size: 1024,
+        originalFilename: storagePath.split('/').pop() ?? 'asset',
+        createdBy: actorId,
+      },
+    ]);
+
+    const asset = Array.isArray(saved) ? saved[0] : saved;
+
+    return asset.id;
   }
 }
 
