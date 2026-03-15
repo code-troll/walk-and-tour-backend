@@ -1,16 +1,5 @@
-import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  ArrayUnique,
-  IsArray,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-  ValidateNested,
-} from 'class-validator';
-
-import { CreateBlogPostTranslationDto } from './create-blog-post.dto';
+import { ArrayUnique, IsArray, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -39,15 +28,6 @@ export class UpdateBlogPostDto {
   slug?: string;
 
   @ApiPropertyOptional({
-    description: 'Updated top-level publication state.',
-    enum: ['draft', 'published'],
-    example: 'published',
-  })
-  @IsString()
-  @IsOptional()
-  publicationStatus?: string;
-
-  @ApiPropertyOptional({
     description: 'Replacement tag key list.',
     type: [String],
     example: ['history', 'architecture'],
@@ -59,17 +39,4 @@ export class UpdateBlogPostDto {
   @IsOptional()
   tagKeys?: string[];
 
-  @ApiPropertyOptional({
-    description: 'Translations to merge into the existing set by locale code.',
-    type: () => [CreateBlogPostTranslationDto],
-    uniqueItems: true,
-  })
-  @IsArray()
-  @ArrayUnique(
-    (translation: CreateBlogPostTranslationDto) => translation.languageCode,
-  )
-  @ValidateNested({ each: true })
-  @Type(() => CreateBlogPostTranslationDto)
-  @IsOptional()
-  translations?: CreateBlogPostTranslationDto[];
 }

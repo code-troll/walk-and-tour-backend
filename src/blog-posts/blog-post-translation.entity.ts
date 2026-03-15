@@ -36,8 +36,8 @@ export class BlogPostTranslationEntity {
   @JoinColumn({ name: 'language_code', referencedColumnName: 'code' })
   language!: LanguageEntity;
 
-  @Column({ name: 'publication_status', type: 'varchar', length: 20 })
-  publicationStatus!: string;
+  @Column({ name: 'is_published', type: 'boolean', default: false })
+  isPublished!: boolean;
 
   @Column({ type: 'varchar', length: 255 })
   title!: string;

@@ -428,12 +428,11 @@ const SEEDED_BLOG_POSTS = [
     name: 'Barcelona Historic Center Guide Article',
     slug: 'barcelona-historic-center-guide',
     heroMediaRef: 'blog/barcelona-historic-center-guide/hero.jpg',
-    publicationStatus: 'published',
     tagKeys: ['history', 'architecture', 'family-friendly'],
     translations: [
       {
         languageCode: 'en',
-        publicationStatus: 'published',
+        isPublished: true,
         title: 'Barcelona Historic Center Guide',
         summary: 'A practical guide to moving through the old city.',
         htmlContent:
@@ -444,7 +443,7 @@ const SEEDED_BLOG_POSTS = [
       },
       {
         languageCode: 'es',
-        publicationStatus: 'published',
+        isPublished: true,
         title: 'Guia del Centro Historico de Barcelona',
         summary: 'Una guia practica para recorrer el casco antiguo.',
         htmlContent:
@@ -455,7 +454,7 @@ const SEEDED_BLOG_POSTS = [
       },
       {
         languageCode: 'it',
-        publicationStatus: 'published',
+        isPublished: true,
         title: 'Guida al Centro Storico di Barcellona',
         summary: 'Una guida pratica per attraversare la citta vecchia.',
         htmlContent:
@@ -470,12 +469,11 @@ const SEEDED_BLOG_POSTS = [
     name: 'Best Tapas After Your Tour Article',
     slug: 'best-tapas-after-your-tour',
     heroMediaRef: 'blog/best-tapas-after-your-tour/hero.jpg',
-    publicationStatus: 'published',
     tagKeys: ['food', 'local-life'],
     translations: [
       {
         languageCode: 'en',
-        publicationStatus: 'published',
+        isPublished: true,
         title: 'Best Tapas After Your Tour',
         summary: 'Three neighborhoods worth staying in after the walking route ends.',
         htmlContent:
@@ -486,7 +484,7 @@ const SEEDED_BLOG_POSTS = [
       },
       {
         languageCode: 'es',
-        publicationStatus: 'unpublished',
+        isPublished: false,
         title: 'Las Mejores Tapas Despues del Tour',
         summary: 'Barrios recomendados para seguir la tarde.',
         htmlContent:
@@ -501,12 +499,11 @@ const SEEDED_BLOG_POSTS = [
     name: 'Behind the Scenes Tour Planning Article',
     slug: 'behind-the-scenes-tour-planning',
     heroMediaRef: 'blog/behind-the-scenes-tour-planning/hero.jpg',
-    publicationStatus: 'draft',
     tagKeys: ['local-life'],
     translations: [
       {
         languageCode: 'en',
-        publicationStatus: 'unpublished',
+        isPublished: false,
         title: 'Behind the Scenes of Tour Planning',
         summary: 'An internal editorial draft for admin previews.',
         htmlContent:
@@ -627,7 +624,13 @@ export interface LocalDevSeedDependencies {
     | 'setCoverMedia'
     | 'update'
   >;
-  blogPostsService: Pick<BlogPostsService, 'create' | 'setHeroMedia'>;
+  blogPostsService: Pick<
+    BlogPostsService,
+    | 'create'
+    | 'createTranslation'
+    | 'publishTranslation'
+    | 'setHeroMedia'
+  >;
   newsletterTokenService: Pick<NewsletterTokenService, 'hashToken'>;
 }
 
@@ -767,12 +770,36 @@ export class LocalDevSeedRunner {
 
   private async seedBlogPosts(actor: SeedActor): Promise<void> {
     for (const blogPost of SEEDED_BLOG_POSTS) {
-      const { heroMediaRef, ...dto } = blogPost;
+      const { heroMediaRef, translations, ...dto } = blogPost;
       const heroMediaId = heroMediaRef
         ? await this.seedStandaloneMediaAsset(actor.id, heroMediaRef)
         : null;
 
       const created = await this.deps.blogPostsService.create(dto, actor) as { id: string };
+
+      for (const translation of translations) {
+        await this.deps.blogPostsService.createTranslation(
+          created.id,
+          {
+            languageCode: translation.languageCode,
+            title: translation.title,
+            summary: translation.summary,
+            htmlContent: translation.htmlContent,
+            seoTitle: translation.seoTitle,
+            seoDescription: translation.seoDescription,
+            imageRefs: translation.imageRefs,
+          },
+          actor,
+        );
+
+        if (translation.isPublished) {
+          await this.deps.blogPostsService.publishTranslation(
+            created.id,
+            translation.languageCode,
+            actor,
+          );
+        }
+      }
 
       if (heroMediaId) {
         await this.deps.blogPostsService.setHeroMedia(

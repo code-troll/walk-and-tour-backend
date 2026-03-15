@@ -40,6 +40,8 @@ describe('LocalDevSeedRunner', () => {
     };
     const blogPostsService = {
       create: jest.fn().mockResolvedValue({ id: 'blog-1' }),
+      createTranslation: jest.fn(),
+      publishTranslation: jest.fn(),
       setHeroMedia: jest.fn(),
     };
     const newsletterTokenService = {
@@ -89,6 +91,14 @@ describe('LocalDevSeedRunner', () => {
         .filter((translation) => translation.isPublished).length,
     );
     expect(blogPostsService.create).toHaveBeenCalledTimes(constants.blogPosts.length);
+    expect(blogPostsService.createTranslation).toHaveBeenCalledTimes(
+      constants.blogPosts.flatMap((blogPost) => blogPost.translations).length,
+    );
+    expect(blogPostsService.publishTranslation).toHaveBeenCalledTimes(
+      constants.blogPosts
+        .flatMap((blogPost) => blogPost.translations)
+        .filter((translation) => translation.isPublished).length,
+    );
     expect(blogPostsService.setHeroMedia).toHaveBeenCalled();
     expect(newsletterSubscribersRepository.save).toHaveBeenCalledWith(
       expect.arrayContaining([
@@ -156,6 +166,8 @@ describe('LocalDevSeedRunner', () => {
     };
     const blogPostsService = {
       create: jest.fn().mockResolvedValue({ id: 'blog-1' }),
+      createTranslation: jest.fn(),
+      publishTranslation: jest.fn(),
       setHeroMedia: jest.fn(),
     };
 
@@ -239,10 +251,29 @@ describe('LocalDevSeedRunner', () => {
       }),
     );
     expect(blogPostsService.create).toHaveBeenCalledWith(
-      expect.objectContaining({
+      {
         name: 'Barcelona Historic Center Guide Article',
         slug: 'barcelona-historic-center-guide',
+        tagKeys: ['history', 'architecture', 'family-friendly'],
+      },
+      expect.objectContaining({
+        id: '11111111-1111-1111-1111-111111111111',
       }),
+    );
+    expect(blogPostsService.createTranslation).toHaveBeenCalledWith(
+      'blog-1',
+      expect.objectContaining({
+        languageCode: 'en',
+        title: 'Barcelona Historic Center Guide',
+        htmlContent: expect.any(String),
+      }),
+      expect.objectContaining({
+        id: '11111111-1111-1111-1111-111111111111',
+      }),
+    );
+    expect(blogPostsService.publishTranslation).toHaveBeenCalledWith(
+      'blog-1',
+      'en',
       expect.objectContaining({
         id: '11111111-1111-1111-1111-111111111111',
       }),

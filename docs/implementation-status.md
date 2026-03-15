@@ -68,3 +68,4 @@ The six planned backend layers are now implemented. The next step, if requested,
 - Admin tag deletion now performs an application-level cascade by removing tag associations from tours and blog posts before deleting the tag record.
 - Tour writes are now split: shared tour data is saved through base-tour endpoints, translations are saved through nested translation endpoints, and translation publish/unpublish is only available through dedicated translation routes.
 - Tour translations can now be permanently removed through a dedicated nested delete endpoint.
+- Blog posts now follow the same publication model as tours: shared blog writes are separate from nested translation create/update/delete routes, only `blog_post_translations.is_published` is stored, and blog-level `publishedAt` is derived from translation publish actions.

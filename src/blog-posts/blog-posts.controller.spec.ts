@@ -15,6 +15,11 @@ describe('BlogPostsController', () => {
       findOne: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      createTranslation: jest.fn(),
+      updateTranslation: jest.fn(),
+      deleteTranslation: jest.fn(),
+      publishTranslation: jest.fn(),
+      unpublishTranslation: jest.fn(),
       listMedia: jest.fn(),
       setHeroMedia: jest.fn(),
       clearHeroMedia: jest.fn(),
@@ -36,7 +41,6 @@ describe('BlogPostsController', () => {
     const dto = {
       name: 'Royal Copenhagen Article',
       slug: 'royal-copenhagen',
-      publicationStatus: 'draft',
     };
     const admin = { id: 'admin-1' };
 
@@ -49,6 +53,96 @@ describe('BlogPostsController', () => {
     await controller.findAllPublic({ locale: 'en' });
 
     expect(publicBlogPostsService.findAll).toHaveBeenCalledWith('en');
+  });
+
+  it('delegates translation creation with the authenticated admin', async () => {
+    const dto = {
+      languageCode: 'en',
+      title: 'Royal Copenhagen',
+      htmlContent: '<p>Hello</p>',
+    };
+    const admin = { id: 'admin-1' };
+
+    await controller.createTranslation(
+      '2b3d8afb-4083-49ec-8990-c71ff89c71eb',
+      dto as never,
+      admin as never,
+    );
+
+    expect(blogPostsService.createTranslation).toHaveBeenCalledWith(
+      '2b3d8afb-4083-49ec-8990-c71ff89c71eb',
+      dto,
+      admin,
+    );
+  });
+
+  it('delegates translation updates with the authenticated admin', async () => {
+    const dto = {
+      title: 'Updated title',
+    };
+    const admin = { id: 'admin-1' };
+
+    await controller.updateTranslation(
+      '2b3d8afb-4083-49ec-8990-c71ff89c71eb',
+      'en',
+      dto as never,
+      admin as never,
+    );
+
+    expect(blogPostsService.updateTranslation).toHaveBeenCalledWith(
+      '2b3d8afb-4083-49ec-8990-c71ff89c71eb',
+      'en',
+      dto,
+      admin,
+    );
+  });
+
+  it('delegates translation deletion with the authenticated admin', async () => {
+    const admin = { id: 'admin-1' };
+
+    await controller.deleteTranslation(
+      '2b3d8afb-4083-49ec-8990-c71ff89c71eb',
+      'en',
+      admin as never,
+    );
+
+    expect(blogPostsService.deleteTranslation).toHaveBeenCalledWith(
+      '2b3d8afb-4083-49ec-8990-c71ff89c71eb',
+      'en',
+      admin,
+    );
+  });
+
+  it('delegates translation publish with the authenticated admin', async () => {
+    const admin = { id: 'admin-1' };
+
+    await controller.publishTranslation(
+      '2b3d8afb-4083-49ec-8990-c71ff89c71eb',
+      'en',
+      admin as never,
+    );
+
+    expect(blogPostsService.publishTranslation).toHaveBeenCalledWith(
+      '2b3d8afb-4083-49ec-8990-c71ff89c71eb',
+      'en',
+      admin,
+    );
+  });
+
+  it('delegates translation unpublish with the authenticated admin', async () => {
+    const admin = { id: 'admin-1' };
+
+    await controller.unpublishTranslation(
+      '2b3d8afb-4083-49ec-8990-c71ff89c71eb',
+      'en',
+      admin as never,
+    );
+
+    expect(blogPostsService.unpublishTranslation).toHaveBeenCalledWith(
+      '2b3d8afb-4083-49ec-8990-c71ff89c71eb',
+      'en',
+      admin,
+    );
   });
 
   it('delegates public blog detail by slug and locale', async () => {
@@ -122,6 +216,15 @@ describe('BlogPostsController', () => {
       Reflect.getMetadata(
         HTTP_CODE_METADATA,
         BlogPostsController.prototype.clearHeroMedia,
+      ),
+    ).toBe(204);
+  });
+
+  it('marks translation delete requests as 204 no content', () => {
+    expect(
+      Reflect.getMetadata(
+        HTTP_CODE_METADATA,
+        BlogPostsController.prototype.deleteTranslation,
       ),
     ).toBe(204);
   });

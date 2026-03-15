@@ -69,8 +69,7 @@ Tour enums:
 
 Blog statuses:
 
-- Blog `publicationStatus`: `draft | published`
-- Blog translation `publicationStatus`: `published | unpublished`
+- Blog translation `isPublished`: `boolean`
 
 Newsletter statuses:
 
@@ -669,6 +668,11 @@ Routes:
 | `GET` | `/api/admin/blog-posts/:id` | `super_admin`, `editor` |
 | `POST` | `/api/admin/blog-posts` | `super_admin`, `editor` |
 | `PATCH` | `/api/admin/blog-posts/:id` | `super_admin`, `editor` |
+| `POST` | `/api/admin/blog-posts/:id/translations` | `super_admin`, `editor` |
+| `PATCH` | `/api/admin/blog-posts/:id/translations/:languageCode` | `super_admin`, `editor` |
+| `DELETE` | `/api/admin/blog-posts/:id/translations/:languageCode` | `super_admin`, `editor` |
+| `POST` | `/api/admin/blog-posts/:id/translations/:languageCode/publish` | `super_admin`, `editor` |
+| `POST` | `/api/admin/blog-posts/:id/translations/:languageCode/unpublish` | `super_admin`, `editor` |
 
 Shared field note:
 
@@ -681,9 +685,7 @@ Top-level request shape:
 
 - `name`
 - `slug`
-- `publicationStatus`
 - `tagKeys?`
-- `translations?`
 
 Blog media routes:
 
@@ -694,7 +696,6 @@ Blog media routes:
 Translation request shape:
 
 - `languageCode`
-- `publicationStatus`
 - `title?`
 - `summary?`
 - `htmlContent?`
@@ -713,15 +714,17 @@ Key DTO rules:
 - `slug` pattern: `^[a-z0-9]+(?:-[a-z0-9]+)*$`
 - `slug` max length: `150`
 - `tagKeys` must be unique
-- `translations` must be unique by `languageCode`
 - `title` max length: `255`
 - `seoTitle` max length: `255`
 
 Publication behavior:
 
-- blog posts have top-level publication state
-- each translation has its own publication state
-- public routes only expose locales where both parent and translation are published
+- blog publication lives only on translations
+- translations are created and updated separately from shared blog data
+- translation publish/unpublish only happens through the dedicated nested routes
+- public routes only expose locales where the requested translation is published
+- updating a published translation auto-unpublishes it when `title` or `htmlContent` becomes empty
+- top-level `audit.publishedAt` reflects the latest successful translation publish time and becomes `null` when no locale is published
 - Hero media attachment is managed separately from create/update through the dedicated blog media routes.
 
 Admin response shape includes:
@@ -735,7 +738,8 @@ Admin response shape includes:
 
 Frontend notes:
 
-- updates merge translations by locale code
+- `POST /api/admin/blog-posts` creates only the shared blog draft; create translations afterward through the nested translation route
+- `PATCH /api/admin/blog-posts/:id` updates only shared fields and does not accept translation content or publish intent
 - HTML content is stored and returned as HTML, not rich-text blocks or Markdown
 
 ### 6.9 Newsletter Subscribers

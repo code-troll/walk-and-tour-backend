@@ -512,7 +512,9 @@ paths:
         - BlogPosts
         - Admin Blog Posts
     post:
-      description: Creates a blog post with shared attributes and localized translations.
+      description: >-
+        Creates a minimal blog draft with shared identifier fields. Localized translations are added later through the
+        nested translation routes.
       operationId: BlogPostsController_createAdmin
       parameters: []
       requestBody:
@@ -602,7 +604,7 @@ paths:
         - BlogPosts
         - Admin Blog Posts
     patch:
-      description: Updates shared blog data and merges translations by locale code.
+      description: Updates only shared blog data on the base blog post record.
       operationId: BlogPostsController_updateAdmin
       parameters:
         - name: id
@@ -658,6 +660,294 @@ paths:
       security:
         - admin-auth: []
       summary: Update a blog post
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
+  /api/admin/blog-posts/{id}/translations:
+    post:
+      description: >-
+        Creates one localized blog translation independently from the shared blog post. New translations always start
+        unpublished.
+      operationId: BlogPostsController_createTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Blog post UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBlogPostTranslationDto"
+      responses:
+        "201":
+          description: Admin blog post record after translation creation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlogAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create a blog post translation
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
+  /api/admin/blog-posts/{id}/translations/{languageCode}:
+    patch:
+      description: >-
+        Updates one localized blog translation independently from the shared blog post. If the translation stops being
+        publishable, it is automatically unpublished.
+      operationId: BlogPostsController_updateTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Blog post UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: languageCode
+          required: true
+          in: path
+          description: Locale code for the translation.
+          schema:
+            example: en
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBlogPostTranslationDto"
+      responses:
+        "200":
+          description: Admin blog post record after translation update.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlogAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update a blog post translation
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
+    delete:
+      description: Deletes one localized blog translation by locale code.
+      operationId: BlogPostsController_deleteTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Blog post UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: languageCode
+          required: true
+          in: path
+          description: Locale code for the translation.
+          schema:
+            example: en
+            type: string
+      responses:
+        "204":
+          description: Translation deleted successfully.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Delete a blog post translation
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
+  /api/admin/blog-posts/{id}/translations/{languageCode}/publish:
+    post:
+      description: >-
+        Publishes one localized blog translation. This endpoint is the only place where translation publication can be
+        enabled manually.
+      operationId: BlogPostsController_publishTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Blog post UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: languageCode
+          required: true
+          in: path
+          description: Locale code for the translation.
+          schema:
+            example: en
+            type: string
+      responses:
+        "200":
+          description: Admin blog post record after translation publication.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlogAdminResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Publish a blog post translation
+      tags:
+        - BlogPosts
+        - Admin Blog Posts
+  /api/admin/blog-posts/{id}/translations/{languageCode}/unpublish:
+    post:
+      description: >-
+        Unpublishes one localized blog translation. This endpoint is the only place where translation publication can be
+        disabled manually.
+      operationId: BlogPostsController_unpublishTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Blog post UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: languageCode
+          required: true
+          in: path
+          description: Locale code for the translation.
+          schema:
+            example: en
+            type: string
+      responses:
+        "200":
+          description: Admin blog post record after translation unpublication.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlogAdminResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Unpublish a blog post translation
       tags:
         - BlogPosts
         - Admin Blog Posts
@@ -2884,21 +3174,19 @@ components:
           type: string
           description: Locale code being evaluated.
           example: en
-        publicationStatus:
-          type: string
-          description: Translation publication state.
-          enum:
-            - published
-            - unpublished
+        isPublished:
+          type: boolean
+          description: Whether the locale is published.
+          example: true
         publiclyAvailable:
           type: boolean
           description: Whether the locale is currently exposed through the public blog APIs.
           example: true
       required:
         - languageCode
-        - publicationStatus
+        - isPublished
         - publiclyAvailable
-    AuditMetadataDto:
+    PublishedRecordAuditMetadataDto:
       type: object
       properties:
         createdBy:
@@ -2911,11 +3199,6 @@ components:
           description: UUID of the admin that most recently updated the record.
           format: uuid
           nullable: true
-        publishedBy:
-          type: object
-          description: UUID of the admin that published the record, if it is currently published.
-          format: uuid
-          nullable: true
         createdAt:
           type: string
           description: Creation timestamp.
@@ -2926,7 +3209,9 @@ components:
           format: date-time
         publishedAt:
           type: string
-          description: Publication timestamp, or `null` when the record is not currently published.
+          description: >-
+            Latest successful translation publication timestamp, or `null` when the record has no published
+            translations.
           format: date-time
           nullable: true
       required:
@@ -2957,12 +3242,6 @@ components:
           nullable: true
           allOf:
             - $ref: "#/components/schemas/MediaAssetResponseDto"
-        publicationStatus:
-          type: string
-          description: Blog post publication state.
-          enum:
-            - draft
-            - published
         tagKeys:
           description: Ordered tag keys assigned to the post.
           type: array
@@ -2986,17 +3265,67 @@ components:
         audit:
           description: Audit metadata for create, update, and publish operations.
           allOf:
-            - $ref: "#/components/schemas/AuditMetadataDto"
+            - $ref: "#/components/schemas/PublishedRecordAuditMetadataDto"
       required:
         - id
         - name
         - slug
-        - publicationStatus
         - tagKeys
         - tags
         - translations
         - translationAvailability
         - audit
+    CreateBlogPostDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Non-localized admin-facing name used to identify the blog post.
+          example: Barcelona Historic Center SEO Article
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          description: Stable public slug for the blog post.
+          example: barcelona-historic-center-guide
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 150
+        tagKeys:
+          description: Assigned tag keys.
+          example:
+            - history
+            - city-guide
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+      required:
+        - name
+        - slug
+    UpdateBlogPostDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated non-localized admin-facing name.
+          example: Barcelona Historic Center SEO Article
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          description: Updated public slug.
+          example: barcelona-historic-center-guide
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 150
+        tagKeys:
+          description: Replacement tag key list.
+          example:
+            - history
+            - architecture
+          uniqueItems: true
+          type: array
+          items:
+            type: string
     CreateBlogPostTranslationDto:
       type: object
       properties:
@@ -3005,16 +3334,9 @@ components:
           description: Locale code for this blog translation.
           example: en
           pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
-        publicationStatus:
-          type: string
-          description: Publication state of the localized blog translation.
-          enum:
-            - published
-            - unpublished
-          example: published
         title:
           type: string
-          description: Localized title. Required before the translation can be published.
+          description: Localized title.
           example: Barcelona Historic Center Guide
           maxLength: 255
         summary:
@@ -3023,7 +3345,7 @@ components:
           example: A walking guide to the historic center of Barcelona.
         htmlContent:
           type: string
-          description: Localized HTML body. Required before the translation can be published.
+          description: Localized HTML body.
           example: <p>Walk through centuries of history.</p>
         seoTitle:
           type: string
@@ -3043,85 +3365,41 @@ components:
             type: string
       required:
         - languageCode
-        - publicationStatus
-    CreateBlogPostDto:
+    UpdateBlogPostTranslationDto:
       type: object
       properties:
-        name:
+        title:
           type: string
-          description: Non-localized admin-facing name used to identify the blog post.
-          example: Barcelona Historic Center SEO Article
-          minLength: 1
+          description: Updated localized title.
+          example: Barcelona Historic Center Guide
           maxLength: 255
-        slug:
+        summary:
+          type: object
+          description: Updated localized summary or excerpt. Set `null` to clear it.
+          example: A walking guide to the historic center of Barcelona.
+          nullable: true
+        htmlContent:
           type: string
-          description: Stable public slug for the blog post.
-          example: barcelona-historic-center-guide
-          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
-          maxLength: 150
-        publicationStatus:
-          type: string
-          description: Top-level publication state of the blog post.
-          enum:
-            - draft
-            - published
-          example: draft
-        tagKeys:
-          description: Assigned tag keys.
+          description: Updated localized HTML body.
+          example: <p>Walk through centuries of history.</p>
+        seoTitle:
+          type: object
+          description: Updated SEO title override. Set `null` to clear it.
+          example: Historic Center Guide | Walk and Tour
+          maxLength: 255
+          nullable: true
+        seoDescription:
+          type: object
+          description: Updated SEO meta description override. Set `null` to clear it.
+          example: Discover the best historic landmarks in Barcelona.
+          nullable: true
+        imageRefs:
+          description: Replacement localized image references. Omit to keep the current list.
           example:
-            - history
-            - city-guide
-          uniqueItems: true
+            - media/blog/historic-center/hero.jpg
           type: array
           items:
             type: string
-        translations:
-          description: Localized translations keyed by locale through an array of translation objects.
-          uniqueItems: true
-          type: array
-          items:
-            $ref: "#/components/schemas/CreateBlogPostTranslationDto"
-      required:
-        - name
-        - slug
-        - publicationStatus
-    UpdateBlogPostDto:
-      type: object
-      properties:
-        name:
-          type: string
-          description: Updated non-localized admin-facing name.
-          example: Barcelona Historic Center SEO Article
-          minLength: 1
-          maxLength: 255
-        slug:
-          type: string
-          description: Updated public slug.
-          example: barcelona-historic-center-guide
-          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
-          maxLength: 150
-        publicationStatus:
-          type: string
-          description: Updated top-level publication state.
-          enum:
-            - draft
-            - published
-          example: published
-        tagKeys:
-          description: Replacement tag key list.
-          example:
-            - history
-            - architecture
-          uniqueItems: true
-          type: array
-          items:
-            type: string
-        translations:
-          description: Translations to merge into the existing set by locale code.
-          uniqueItems: true
-          type: array
-          items:
-            $ref: "#/components/schemas/CreateBlogPostTranslationDto"
     BlogMediaListResponseDto:
       type: object
       properties:
@@ -3272,14 +3550,6 @@ components:
               - private-transport
               - boat
               - other
-        blogPublicationStatuses:
-          type: array
-          description: Top-level publication states available for blog posts.
-          items:
-            type: string
-            enum:
-              - draft
-              - published
         newsletterSubscriptionStatuses:
           type: array
           description: Newsletter subscription lifecycle states reserved by the domain model.
@@ -3294,7 +3564,6 @@ components:
         - supportedLanguageCodes
         - tourTypes
         - tourCommuteModes
-        - blogPublicationStatuses
         - newsletterSubscriptionStatuses
     HealthResponseDto:
       type: object
@@ -4498,6 +4767,40 @@ components:
           description: Optional external booking reference override applied before publishing. Set `null` to clear it.
           example: booking-ref-123
           nullable: true
+    AuditMetadataDto:
+      type: object
+      properties:
+        createdBy:
+          type: object
+          description: UUID of the admin that originally created the record.
+          format: uuid
+          nullable: true
+        updatedBy:
+          type: object
+          description: UUID of the admin that most recently updated the record.
+          format: uuid
+          nullable: true
+        publishedBy:
+          type: object
+          description: UUID of the admin that published the record, if it is currently published.
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          description: Creation timestamp.
+          format: date-time
+        updatedAt:
+          type: string
+          description: Last update timestamp.
+          format: date-time
+        publishedAt:
+          type: string
+          description: Publication timestamp, or `null` when the record is not currently published.
+          format: date-time
+          nullable: true
+      required:
+        - createdAt
+        - updatedAt
     TourAdminTranslationResponseDto:
       type: object
       properties:
@@ -4557,12 +4860,10 @@ components:
     BlogAdminTranslationResponseDto:
       type: object
       properties:
-        publicationStatus:
-          type: string
-          description: Translation publication state.
-          enum:
-            - published
-            - unpublished
+        isPublished:
+          type: boolean
+          description: Whether the translation is published.
+          example: true
         title:
           type: string
           description: Localized title.
@@ -4589,7 +4890,7 @@ components:
           items:
             type: string
       required:
-        - publicationStatus
+        - isPublished
         - title
         - htmlContent
         - imageRefs

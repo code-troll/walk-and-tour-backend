@@ -12,23 +12,21 @@ import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface'
 import { LanguageEntity } from '../languages/language.entity';
 import { MediaAssetEntity } from '../media/media-asset.entity';
 import { getProviderConfig } from '../shared/config/provider.config';
-import {
-  BLOG_PUBLICATION_STATUSES,
-  BLOG_TRANSLATION_PUBLICATION_STATUSES,
-} from '../shared/domain';
 import { TagEntity } from '../tags/tag.entity';
 import { SetBlogPostHeroMediaDto } from './dto/blog-post-media.dto';
-import { CreateBlogPostDto, CreateBlogPostTranslationDto } from './dto/create-blog-post.dto';
+import {
+  CreateBlogPostTranslationDto,
+  UpdateBlogPostTranslationDto,
+} from './dto/blog-post-translation.dto';
+import { CreateBlogPostDto } from './dto/create-blog-post.dto';
 import { UpdateBlogPostDto } from './dto/update-blog-post.dto';
 import { BlogPostTranslationEntity } from './blog-post-translation.entity';
 import { BlogPostEntity } from './blog-post.entity';
 
-interface BlogAggregateInput {
+interface BlogSharedInput {
   name: string;
   slug: string;
-  publicationStatus: string;
   tagKeys: string[];
-  translations: CreateBlogPostTranslationDto[];
 }
 
 @Injectable()
@@ -75,24 +73,20 @@ export class BlogPostsService {
       throw new ConflictException(`Blog post slug "${dto.slug}" already exists.`);
     }
 
-    const aggregate = await this.buildAggregate(dto);
+    const aggregate = this.buildSharedAggregate(dto);
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);
-    await this.validateTranslations(aggregate.translations);
 
     const blogPost = this.blogPostsRepository.create({
       name: aggregate.name,
       slug: aggregate.slug,
       heroMediaId: null,
-      publicationStatus: aggregate.publicationStatus,
       tags,
       createdBy: actor.id,
       updatedBy: actor.id,
-      publishedBy: aggregate.publicationStatus === 'published' ? actor.id : null,
-      publishedAt: aggregate.publicationStatus === 'published' ? new Date() : null,
+      publishedAt: null,
     });
 
     const saved = await this.blogPostsRepository.save(blogPost);
-    await this.replaceTranslations(saved.id, aggregate.translations);
 
     return this.findOne(saved.id);
   }
@@ -103,6 +97,7 @@ export class BlogPostsService {
     actor: AuthenticatedAdmin,
   ): Promise<unknown> {
     const existing = await this.findEntityOrThrow(id);
+
     if (dto.slug && dto.slug !== existing.slug) {
       const slugCollision = await this.blogPostsRepository.findOne({
         where: { slug: dto.slug },
@@ -113,114 +108,156 @@ export class BlogPostsService {
       }
     }
 
-    const previousPublicationStatus = existing.publicationStatus;
-    const aggregate = await this.buildAggregate(dto, existing);
+    const aggregate = this.buildSharedAggregate(dto, existing);
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);
-    await this.validateTranslations(aggregate.translations);
 
     existing.name = aggregate.name;
     existing.slug = aggregate.slug;
-    existing.publicationStatus = aggregate.publicationStatus;
     existing.tags = tags;
     existing.updatedBy = actor.id;
 
-    if (
-      aggregate.publicationStatus === 'published' &&
-      previousPublicationStatus !== 'published'
-    ) {
-      existing.publishedAt = new Date();
-      existing.publishedBy = actor.id;
-    } else if (aggregate.publicationStatus !== 'published') {
-      existing.publishedAt = null;
-      existing.publishedBy = null;
-    }
-
     await this.blogPostsRepository.save(existing);
-    await this.upsertTranslations(existing.id, existing.translations, aggregate.translations);
 
     return this.findOne(existing.id);
   }
 
-  private async buildAggregate(
-    source: CreateBlogPostDto | UpdateBlogPostDto,
-    existing?: BlogPostEntity,
-  ): Promise<BlogAggregateInput> {
-    const aggregate: BlogAggregateInput = {
-      name: source.name ?? existing?.name ?? '',
-      slug: source.slug ?? existing?.slug ?? '',
-      publicationStatus:
-        source.publicationStatus ??
-        existing?.publicationStatus ??
-        BLOG_PUBLICATION_STATUSES[0],
-      tagKeys: source.tagKeys ?? existing?.tags.map((tag) => tag.key) ?? [],
-      translations: this.mergeTranslations(existing, source.translations),
-    };
+  async createTranslation(
+    id: string,
+    dto: CreateBlogPostTranslationDto,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    const blogPost = await this.findEntityOrThrow(id);
+    await this.assertLanguageExists(dto.languageCode);
 
-    if (!aggregate.slug) {
-      throw new BadRequestException('Blog post slug is required.');
-    }
+    const existing = blogPost.translations.find(
+      (translation) => translation.languageCode === dto.languageCode,
+    );
 
-    if (!aggregate.name || aggregate.name.trim().length === 0) {
-      throw new BadRequestException('Blog post name is required.');
-    }
-
-    if (
-      !BLOG_PUBLICATION_STATUSES.includes(
-        aggregate.publicationStatus as (typeof BLOG_PUBLICATION_STATUSES)[number],
-      )
-    ) {
-      throw new BadRequestException(
-        `Blog post publicationStatus "${aggregate.publicationStatus}" is invalid.`,
+    if (existing) {
+      throw new ConflictException(
+        `Blog translation "${dto.languageCode}" already exists for blog post "${id}".`,
       );
     }
 
-    return aggregate;
+    const translation = this.translationsRepository.create({
+      blogPostId: id,
+      languageCode: dto.languageCode,
+      isPublished: false,
+      title: dto.title ?? '',
+      summary: dto.summary ?? null,
+      htmlContent: dto.htmlContent ?? '',
+      seoTitle: dto.seoTitle ?? null,
+      seoDescription: dto.seoDescription ?? null,
+      imageRefs: dto.imageRefs ?? [],
+    });
+
+    await this.translationsRepository.save(translation);
+    await this.touchBlogPost(blogPost.id, actor);
+
+    return this.findOne(id);
   }
 
-  private async validateTranslations(
-    translations: CreateBlogPostTranslationDto[],
+  async updateTranslation(
+    id: string,
+    languageCode: string,
+    dto: UpdateBlogPostTranslationDto,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    const blogPost = await this.findEntityOrThrow(id);
+    await this.assertLanguageExists(languageCode);
+    const translation = this.findTranslationOrThrow(blogPost, languageCode);
+
+    if ('title' in dto) {
+      translation.title = dto.title ?? '';
+    }
+
+    if ('summary' in dto) {
+      translation.summary = dto.summary ?? null;
+    }
+
+    if ('htmlContent' in dto) {
+      translation.htmlContent = dto.htmlContent ?? '';
+    }
+
+    if ('seoTitle' in dto) {
+      translation.seoTitle = dto.seoTitle ?? null;
+    }
+
+    if ('seoDescription' in dto) {
+      translation.seoDescription = dto.seoDescription ?? null;
+    }
+
+    if ('imageRefs' in dto) {
+      translation.imageRefs = dto.imageRefs ?? [];
+    }
+
+    if (!this.isTranslationPublishable(translation)) {
+      translation.isPublished = false;
+    }
+
+    await this.translationsRepository.save(translation);
+    await this.touchBlogPost(blogPost.id, actor);
+    await this.syncDerivedPublicationState(blogPost.id);
+
+    return this.findOne(id);
+  }
+
+  async publishTranslation(
+    id: string,
+    languageCode: string,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    const blogPost = await this.findEntityOrThrow(id);
+    await this.assertLanguageExists(languageCode);
+    const translation = this.findTranslationOrThrow(blogPost, languageCode);
+
+    if (!this.isTranslationPublishable(translation)) {
+      translation.isPublished = false;
+      await this.translationsRepository.save(translation);
+      await this.syncDerivedPublicationState(blogPost.id);
+      throw new BadRequestException(
+        `Translation "${translation.languageCode}" cannot be published until it has both title and htmlContent.`,
+      );
+    }
+
+    translation.isPublished = true;
+
+    await this.translationsRepository.save(translation);
+    await this.touchBlogPost(blogPost.id, actor);
+    await this.syncDerivedPublicationState(blogPost.id, new Date());
+
+    return this.findOne(id);
+  }
+
+  async unpublishTranslation(
+    id: string,
+    languageCode: string,
+    actor: AuthenticatedAdmin,
+  ): Promise<unknown> {
+    const blogPost = await this.findEntityOrThrow(id);
+    await this.assertLanguageExists(languageCode);
+    const translation = this.findTranslationOrThrow(blogPost, languageCode);
+
+    translation.isPublished = false;
+
+    await this.translationsRepository.save(translation);
+    await this.touchBlogPost(blogPost.id, actor);
+    await this.syncDerivedPublicationState(blogPost.id);
+
+    return this.findOne(id);
+  }
+
+  async deleteTranslation(
+    id: string,
+    languageCode: string,
+    actor: AuthenticatedAdmin,
   ): Promise<void> {
-    const languageCodes = translations.map((translation) => translation.languageCode);
+    const blogPost = await this.findEntityOrThrow(id);
+    const translation = this.findTranslationOrThrow(blogPost, languageCode);
 
-    if (languageCodes.length > 0) {
-      const languages = await this.languagesRepository.findBy({
-        code: In(languageCodes),
-      });
-
-      if (languages.length !== new Set(languageCodes).size) {
-        const found = new Set(languages.map((language) => language.code));
-        const missing = [...new Set(languageCodes)].filter((code) => !found.has(code));
-        throw new BadRequestException(
-          `Blog translations reference unknown language codes: ${missing.join(', ')}`,
-        );
-      }
-    }
-
-    for (const translation of translations) {
-      if (
-        !BLOG_TRANSLATION_PUBLICATION_STATUSES.includes(
-          translation.publicationStatus as (typeof BLOG_TRANSLATION_PUBLICATION_STATUSES)[number],
-        )
-      ) {
-        throw new BadRequestException(
-          `Blog translation publicationStatus "${translation.publicationStatus}" is invalid.`,
-        );
-      }
-
-      if (translation.publicationStatus === 'published') {
-        if (!translation.title || translation.title.trim().length === 0) {
-          throw new BadRequestException(
-            `Blog translation "${translation.languageCode}" requires a title before publication.`,
-          );
-        }
-
-        if (!translation.htmlContent || translation.htmlContent.trim().length === 0) {
-          throw new BadRequestException(
-            `Blog translation "${translation.languageCode}" requires htmlContent before publication.`,
-          );
-        }
-      }
-    }
+    await this.translationsRepository.delete({ id: translation.id });
+    await this.touchBlogPost(blogPost.id, actor);
+    await this.syncDerivedPublicationState(blogPost.id);
   }
 
   async listMedia(id: string): Promise<{ items: unknown[] }> {
@@ -261,6 +298,30 @@ export class BlogPostsService {
     return this.findOne(id);
   }
 
+  private buildSharedAggregate(
+    source: CreateBlogPostDto | UpdateBlogPostDto,
+    existing?: BlogPostEntity,
+  ): BlogSharedInput {
+    const aggregate: BlogSharedInput = {
+      name: source.name ?? existing?.name ?? '',
+      slug: source.slug ?? existing?.slug ?? '',
+      tagKeys: source.tagKeys ?? existing?.tags.map((tag) => tag.key) ?? [],
+    };
+
+    if (!aggregate.slug) {
+      throw new BadRequestException('Blog post slug is required.');
+    }
+
+    if (!aggregate.name || aggregate.name.trim().length === 0) {
+      throw new BadRequestException('Blog post name is required.');
+    }
+
+    return {
+      ...aggregate,
+      name: aggregate.name.trim(),
+    };
+  }
+
   private async getTagsOrThrow(keys: string[]): Promise<TagEntity[]> {
     if (keys.length === 0) {
       return [];
@@ -277,112 +338,6 @@ export class BlogPostsService {
     }
 
     return keys.map((key) => tags.find((tag) => tag.key === key) as TagEntity);
-  }
-
-  private async replaceTranslations(
-    blogPostId: string,
-    translations: CreateBlogPostTranslationDto[],
-  ): Promise<void> {
-    if (translations.length === 0) {
-      return;
-    }
-
-    const entities = translations.map((translation) =>
-      this.translationsRepository.create({
-        blogPostId,
-        languageCode: translation.languageCode,
-        publicationStatus: translation.publicationStatus,
-        title: translation.title ?? '',
-        summary: translation.summary ?? null,
-        htmlContent: translation.htmlContent ?? '',
-        seoTitle: translation.seoTitle ?? null,
-        seoDescription: translation.seoDescription ?? null,
-        imageRefs: translation.imageRefs ?? [],
-      }),
-    );
-
-    await this.translationsRepository.save(entities);
-  }
-
-  private async upsertTranslations(
-    blogPostId: string,
-    existing: BlogPostTranslationEntity[],
-    incoming: CreateBlogPostTranslationDto[],
-  ): Promise<void> {
-    const existingByLanguage = new Map(
-      existing.map((translation) => [translation.languageCode, translation]),
-    );
-
-    const upserts = incoming.map((translation) => {
-      const current = existingByLanguage.get(translation.languageCode);
-
-      if (!current) {
-        return this.translationsRepository.create({
-          blogPostId,
-          languageCode: translation.languageCode,
-          publicationStatus: translation.publicationStatus,
-          title: translation.title ?? '',
-          summary: translation.summary ?? null,
-          htmlContent: translation.htmlContent ?? '',
-          seoTitle: translation.seoTitle ?? null,
-          seoDescription: translation.seoDescription ?? null,
-          imageRefs: translation.imageRefs ?? [],
-        });
-      }
-
-      current.publicationStatus = translation.publicationStatus;
-      current.title = translation.title ?? current.title;
-      current.summary = translation.summary ?? null;
-      current.htmlContent = translation.htmlContent ?? current.htmlContent;
-      current.seoTitle = translation.seoTitle ?? null;
-      current.seoDescription = translation.seoDescription ?? null;
-      current.imageRefs = translation.imageRefs ?? [];
-
-      return current;
-    });
-
-    if (upserts.length > 0) {
-      await this.translationsRepository.save(upserts);
-    }
-  }
-
-  private mergeTranslations(
-    existing: BlogPostEntity | undefined,
-    incoming: CreateBlogPostTranslationDto[] | undefined,
-  ): CreateBlogPostTranslationDto[] {
-    if (!incoming) {
-      return (
-        existing?.translations.map((translation) => ({
-          languageCode: translation.languageCode,
-          publicationStatus: translation.publicationStatus,
-          title: translation.title,
-          summary: translation.summary ?? undefined,
-          htmlContent: translation.htmlContent,
-          seoTitle: translation.seoTitle ?? undefined,
-          seoDescription: translation.seoDescription ?? undefined,
-          imageRefs: translation.imageRefs,
-        })) ?? []
-      );
-    }
-
-    const existingByLanguage = new Map(
-      existing?.translations.map((translation) => [translation.languageCode, translation]) ?? [],
-    );
-
-    return incoming.map((translation) => {
-      const current = existingByLanguage.get(translation.languageCode);
-
-      return {
-        languageCode: translation.languageCode,
-        publicationStatus: translation.publicationStatus,
-        title: translation.title ?? current?.title,
-        summary: translation.summary ?? current?.summary ?? undefined,
-        htmlContent: translation.htmlContent ?? current?.htmlContent,
-        seoTitle: translation.seoTitle ?? current?.seoTitle ?? undefined,
-        seoDescription: translation.seoDescription ?? current?.seoDescription ?? undefined,
-        imageRefs: translation.imageRefs ?? current?.imageRefs ?? [],
-      };
-    });
   }
 
   private async findEntityOrThrow(id: string): Promise<BlogPostEntity> {
@@ -414,12 +369,89 @@ export class BlogPostsService {
     return mediaAsset;
   }
 
+  private async assertLanguageExists(languageCode: string): Promise<void> {
+    const language = await this.languagesRepository.findOne({
+      where: { code: languageCode },
+    });
+
+    if (!language) {
+      throw new BadRequestException(
+        `Blog translations reference unknown language code: ${languageCode}`,
+      );
+    }
+  }
+
+  private findTranslationOrThrow(
+    blogPost: BlogPostEntity,
+    languageCode: string,
+  ): BlogPostTranslationEntity {
+    const translation = blogPost.translations.find(
+      (entry) => entry.languageCode === languageCode,
+    );
+
+    if (!translation) {
+      throw new NotFoundException(
+        `Blog translation "${languageCode}" was not found for blog post "${blogPost.id}".`,
+      );
+    }
+
+    return translation;
+  }
+
+  private isTranslationPublishable(
+    translation: Pick<BlogPostTranslationEntity, 'title' | 'htmlContent'>,
+  ): boolean {
+    return (
+      translation.title.trim().length > 0 && translation.htmlContent.trim().length > 0
+    );
+  }
+
+  private async touchBlogPost(id: string, actor: AuthenticatedAdmin): Promise<void> {
+    await this.blogPostsRepository.update(
+      { id },
+      {
+        updatedBy: actor.id,
+      },
+    );
+  }
+
+  private async syncDerivedPublicationState(
+    blogPostId: string,
+    publishedAtOverride?: Date,
+  ): Promise<void> {
+    if (publishedAtOverride) {
+      await this.blogPostsRepository.update(
+        { id: blogPostId },
+        {
+          publishedAt: publishedAtOverride,
+        },
+      );
+      return;
+    }
+
+    const publishedTranslations = await this.translationsRepository.count({
+      where: {
+        blogPostId,
+        isPublished: true,
+      },
+    });
+
+    if (publishedTranslations === 0) {
+      await this.blogPostsRepository.update(
+        { id: blogPostId },
+        {
+          publishedAt: null,
+        },
+      );
+    }
+  }
+
   private toAdminResponse(blogPost: BlogPostEntity): unknown {
     const translations = Object.fromEntries(
       blogPost.translations.map((translation) => [
         translation.languageCode,
         {
-          publicationStatus: translation.publicationStatus,
+          isPublished: translation.isPublished,
           title: translation.title,
           summary: translation.summary,
           htmlContent: translation.htmlContent,
@@ -436,7 +468,6 @@ export class BlogPostsService {
       slug: blogPost.slug,
       heroMediaId: blogPost.heroMediaId,
       heroMedia: this.toMediaResponse(blogPost, blogPost.heroMedia),
-      publicationStatus: blogPost.publicationStatus,
       tagKeys: blogPost.tags.map((tag) => tag.key),
       tags: blogPost.tags.map((tag) => ({
         key: tag.key,
@@ -445,15 +476,12 @@ export class BlogPostsService {
       translations,
       translationAvailability: blogPost.translations.map((translation) => ({
         languageCode: translation.languageCode,
-        publicationStatus: translation.publicationStatus,
-        publiclyAvailable:
-          blogPost.publicationStatus === 'published' &&
-          translation.publicationStatus === 'published',
+        isPublished: translation.isPublished,
+        publiclyAvailable: translation.isPublished,
       })),
       audit: {
         createdBy: blogPost.createdBy,
         updatedBy: blogPost.updatedBy,
-        publishedBy: blogPost.publishedBy,
         createdAt: blogPost.createdAt,
         updatedAt: blogPost.updatedAt,
         publishedAt: blogPost.publishedAt,

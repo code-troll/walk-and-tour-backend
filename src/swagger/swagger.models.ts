@@ -3,8 +3,6 @@ import { ApiProperty, ApiPropertyOptional, getSchemaPath } from '@nestjs/swagger
 import {
   ADMIN_ROLES,
   ADMIN_USER_STATUSES,
-  BLOG_PUBLICATION_STATUSES,
-  BLOG_TRANSLATION_PUBLICATION_STATUSES,
   NEWSLETTER_SUBSCRIPTION_STATUSES,
   SUPPORTED_LANGUAGE_CODES,
   TOUR_COMMUTE_MODES,
@@ -113,6 +111,17 @@ export class RecordAuditMetadataDto {
   updatedAt!: string;
 }
 
+export class PublishedRecordAuditMetadataDto extends RecordAuditMetadataDto {
+  @ApiPropertyOptional({
+    description:
+      'Latest successful translation publication timestamp, or `null` when the record has no published translations.',
+    type: String,
+    format: 'date-time',
+    nullable: true,
+  })
+  publishedAt!: string | null;
+}
+
 export class HealthFoundationDto {
   @ApiProperty({
     description: 'Configured admin roles available in the platform.',
@@ -141,13 +150,6 @@ export class HealthFoundationDto {
     isArray: true,
   })
   tourCommuteModes!: (typeof TOUR_COMMUTE_MODES)[number][];
-
-  @ApiProperty({
-    description: 'Top-level publication states available for blog posts.',
-    enum: BLOG_PUBLICATION_STATUSES,
-    isArray: true,
-  })
-  blogPublicationStatuses!: (typeof BLOG_PUBLICATION_STATUSES)[number][];
 
   @ApiProperty({
     description: 'Newsletter subscription lifecycle states reserved by the domain model.',
@@ -1063,10 +1065,10 @@ export class PublicTourResponseDto {
 
 export class BlogAdminTranslationResponseDto {
   @ApiProperty({
-    description: 'Translation publication state.',
-    enum: BLOG_TRANSLATION_PUBLICATION_STATUSES,
+    description: 'Whether the translation is published.',
+    example: true,
   })
-  publicationStatus!: (typeof BLOG_TRANSLATION_PUBLICATION_STATUSES)[number];
+  isPublished!: boolean;
 
   @ApiProperty({
     description: 'Localized title.',
@@ -1113,10 +1115,10 @@ export class BlogTranslationAvailabilityResponseDto {
   languageCode!: string;
 
   @ApiProperty({
-    description: 'Translation publication state.',
-    enum: BLOG_TRANSLATION_PUBLICATION_STATUSES,
+    description: 'Whether the locale is published.',
+    example: true,
   })
-  publicationStatus!: (typeof BLOG_TRANSLATION_PUBLICATION_STATUSES)[number];
+  isPublished!: boolean;
 
   @ApiProperty({
     description: 'Whether the locale is currently exposed through the public blog APIs.',
@@ -1159,12 +1161,6 @@ export class BlogAdminResponseDto {
   heroMedia!: MediaAssetResponseDto | null;
 
   @ApiProperty({
-    description: 'Blog post publication state.',
-    enum: BLOG_PUBLICATION_STATUSES,
-  })
-  publicationStatus!: (typeof BLOG_PUBLICATION_STATUSES)[number];
-
-  @ApiProperty({
     description: 'Ordered tag keys assigned to the post.',
     type: [String],
   })
@@ -1191,9 +1187,9 @@ export class BlogAdminResponseDto {
 
   @ApiProperty({
     description: 'Audit metadata for create, update, and publish operations.',
-    type: () => AuditMetadataDto,
+    type: () => PublishedRecordAuditMetadataDto,
   })
-  audit!: AuditMetadataDto;
+  audit!: PublishedRecordAuditMetadataDto;
 }
 
 export class PublicBlogTranslationResponseDto {
@@ -1478,6 +1474,7 @@ export const SWAGGER_EXTRA_MODELS = [
   ErrorResponseDto,
   AuditMetadataDto,
   RecordAuditMetadataDto,
+  PublishedRecordAuditMetadataDto,
   HealthFoundationDto,
   HealthResponseDto,
   LanguageResponseDto,

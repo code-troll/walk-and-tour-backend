@@ -4,7 +4,6 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { getAppConfig } from '../shared/config/app.config';
 import {
   ADMIN_ROLES,
-  BLOG_PUBLICATION_STATUSES,
   NEWSLETTER_SUBSCRIPTION_STATUSES,
   SUPPORTED_LANGUAGE_CODES,
   TOUR_COMMUTE_MODES,
@@ -37,7 +36,6 @@ export class HealthController {
         supportedLanguageCodes: SUPPORTED_LANGUAGE_CODES,
         tourTypes: TOUR_TYPES,
         tourCommuteModes: TOUR_COMMUTE_MODES,
-        blogPublicationStatuses: BLOG_PUBLICATION_STATUSES,
         newsletterSubscriptionStatuses: NEWSLETTER_SUBSCRIPTION_STATUSES,
       },
     };

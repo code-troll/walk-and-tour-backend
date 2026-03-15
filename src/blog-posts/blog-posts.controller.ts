@@ -43,6 +43,10 @@ import {
   PublicBlogResponseDto,
 } from '../swagger/swagger.models';
 import { SetBlogPostHeroMediaDto } from './dto/blog-post-media.dto';
+import {
+  CreateBlogPostTranslationDto,
+  UpdateBlogPostTranslationDto,
+} from './dto/blog-post-translation.dto';
 import { CreateBlogPostDto } from './dto/create-blog-post.dto';
 import { UpdateBlogPostDto } from './dto/update-blog-post.dto';
 import { BlogPostsService } from './blog-posts.service';
@@ -104,7 +108,8 @@ export class BlogPostsController {
   @ApiBearerAuth('admin-auth')
   @ApiOperation({
     summary: 'Create a blog post',
-    description: 'Creates a blog post with shared attributes and localized translations.',
+    description:
+      'Creates a minimal blog draft with shared identifier fields. Localized translations are added later through the nested translation routes.',
   })
   @ApiCreatedResponse({
     description: 'Created admin blog post record.',
@@ -128,7 +133,7 @@ export class BlogPostsController {
   @ApiBearerAuth('admin-auth')
   @ApiOperation({
     summary: 'Update a blog post',
-    description: 'Updates shared blog data and merges translations by locale code.',
+    description: 'Updates only shared blog data on the base blog post record.',
   })
   @ApiParam({
     name: 'id',
@@ -153,6 +158,181 @@ export class BlogPostsController {
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     return this.blogPostsService.update(id, dto, admin);
+  }
+
+  @ApiTags('Admin Blog Posts')
+  @ApiBearerAuth('admin-auth')
+  @ApiOperation({
+    summary: 'Create a blog post translation',
+    description:
+      'Creates one localized blog translation independently from the shared blog post. New translations always start unpublished.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Blog post UUID.',
+    format: 'uuid',
+  })
+  @ApiCreatedResponse({
+    description: 'Admin blog post record after translation creation.',
+    type: BlogAdminResponseDto,
+  })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiConflictResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post('admin/blog-posts/:id/translations')
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles('super_admin', 'editor')
+  createTranslation(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: CreateBlogPostTranslationDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.blogPostsService.createTranslation(id, dto, admin);
+  }
+
+  @ApiTags('Admin Blog Posts')
+  @ApiBearerAuth('admin-auth')
+  @ApiOperation({
+    summary: 'Update a blog post translation',
+    description:
+      'Updates one localized blog translation independently from the shared blog post. If the translation stops being publishable, it is automatically unpublished.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Blog post UUID.',
+    format: 'uuid',
+  })
+  @ApiParam({
+    name: 'languageCode',
+    description: 'Locale code for the translation.',
+    example: 'en',
+  })
+  @ApiOkResponse({
+    description: 'Admin blog post record after translation update.',
+    type: BlogAdminResponseDto,
+  })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiConflictResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Patch('admin/blog-posts/:id/translations/:languageCode')
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles('super_admin', 'editor')
+  updateTranslation(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('languageCode') languageCode: string,
+    @Body() dto: UpdateBlogPostTranslationDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.blogPostsService.updateTranslation(id, languageCode, dto, admin);
+  }
+
+  @ApiTags('Admin Blog Posts')
+  @ApiBearerAuth('admin-auth')
+  @ApiOperation({
+    summary: 'Delete a blog post translation',
+    description: 'Deletes one localized blog translation by locale code.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Blog post UUID.',
+    format: 'uuid',
+  })
+  @ApiParam({
+    name: 'languageCode',
+    description: 'Locale code for the translation.',
+    example: 'en',
+  })
+  @ApiNoContentResponse({
+    description: 'Translation deleted successfully.',
+  })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Delete('admin/blog-posts/:id/translations/:languageCode')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles('super_admin', 'editor')
+  async deleteTranslation(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('languageCode') languageCode: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    await this.blogPostsService.deleteTranslation(id, languageCode, admin);
+  }
+
+  @ApiTags('Admin Blog Posts')
+  @ApiBearerAuth('admin-auth')
+  @ApiOperation({
+    summary: 'Publish a blog post translation',
+    description:
+      'Publishes one localized blog translation. This endpoint is the only place where translation publication can be enabled manually.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Blog post UUID.',
+    format: 'uuid',
+  })
+  @ApiParam({
+    name: 'languageCode',
+    description: 'Locale code for the translation.',
+    example: 'en',
+  })
+  @ApiOkResponse({
+    description: 'Admin blog post record after translation publication.',
+    type: BlogAdminResponseDto,
+  })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post('admin/blog-posts/:id/translations/:languageCode/publish')
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles('super_admin', 'editor')
+  publishTranslation(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('languageCode') languageCode: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.blogPostsService.publishTranslation(id, languageCode, admin);
+  }
+
+  @ApiTags('Admin Blog Posts')
+  @ApiBearerAuth('admin-auth')
+  @ApiOperation({
+    summary: 'Unpublish a blog post translation',
+    description:
+      'Unpublishes one localized blog translation. This endpoint is the only place where translation publication can be disabled manually.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Blog post UUID.',
+    format: 'uuid',
+  })
+  @ApiParam({
+    name: 'languageCode',
+    description: 'Locale code for the translation.',
+    example: 'en',
+  })
+  @ApiOkResponse({
+    description: 'Admin blog post record after translation unpublication.',
+    type: BlogAdminResponseDto,
+  })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post('admin/blog-posts/:id/translations/:languageCode/unpublish')
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles('super_admin', 'editor')
+  unpublishTranslation(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('languageCode') languageCode: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.blogPostsService.unpublishTranslation(id, languageCode, admin);
   }
 
   @ApiTags('Admin Blog Posts')

@@ -35,9 +35,6 @@ export class BlogPostEntity {
   @JoinColumn({ name: 'hero_media_id' })
   heroMedia!: MediaAssetEntity | null;
 
-  @Column({ name: 'publication_status', type: 'varchar', length: 20 })
-  publicationStatus!: string;
-
   @ManyToMany(() => TagEntity)
   @JoinTable({
     name: 'blog_post_tags',
@@ -56,9 +53,6 @@ export class BlogPostEntity {
 
   @Column({ name: 'updated_by', type: 'uuid', nullable: true })
   updatedBy!: string | null;
-
-  @Column({ name: 'published_by', type: 'uuid', nullable: true })
-  publishedBy!: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

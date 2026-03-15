@@ -38,7 +38,18 @@ describe('PublicBlogPostsService', () => {
       createPublicBlogPost(),
       createPublicBlogPost({
         slug: 'draft-post',
-        publicationStatus: 'draft',
+        translations: [
+          {
+            languageCode: 'en',
+            isPublished: false,
+            title: 'Draft post',
+            summary: null,
+            htmlContent: '<p>Draft</p>',
+            seoTitle: null,
+            seoDescription: null,
+            imageRefs: [],
+          },
+        ] as unknown as BlogPostEntity['translations'],
       }),
     ] as BlogPostEntity[]);
 
@@ -72,7 +83,7 @@ describe('PublicBlogPostsService', () => {
         translations: [
           {
             languageCode: 'en',
-            publicationStatus: 'unpublished',
+            isPublished: false,
             title: 'Royal Copenhagen',
             summary: null,
             htmlContent: '<p>Hello</p>',
@@ -97,7 +108,6 @@ function createPublicBlogPost(overrides: Partial<BlogPostEntity> = {}): BlogPost
     slug: 'royal-copenhagen',
     heroMediaId: 'media-1',
     heroMedia: createMediaAssetEntity(),
-    publicationStatus: 'published',
     tags: [
       {
         key: 'history',
@@ -107,7 +117,7 @@ function createPublicBlogPost(overrides: Partial<BlogPostEntity> = {}): BlogPost
     translations: [
       {
         languageCode: 'en',
-        publicationStatus: 'published',
+        isPublished: true,
         title: 'Royal Copenhagen',
         summary: 'Summary',
         htmlContent: '<p>Hello</p>',

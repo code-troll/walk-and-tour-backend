@@ -81,12 +81,12 @@ export class PublicBlogPostsService {
       },
     });
 
-    if (!blogPost || blogPost.publicationStatus !== 'published') {
+    if (!blogPost) {
       throw new NotFoundException(`Blog post "${slug}" was not found.`);
     }
 
     const hasPublicTranslation = blogPost.translations.some(
-      (translation) => translation.publicationStatus === 'published',
+      (translation) => translation.isPublished,
     );
 
     if (!hasPublicTranslation || !blogPost.heroMedia || blogPost.heroMedia.id !== mediaId) {
@@ -118,13 +118,8 @@ export class PublicBlogPostsService {
   }
 
   private toPublicResponse(blogPost: BlogPostEntity, locale: string): unknown | null {
-    if (blogPost.publicationStatus !== 'published') {
-      return null;
-    }
-
     const translation = blogPost.translations.find(
-      (entry) =>
-        entry.languageCode === locale && entry.publicationStatus === 'published',
+      (entry) => entry.languageCode === locale && entry.isPublished,
     );
 
     if (!translation) {
