@@ -17,7 +17,8 @@ describe('ResendEmailProvider', () => {
         storageDriver: 'local',
         localStorageRoot: 'storage',
         localStoragePublicBaseUrl: 'https://backend.example.com/media',
-        supabaseBucket: 'media',
+        railwayStorageRegion: 'auto',
+        railwayStorageUrlStyle: 'virtual-hosted',
       },
       fetchImpl,
     );
@@ -56,7 +57,8 @@ describe('ResendEmailProvider', () => {
       storageDriver: 'local',
       localStorageRoot: 'storage',
       localStoragePublicBaseUrl: 'https://backend.example.com/media',
-      supabaseBucket: 'media',
+      railwayStorageRegion: 'auto',
+      railwayStorageUrlStyle: 'virtual-hosted',
     });
 
     await expect(

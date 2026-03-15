@@ -1,11 +1,11 @@
 import { ProviderConfig } from '../shared/config/provider.config';
 import { LocalFilesystemStorageService } from './local-filesystem-storage.service';
+import { RailwayS3StorageService } from './railway-s3-storage.service';
 import { StorageService } from './storage-service.interface';
-import { SupabaseStorageService } from './supabase-storage.service';
 
 export function createStorageService(config: ProviderConfig): StorageService {
-  if (config.storageDriver === 'supabase') {
-    return new SupabaseStorageService(config);
+  if (config.storageDriver === 'railway') {
+    return new RailwayS3StorageService(config);
   }
 
   return new LocalFilesystemStorageService(config);

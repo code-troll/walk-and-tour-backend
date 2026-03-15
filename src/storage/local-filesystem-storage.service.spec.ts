@@ -14,7 +14,8 @@ describe('LocalFilesystemStorageService', () => {
       storageDriver: 'local',
       localStorageRoot: root,
       localStoragePublicBaseUrl: 'https://backend.example.com/media',
-      supabaseBucket: 'media',
+      railwayStorageRegion: 'auto',
+      railwayStorageUrlStyle: 'virtual-hosted',
     });
 
     const result = await service.putObject({

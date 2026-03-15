@@ -352,7 +352,7 @@ Exact route names, DTO shapes, and module boundaries are implementation details.
 - Public content endpoints should be designed for efficient read access.
 - The architecture should permit future provider changes for auth, storage, and email with minimal domain-level disruption.
 - Development media storage should use the local filesystem through an application-level storage abstraction.
-- Production media storage should use Supabase Storage through the same application-level storage abstraction.
+- Production media storage should use Railway Bucket storage through the same application-level storage abstraction.
 
 ## Acceptance Criteria
 
@@ -387,7 +387,7 @@ The MVP requirements are met when the backend supports the following outcomes:
 - Tour tags remain stable across locales while their display values can be translated.
 - Public APIs return only published content.
 - Public APIs can serve content by locale when a translation exists and meets the availability rules for that content type.
-- Media storage can use the same application-level storage abstraction in development with the local filesystem and in production with Supabase Storage.
+- Media storage can use the same application-level storage abstraction in development with the local filesystem and in production with Railway Bucket storage.
 - Newsletter subscribers can subscribe through a double opt-in flow and confirm by email before activation.
 - Newsletter subscribers can unsubscribe through a tokenized email link.
 - Future email-sending capabilities can target Resend without changing newsletter subscriber persistence in PostgreSQL.
@@ -413,7 +413,7 @@ The MVP requirements are met when the backend supports the following outcomes:
 - Roles: `super_admin`, `editor`, `marketing`.
 - Public content model: expose published tours and blog posts via public read APIs.
 - Development storage: local filesystem via storage abstraction.
-- Production storage: Supabase Storage via storage abstraction.
+- Production storage: Railway Bucket storage via storage abstraction.
 - Email provider: Resend.
 - Newsletter scope: subscriber lifecycle with double opt-in and tokenized unsubscribe, not campaign management.
 
@@ -425,6 +425,6 @@ The MVP requirements are met when the backend supports the following outcomes:
 - Exact currency representation for paid tours.
 - Exact location object shape for starting point and end point.
 - Exact local filesystem storage path and layout for development.
-- Exact Supabase Storage bucket structure and access patterns for production.
+- Exact Railway Bucket structure and access patterns for production.
 - Exact Auth0 integration shape, including token/session handling and identity-to-admin-user mapping details.
 - Exact Resend integration shape, including sending triggers, template strategy, and webhook handling.

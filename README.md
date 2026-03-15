@@ -34,7 +34,7 @@ Implementation tracking lives in `docs/implementation-status.md`.
 - `src/newsletter-subscribers`: subscribe, confirm, unsubscribe, admin list/detail/export
 - `src/admin-media`: admin media asset API backed by the shared storage abstraction
 - `src/providers/email`: console and Resend-backed email delivery adapters
-- `src/storage`: local-filesystem and Supabase-backed storage adapters
+- `src/storage`: local-filesystem and Railway S3-backed storage adapters
 
 ## Environment
 
@@ -64,20 +64,25 @@ Important groups:
   - `EMAIL_FROM`
   - `RESEND_API_KEY`
 - storage providers:
-  - `STORAGE_DRIVER=local|supabase`
+  - `STORAGE_DRIVER=local|railway`
   - `LOCAL_STORAGE_ROOT`
   - `LOCAL_STORAGE_PUBLIC_BASE_URL`
-  - `SUPABASE_URL`
-  - `SUPABASE_SERVICE_ROLE_KEY`
-  - `SUPABASE_BUCKET`
+  - `RAILWAY_STORAGE_ENDPOINT`
+  - `RAILWAY_STORAGE_ACCESS_KEY_ID`
+  - `RAILWAY_STORAGE_SECRET_ACCESS_KEY`
+  - `RAILWAY_STORAGE_REGION`
+  - `RAILWAY_STORAGE_BUCKET`
+  - `RAILWAY_STORAGE_URL_STYLE=virtual-hosted|path`
 
 Notes:
 
 - `EMAIL_PROVIDER=console` is the safe default for development. Newsletter confirmation emails are logged instead of being sent.
 - `STORAGE_DRIVER=local` is the safe default for development.
+- `STORAGE_DRIVER=railway` uses a private Railway Bucket through the S3-compatible API; media stays exposed through the existing backend content endpoints rather than direct public bucket URLs.
 - admin endpoints boot without valid Auth0 credentials, but protected admin requests will only work with a valid bearer token and local admin mapping.
 - `CORS_ALLOWED_ORIGINS` is a comma-separated list of browser origins allowed to call the backend, for example `http://admin.dev.walkandtour.dk:3001,http://localhost:3001`.
 - `AUTH_BOOTSTRAP_SUPER_ADMIN_EMAIL` and `AUTH_BOOTSTRAP_SUPER_ADMIN_SUB` can bootstrap the first admin on an empty database.
+- If you provision a Railway Bucket, map Railway's bucket credentials into the app config as follows: `ENDPOINT -> RAILWAY_STORAGE_ENDPOINT`, `ACCESS_KEY_ID -> RAILWAY_STORAGE_ACCESS_KEY_ID`, `SECRET_ACCESS_KEY -> RAILWAY_STORAGE_SECRET_ACCESS_KEY`, `REGION -> RAILWAY_STORAGE_REGION`, and `BUCKET -> RAILWAY_STORAGE_BUCKET`. Use `RAILWAY_STORAGE_URL_STYLE=path` only if Railway indicates your bucket requires path-style addressing.
 
 ## Run Locally
 

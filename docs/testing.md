@@ -32,7 +32,7 @@ The current suite focuses on branch-heavy and contract-heavy logic:
 - blog post admin service behavior, including split translation create/update/delete/publish flows and derived `publishedAt` handling
 - blog public visibility and controller delegation
 - newsletter subscriber double opt-in, unsubscribe, admin search, and CSV export flows
-- provider-backed newsletter email delivery and storage adapter behavior
+- provider-backed newsletter email delivery and storage adapter behavior, including Railway S3 request signing and URL-style handling
 - local development seed reset-and-reseed orchestration
 
 Shared test utilities live under `test/` so future layers can reuse repository mocks and module-level stubs instead of rebuilding test scaffolding.

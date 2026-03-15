@@ -19,7 +19,7 @@ Completed in this step:
 
 - Added application-level email-provider abstractions with `console` and Resend-backed implementations.
 - Wired newsletter subscribe flows to dispatch provider-backed confirmation emails containing direct confirmation and unsubscribe links.
-- Added application-level storage abstractions with local-filesystem and Supabase-backed implementations behind one shared contract.
+- Added application-level storage abstractions with local-filesystem and Railway S3-backed implementations behind one shared contract.
 - Added an admin media asset API backed by the shared storage abstraction for reusable tour and future content media.
 - Added direct-link GET confirmation and unsubscribe endpoints to support email-driven tokenized flows without changing subscriber persistence.
 - Added configuration, Swagger updates, and unit coverage for provider and storage adapters.
@@ -51,7 +51,7 @@ The six planned backend layers are now implemented. The next step, if requested,
 - Swagger/OpenAPI documentation is exposed at `/api/docs` and `/api/docs-json`, with exhaustive request/response schema descriptions for the current API surface.
 - Tag labels are validated as non-empty locale-keyed strings with a maximum length of 100 characters.
 - Newsletter confirmation emails are now dispatched through the configured email provider abstraction; `console` is the safe default and Resend is available through environment configuration.
-- Storage provider selection is environment-driven: local filesystem for development defaults and Supabase-backed object storage for production-style configuration.
+- Storage provider selection is environment-driven: local filesystem for development defaults and Railway Bucket-backed S3 storage for production-style configuration.
 - Local development now has a reset-and-reseed command that recreates a predictable demo dataset for admin, content, and newsletter testing without adding a new product layer.
 - Tour translations now surface and validate localized `highlights`, `included`, and `notIncluded` lists in admin/public responses and seeded demo content.
 - Tour public visibility is now derived from shared tour completeness plus translation state; only `tour_translations.is_published` is stored, while `tour_translations.is_ready` is recalculated by the backend.

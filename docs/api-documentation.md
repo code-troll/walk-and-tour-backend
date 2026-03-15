@@ -47,6 +47,7 @@ That guide adds:
 - Blog posts now manage hero media through `GET /api/admin/blog-posts/:id/media`, `POST /api/admin/blog-posts/:id/hero-media`, and `DELETE /api/admin/blog-posts/:id/hero-media`.
 - Blog posts now manage localized content through nested translation routes, including dedicated publish/unpublish endpoints and translation deletion by locale.
 - Public media is only exposed through content-scoped routes: `GET /api/public/tours/:slug/media/:mediaId` and `GET /api/public/blog-posts/:slug/media/:mediaId`.
+- Public media remains content-scoped even with the Railway storage driver; bucket objects are not exposed as direct public URLs.
 - Tours and blog posts no longer expose or persist a `category` field.
 - Swagger remains the machine-readable contract; `docs/admin-frontend-api.md` is the curated frontend implementation guide.
 - `docs/backend.yaml` should be regenerated from the Nest Swagger document with `npm run openapi:export` instead of being hand-maintained.
