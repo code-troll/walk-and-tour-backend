@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -41,13 +40,6 @@ const REQUIRED_LOCALIZED_LIST_FIELDS = [
   'notIncluded',
 ] as const;
 const TOUR_SORT_ORDER_CONSTRAINT = 'UQ_tours_sort_order';
-
-interface TourMediaAttachmentInput {
-  mediaId: string;
-  orderIndex: number;
-  altText: Record<string, string> | null;
-  media: MediaAssetEntity;
-}
 
 interface TourSharedInput {
   name: string;

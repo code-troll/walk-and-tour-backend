@@ -24,6 +24,22 @@ const DEFAULT_FOLDER = 'media';
 const IMAGE_MIME_TYPE_PATTERN = /^image\/[a-z0-9.+-]+$/i;
 const VIDEO_MIME_TYPE_PATTERN = /^video\/[a-z0-9.+-]+$/i;
 
+export interface AdminMediaResponse {
+  id: string;
+  mediaType: 'image' | 'video';
+  storagePath: string;
+  adminContentUrl: string;
+  publicContentUrl: string;
+  contentType: string;
+  size: number;
+  originalFilename: string;
+}
+
+export interface PersistedAdminMediaResponse extends AdminMediaResponse {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface UploadMediaInput {
   file: {
     originalname: string;
@@ -51,17 +67,7 @@ export class AdminMediaService {
   ) {}
 
   async findAll(query: ListMediaDto): Promise<{
-    items: Array<{
-      id: string;
-      mediaType: 'image' | 'video';
-      storagePath: string;
-      contentUrl: string;
-      contentType: string;
-      size: number;
-      originalFilename: string;
-      createdAt: Date;
-      updatedAt: Date;
-    }>;
+    items: PersistedAdminMediaResponse[];
     page: number;
     limit: number;
     total: number;
@@ -86,17 +92,7 @@ export class AdminMediaService {
     };
   }
 
-  async findOne(id: string): Promise<{
-    id: string;
-    mediaType: 'image' | 'video';
-    storagePath: string;
-    contentUrl: string;
-    contentType: string;
-    size: number;
-    originalFilename: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }> {
+  async findOne(id: string): Promise<PersistedAdminMediaResponse> {
     const mediaAsset = await this.getMediaAssetOrThrow(id);
     return this.toAdminMediaResponse(mediaAsset);
   }
@@ -116,15 +112,7 @@ export class AdminMediaService {
     };
   }
 
-  async upload(input: UploadMediaInput): Promise<{
-    id: string;
-    mediaType: 'image' | 'video';
-    storagePath: string;
-    contentUrl: string;
-    contentType: string;
-    size: number;
-    originalFilename: string;
-  }> {
+  async upload(input: UploadMediaInput): Promise<AdminMediaResponse> {
     const mediaType = this.detectMediaType(input.file.mimetype);
     this.validateFile(input.file, mediaType);
 
@@ -150,7 +138,8 @@ export class AdminMediaService {
       id: mediaAsset.id,
       mediaType,
       storagePath: stored.path,
-      contentUrl: this.buildAdminContentUrl(mediaAsset.id),
+      adminContentUrl: this.buildAdminContentUrl(mediaAsset.id),
+      publicContentUrl: this.buildPublicContentUrl(mediaAsset.id),
       contentType: stored.contentType,
       size: stored.size,
       originalFilename: input.file.originalname,
@@ -255,22 +244,13 @@ export class AdminMediaService {
     ];
   }
 
-  private toAdminMediaResponse(mediaAsset: MediaAssetEntity): {
-    id: string;
-    mediaType: 'image' | 'video';
-    storagePath: string;
-    contentUrl: string;
-    contentType: string;
-    size: number;
-    originalFilename: string;
-    createdAt: Date;
-    updatedAt: Date;
-  } {
+  private toAdminMediaResponse(mediaAsset: MediaAssetEntity): PersistedAdminMediaResponse {
     return {
       id: mediaAsset.id,
       mediaType: mediaAsset.mediaType,
       storagePath: mediaAsset.storagePath,
-      contentUrl: this.buildAdminContentUrl(mediaAsset.id),
+      adminContentUrl: this.buildAdminContentUrl(mediaAsset.id),
+      publicContentUrl: this.buildPublicContentUrl(mediaAsset.id),
       contentType: mediaAsset.contentType,
       size: mediaAsset.size,
       originalFilename: mediaAsset.originalFilename,
@@ -294,5 +274,10 @@ export class AdminMediaService {
   private buildAdminContentUrl(mediaId: string): string {
     const { appBaseUrl } = getProviderConfig();
     return `${appBaseUrl.replace(/\/$/, '')}/api/admin/media/${mediaId}/content`;
+  }
+
+  private buildPublicContentUrl(mediaId: string): string {
+    const { appBaseUrl } = getProviderConfig();
+    return `${appBaseUrl.replace(/\/$/, '')}/api/media/${mediaId}/content`;
   }
 }

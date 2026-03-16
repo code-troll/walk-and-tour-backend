@@ -17,6 +17,7 @@ import { PublicBlogPostsService } from '../blog-posts/public-blog-posts.service'
 import { HealthController } from '../health/health.controller';
 import { LanguagesController } from '../languages/languages.controller';
 import { LanguagesService } from '../languages/languages.service';
+import { MediaController } from '../media/media.controller';
 import { NewsletterSubscribersController } from '../newsletter-subscribers/newsletter-subscribers.controller';
 import { NewsletterSubscribersService } from '../newsletter-subscribers/newsletter-subscribers.service';
 import { TagsController } from '../tags/tags.controller';
@@ -32,6 +33,7 @@ const EMPTY_SERVICE = {};
   controllers: [
     AdminAuthController,
     AdminMediaController,
+    MediaController,
     AdminUsersController,
     RolesController,
     BlogPostsController,

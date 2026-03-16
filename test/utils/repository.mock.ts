@@ -1,4 +1,4 @@
-interface RepositoryManagerMock<T> {
+interface RepositoryManagerMock {
   transaction: jest.Mock;
   find: jest.Mock;
   save: jest.Mock;

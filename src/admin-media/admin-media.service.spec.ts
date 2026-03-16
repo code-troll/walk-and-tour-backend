@@ -78,7 +78,8 @@ describe('AdminMediaService', () => {
       id: 'media-1',
       mediaType: 'image',
       storagePath: 'tours/historic-center/uploaded.jpg',
-      contentUrl: 'http://api.dev.walkandtour.dk:3000/api/admin/media/media-1/content',
+      adminContentUrl: 'http://api.dev.walkandtour.dk:3000/api/admin/media/media-1/content',
+      publicContentUrl: 'http://api.dev.walkandtour.dk:3000/api/media/media-1/content',
       contentType: 'image/jpeg',
       size: 128,
       originalFilename: 'cover.jpg',
@@ -108,7 +109,8 @@ describe('AdminMediaService', () => {
       items: [
         expect.objectContaining({
           id: 'media-1',
-          contentUrl: 'http://api.dev.walkandtour.dk:3000/api/admin/media/media-1/content',
+          adminContentUrl: 'http://api.dev.walkandtour.dk:3000/api/admin/media/media-1/content',
+          publicContentUrl: 'http://api.dev.walkandtour.dk:3000/api/media/media-1/content',
         }),
       ],
       page: 1,
@@ -125,7 +127,8 @@ describe('AdminMediaService', () => {
     expect(result).toEqual(
       expect.objectContaining({
         id: 'media-1',
-        contentUrl: 'http://api.dev.walkandtour.dk:3000/api/admin/media/media-1/content',
+        adminContentUrl: 'http://api.dev.walkandtour.dk:3000/api/admin/media/media-1/content',
+        publicContentUrl: 'http://api.dev.walkandtour.dk:3000/api/media/media-1/content',
       }),
     );
   });

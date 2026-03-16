@@ -497,7 +497,7 @@ export class BlogPostsController {
     response.setHeader('Content-Type', content.contentType);
     response.setHeader(
       'Content-Disposition',
-      `inline; filename=\"${content.originalFilename.replace(/"/g, '')}\"`,
+      `inline; filename="${content.originalFilename.replace(/"/g, '')}"`,
     );
 
     return new StreamableFile(content.content);

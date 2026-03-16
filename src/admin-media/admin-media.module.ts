@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { BlogPostEntity } from '../blog-posts/blog-post.entity';
 import { MediaAssetEntity } from '../media/media-asset.entity';
+import { MediaController } from '../media/media.controller';
 import { StorageModule } from '../storage/storage.module';
 import { TourEntity } from '../tours/entities/tour.entity';
 import { TourMediaEntity } from '../tours/entities/tour-media.entity';
@@ -19,7 +20,7 @@ import { AdminMediaService } from './admin-media.service';
       BlogPostEntity,
     ]),
   ],
-  controllers: [AdminMediaController],
+  controllers: [AdminMediaController, MediaController],
   providers: [AdminMediaService],
 })
 export class AdminMediaModule {}

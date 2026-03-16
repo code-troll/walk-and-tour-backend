@@ -305,6 +305,36 @@ paths:
       summary: Fetch media content
       tags:
         - Admin Media
+  /api/media/{id}/content:
+    get:
+      description: Streams the stored file bytes for one reusable media asset by UUID.
+      operationId: MediaController_fetchContent
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Media asset UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Stored media file bytes.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: Fetch public media content
+      tags:
+        - Media
   /api/admin/users:
     get:
       description: Returns all local admin users with their expanded role records.
@@ -2902,10 +2932,14 @@ components:
           type: string
           description: Media storage path.
           example: media/tours/historic-center/cover.jpg
-        contentUrl:
+        adminContentUrl:
           type: string
-          description: API URL used to fetch the stored media bytes.
+          description: Authenticated admin API URL used to fetch the stored media bytes.
           example: http://api.dev.walkandtour.dk:3000/api/admin/media/uuid/content
+        publicContentUrl:
+          type: string
+          description: Public API URL used to fetch the stored media bytes without admin authentication.
+          example: http://api.dev.walkandtour.dk:3000/api/media/uuid/content
         contentType:
           type: string
           description: Detected content type of the uploaded object.
@@ -2930,7 +2964,8 @@ components:
         - id
         - mediaType
         - storagePath
-        - contentUrl
+        - adminContentUrl
+        - publicContentUrl
         - contentType
         - size
         - originalFilename
@@ -2979,10 +3014,14 @@ components:
           type: string
           description: Media storage path.
           example: media/tours/historic-center/cover.jpg
-        contentUrl:
+        adminContentUrl:
           type: string
-          description: API URL used to fetch the stored media bytes.
+          description: Authenticated admin API URL used to fetch the stored media bytes.
           example: http://api.dev.walkandtour.dk:3000/api/admin/media/uuid/content
+        publicContentUrl:
+          type: string
+          description: Public API URL used to fetch the stored media bytes without admin authentication.
+          example: http://api.dev.walkandtour.dk:3000/api/media/uuid/content
         contentType:
           type: string
           description: Detected content type of the uploaded object.
@@ -2999,7 +3038,8 @@ components:
         - id
         - mediaType
         - storagePath
-        - contentUrl
+        - adminContentUrl
+        - publicContentUrl
         - contentType
         - size
         - originalFilename

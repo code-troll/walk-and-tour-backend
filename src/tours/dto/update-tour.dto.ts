@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayUnique,
   IsArray,
@@ -13,7 +13,6 @@ import {
   Max,
   MaxLength,
   Min,
-  IsUUID,
   ValidateNested,
 } from 'class-validator';
 

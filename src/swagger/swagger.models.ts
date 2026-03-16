@@ -494,9 +494,60 @@ export class MediaAssetResponseDto {
   originalFilename!: string;
 }
 
-export class UploadedMediaResponseDto extends MediaAssetResponseDto {}
+export class AdminMediaAssetBaseResponseDto {
+  @ApiProperty({
+    description: 'Media asset UUID.',
+    format: 'uuid',
+  })
+  id!: string;
 
-export class AdminMediaAssetResponseDto extends MediaAssetResponseDto {
+  @ApiProperty({
+    description: 'Stored media type.',
+    enum: ['image', 'video'],
+    example: 'image',
+  })
+  mediaType!: 'image' | 'video';
+
+  @ApiProperty({
+    description: 'Media storage path.',
+    example: 'media/tours/historic-center/cover.jpg',
+  })
+  storagePath!: string;
+
+  @ApiProperty({
+    description: 'Authenticated admin API URL used to fetch the stored media bytes.',
+    example: 'http://api.dev.walkandtour.dk:3000/api/admin/media/uuid/content',
+  })
+  adminContentUrl!: string;
+
+  @ApiProperty({
+    description: 'Public API URL used to fetch the stored media bytes without admin authentication.',
+    example: 'http://api.dev.walkandtour.dk:3000/api/media/uuid/content',
+  })
+  publicContentUrl!: string;
+
+  @ApiProperty({
+    description: 'Detected content type of the uploaded object.',
+    example: 'image/jpeg',
+  })
+  contentType!: string;
+
+  @ApiProperty({
+    description: 'Stored file size in bytes.',
+    example: 248193,
+  })
+  size!: number;
+
+  @ApiProperty({
+    description: 'Original uploaded filename.',
+    example: 'cover.jpg',
+  })
+  originalFilename!: string;
+}
+
+export class UploadedMediaResponseDto extends AdminMediaAssetBaseResponseDto {}
+
+export class AdminMediaAssetResponseDto extends AdminMediaAssetBaseResponseDto {
   @ApiProperty({
     description: 'Creation timestamp of the media asset record.',
     type: String,

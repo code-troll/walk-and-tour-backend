@@ -17,7 +17,8 @@ import { PublicToursService } from './public-tours.service';
 @ApiTags('Public Tours')
 @Controller('public/tours')
 export class PublicToursController {
-  constructor(private readonly publicToursService: PublicToursService) {}
+  constructor(private readonly publicToursService: PublicToursService) {
+  }
 
   @ApiOperation({
     summary: 'List public tours by locale',
@@ -50,8 +51,8 @@ export class PublicToursController {
     type: PublicTourResponseDto,
     isArray: true,
   })
-  @ApiBadRequestResponse({ type: ErrorResponseDto })
-  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiBadRequestResponse({type: ErrorResponseDto})
+  @ApiNotFoundResponse({type: ErrorResponseDto})
   @Get()
   findAll(@Query() query: PublicListToursDto) {
     return this.publicToursService.findAll(query.locale, query);
@@ -76,8 +77,8 @@ export class PublicToursController {
     description: 'Published localized public tour.',
     type: PublicTourResponseDto,
   })
-  @ApiBadRequestResponse({ type: ErrorResponseDto })
-  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiBadRequestResponse({type: ErrorResponseDto})
+  @ApiNotFoundResponse({type: ErrorResponseDto})
   @Get(':slug')
   findOne(
     @Param('slug') slug: string,
@@ -101,19 +102,19 @@ export class PublicToursController {
     description: 'Attached media asset UUID.',
     format: 'uuid',
   })
-  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({type: ErrorResponseDto})
   @Get(':slug/media/:mediaId')
   async getMediaContent(
     @Param('slug') slug: string,
     @Param('mediaId') mediaId: string,
-    @Res({ passthrough: true })
+    @Res({passthrough: true})
     response: { setHeader(name: string, value: string): void },
   ): Promise<StreamableFile> {
     const content = await this.publicToursService.getMediaContent(slug, mediaId);
     response.setHeader('Content-Type', content.contentType);
     response.setHeader(
       'Content-Disposition',
-      `inline; filename=\"${content.originalFilename.replace(/"/g, '')}\"`,
+      `inline; filename="${ content.originalFilename.replace(/"/g, '') }"`,
     );
 
     return new StreamableFile(content.content);

@@ -407,7 +407,8 @@ Response:
 - `id`
 - `mediaType`
 - `storagePath`
-- `contentUrl`
+- `adminContentUrl`
+- `publicContentUrl`
 - `contentType`
 - `size`
 - `originalFilename`
@@ -416,7 +417,8 @@ Frontend notes:
 
 - Upload does not modify a tour or blog directly.
 - Use `GET /api/admin/media` to browse existing assets and attach them by ID.
-- Use `GET /api/admin/media/:id/content` to render or preview the stored file in admin flows.
+- Use `adminContentUrl` or `GET /api/admin/media/:id/content` to render or preview the stored file in admin flows.
+- `publicContentUrl` points to the unauthenticated media endpoint `GET /api/media/:id/content`.
 - Tours attach media through `/api/admin/tours/:id/media` and assign the cover through `/api/admin/tours/:id/cover-media`.
 - Blogs attach media through `/api/admin/blog-posts/:id/hero-media`.
 - Alt text is not part of the media asset upload response; it is edited on the tour attachment itself.

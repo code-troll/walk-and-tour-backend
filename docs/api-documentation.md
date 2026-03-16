@@ -46,11 +46,12 @@ That guide adds:
 - Supported `tourType` values now include `company` in addition to `private`, `group`, and `tip_based`.
 - Admin and public tour list endpoints now return tours by `sortOrder` ascending and support optional `tagKeys` and `tourTypes` query filters, accepting comma-separated values or repeated query params and matching any provided tag/type within each filter group.
 - Admin media now exposes a browsable shared library through `GET /api/admin/media` and `GET /api/admin/media/:id`, file streaming through `GET /api/admin/media/:id/content`, image/video upload through `POST /api/admin/media`, and deletion through `DELETE /api/admin/media/:id`.
+- Admin media list/detail/upload responses now expose both `adminContentUrl` and `publicContentUrl`; `publicContentUrl` points to `GET /api/media/:id/content`, while tour/blog attached media responses still use a single scoped `contentUrl`.
 - Tours now manage media associations through `GET/POST /api/admin/tours/:id/media`, `PATCH/DELETE /api/admin/tours/:id/media/:mediaId`, and dedicated cover assignment routes.
 - Blog posts now manage hero media through `GET /api/admin/blog-posts/:id/media`, `POST /api/admin/blog-posts/:id/hero-media`, and `DELETE /api/admin/blog-posts/:id/hero-media`.
 - Blog posts now manage localized content through nested translation routes, including dedicated publish/unpublish endpoints and translation deletion by locale.
-- Public media is only exposed through content-scoped routes: `GET /api/public/tours/:slug/media/:mediaId` and `GET /api/public/blog-posts/:slug/media/:mediaId`.
-- Public media remains content-scoped even with the Railway storage driver; bucket objects are not exposed as direct public URLs.
+- Public media is exposed through the generic route `GET /api/media/:id/content` and the content-scoped routes `GET /api/public/tours/:slug/media/:mediaId` and `GET /api/public/blog-posts/:slug/media/:mediaId`.
+- Public media remains API-mediated even with the Railway storage driver; bucket objects are not exposed as direct public URLs.
 - Tours and blog posts no longer expose or persist a `category` field.
 - Swagger remains the machine-readable contract; `docs/admin-frontend-api.md` is the curated frontend implementation guide.
 - `docs/backend.yaml` should be regenerated from the Nest Swagger document with `npm run openapi:export` instead of being hand-maintained.

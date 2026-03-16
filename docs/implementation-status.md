@@ -63,9 +63,10 @@ The six planned backend layers are now implemented. The next step, if requested,
 - Tour `cancellationType` is now a localized free-text translation field, not a shared persisted tour column.
 - Tour media is now stored through reusable `media_assets` records plus per-tour `tour_media` attachments, with localized alt text on each attachment and cover assignment managed through dedicated cover routes.
 - Admin media now supports paginated library browsing through `GET /api/admin/media`, single-asset retrieval through `GET /api/admin/media/:id`, authenticated byte streaming through `GET /api/admin/media/:id/content`, image/video upload through `POST /api/admin/media`, and deletion through `DELETE /api/admin/media/:id`.
+- Admin media library responses now split media URLs into `adminContentUrl` for authenticated previews and `publicContentUrl` for the new public media route `GET /api/media/:id/content`.
 - Tours now manage media associations through dedicated nested endpoints instead of embedding media changes in `PATCH /api/admin/tours/:id`.
 - Blog posts now attach and clear shared hero media through dedicated media endpoints and return resolved `heroMedia` objects instead of raw hero storage refs.
-- Public media is exposed only through tour/blog-scoped routes, not a direct `/media/...` path.
+- Public media is now exposed through the generic `/api/media/:id/content` route in addition to the tour/blog-scoped public media routes.
 - Admin tag deletion now performs an application-level cascade by removing tag associations from tours and blog posts before deleting the tag record.
 - Tour writes are now split: shared tour data is saved through base-tour endpoints, translations are saved through nested translation endpoints, and translation publish/unpublish is only available through dedicated translation routes.
 - Tour translations can now be permanently removed through a dedicated nested delete endpoint.
