@@ -148,6 +148,7 @@ export class BlogPostsService {
       seoTitle: dto.seoTitle ?? null,
       seoDescription: dto.seoDescription ?? null,
       imageRefs: dto.imageRefs ?? [],
+      viewCount: 0,
     });
 
     await this.translationsRepository.save(translation);
@@ -451,6 +452,7 @@ export class BlogPostsService {
         translation.languageCode,
         {
           isPublished: translation.isPublished,
+          viewCount: translation.viewCount,
           title: translation.title,
           summary: translation.summary,
           htmlContent: translation.htmlContent,

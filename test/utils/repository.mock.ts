@@ -16,18 +16,18 @@ export interface RepositoryMock<_T> {
   save: jest.Mock;
   update: jest.Mock;
   delete: jest.Mock;
-  manager: RepositoryManagerMock<_T>;
+  manager: RepositoryManagerMock;
 }
 
 export function createRepositoryMock<T>(): RepositoryMock<T> {
-  const manager: RepositoryManagerMock<T> = {
+  const manager: RepositoryManagerMock = {
     transaction: jest.fn(),
     find: jest.fn(),
     save: jest.fn(),
     query: jest.fn(),
   };
 
-  manager.transaction.mockImplementation(async (callback: (manager: RepositoryManagerMock<T>) => unknown) =>
+  manager.transaction.mockImplementation(async (callback: (manager: RepositoryManagerMock) => unknown) =>
     callback(manager),
   );
   manager.find.mockImplementation(async () => []);

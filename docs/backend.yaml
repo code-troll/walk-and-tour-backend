@@ -1159,7 +1159,8 @@ paths:
     get:
       description: >-
         Returns a published blog post only when the requested locale is enabled and that locale has a published
-        translation.
+        translation. Successful requests update the requested translation view count at most once per translation and
+        client IP hash every 24 hours.
       operationId: BlogPostsController_findOnePublic
       parameters:
         - name: slug
@@ -3563,11 +3564,19 @@ components:
           type: array
           items:
             type: string
+        viewCount:
+          type: number
+          description: >-
+            Aggregated view count for this translation locale. Successful detail requests can increment it at most once
+            per translation and client IP hash every 24 hours.
+          example: 128
+          minimum: 0
       required:
         - locale
         - title
         - htmlContent
         - imageRefs
+        - viewCount
     PublicBlogResponseDto:
       type: object
       properties:
@@ -4987,6 +4996,11 @@ components:
           type: boolean
           description: Whether the translation is published.
           example: true
+        viewCount:
+          type: number
+          description: Aggregated view count for this translation locale.
+          example: 128
+          minimum: 0
         title:
           type: string
           description: Localized title.
@@ -5014,6 +5028,7 @@ components:
             type: string
       required:
         - isPublished
+        - viewCount
         - title
         - htmlContent
         - imageRefs

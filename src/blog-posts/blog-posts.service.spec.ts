@@ -132,6 +132,7 @@ describe('BlogPostsService', () => {
         isPublished: false,
         title: 'Royal Copenhagen',
         htmlContent: '<p>Hello</p>',
+        viewCount: 0,
       }),
     );
     expect(blogPostsRepository.update).toHaveBeenCalledWith(
@@ -344,6 +345,7 @@ function createBlogPostTranslationEntity(
     seoTitle: null,
     seoDescription: null,
     imageRefs: [],
+    viewCount: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,

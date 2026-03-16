@@ -749,6 +749,10 @@ Admin response shape includes:
 - `translationAvailability[]`
 - `audit`
 
+Each blog translation response includes:
+
+- `viewCount`
+
 Frontend notes:
 
 - `POST /api/admin/blog-posts` creates only the shared blog draft; create translations afterward through the nested translation route
@@ -851,6 +855,7 @@ Rules:
 - `locale` is required
 - no locale fallback exists
 - only parent-published blog posts with translation-published locales are returned
+- successful `GET /api/public/blog-posts/:slug` requests increment the selected translation `viewCount` at most once per translation and client IP hash every 24 hours
 
 Public blog response includes:
 
@@ -858,6 +863,10 @@ Public blog response includes:
 - localized `translation`
 - localized tag labels for the requested locale
 - `publishedAt`
+
+The localized `translation` object includes:
+
+- `viewCount`
 
 ### 7.3 Public Newsletter Subscription
 

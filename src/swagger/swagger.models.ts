@@ -1129,6 +1129,13 @@ export class BlogAdminTranslationResponseDto {
   isPublished!: boolean;
 
   @ApiProperty({
+    description: 'Aggregated view count for this translation locale.',
+    example: 128,
+    minimum: 0,
+  })
+  viewCount!: number;
+
+  @ApiProperty({
     description: 'Localized title.',
     example: 'Barcelona Historic Center Guide',
   })
@@ -1291,6 +1298,14 @@ export class PublicBlogTranslationResponseDto {
     type: [String],
   })
   imageRefs!: string[];
+
+  @ApiProperty({
+    description:
+      'Aggregated view count for this translation locale. Successful detail requests can increment it at most once per translation and client IP hash every 24 hours.',
+    example: 128,
+    minimum: 0,
+  })
+  viewCount!: number;
 }
 
 export class PublicBlogResponseDto {

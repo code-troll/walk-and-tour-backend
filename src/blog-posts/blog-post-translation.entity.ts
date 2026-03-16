@@ -57,6 +57,9 @@ export class BlogPostTranslationEntity {
   @Column({ name: 'image_refs', type: 'jsonb', default: [] })
   imageRefs!: string[];
 
+  @Column({ name: 'view_count', type: 'integer', default: 0 })
+  viewCount!: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

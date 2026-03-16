@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Req,
   Get,
   Param,
   ParseUUIDPipe,
@@ -50,7 +51,7 @@ import {
 import { CreateBlogPostDto } from './dto/create-blog-post.dto';
 import { UpdateBlogPostDto } from './dto/update-blog-post.dto';
 import { BlogPostsService } from './blog-posts.service';
-import { PublicBlogPostsService } from './public-blog-posts.service';
+import { PublicBlogPostsService, PublicBlogRequestContext } from './public-blog-posts.service';
 
 @Controller()
 export class BlogPostsController {
@@ -443,7 +444,8 @@ export class BlogPostsController {
   @ApiTags('Public Blog Posts')
   @ApiOperation({
     summary: 'Get a public blog post by slug and locale',
-    description: 'Returns a published blog post only when the requested locale is enabled and that locale has a published translation.',
+    description:
+      'Returns a published blog post only when the requested locale is enabled and that locale has a published translation. Successful requests update the requested translation view count at most once per translation and client IP hash every 24 hours.',
   })
   @ApiParam({
     name: 'slug',
@@ -465,8 +467,9 @@ export class BlogPostsController {
   findOnePublic(
     @Param('slug') slug: string,
     @Query() query: LocaleQueryDto,
+    @Req() request: PublicBlogRequestContext,
   ) {
-    return this.publicBlogPostsService.findOneBySlug(slug, query.locale);
+    return this.publicBlogPostsService.findOneBySlug(slug, query.locale, request);
   }
 
   @ApiTags('Public Blog Posts')

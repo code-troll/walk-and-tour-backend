@@ -146,11 +146,18 @@ describe('BlogPostsController', () => {
   });
 
   it('delegates public blog detail by slug and locale', async () => {
-    await controller.findOnePublic('royal-copenhagen', { locale: 'en' });
+    const request = {
+      headers: {
+        'x-forwarded-for': '203.0.113.10',
+      },
+    };
+
+    await controller.findOnePublic('royal-copenhagen', { locale: 'en' }, request as never);
 
     expect(publicBlogPostsService.findOneBySlug).toHaveBeenCalledWith(
       'royal-copenhagen',
       'en',
+      request,
     );
   });
 
