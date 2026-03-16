@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -22,6 +23,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiUnauthorizedResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -37,6 +39,7 @@ import {
   TourMediaListResponseDto,
 } from '../swagger/swagger.models';
 import { CreateTourDto } from './dto/create-tour.dto';
+import { AdminListToursDto } from './dto/list-tours.dto';
 import {
   AttachTourMediaDto,
   SetTourCoverMediaDto,
@@ -67,11 +70,27 @@ export class ToursController {
     type: TourAdminResponseDto,
     isArray: true,
   })
+  @ApiQuery({
+    name: 'tagKeys',
+    required: false,
+    description:
+      'Optional tag-key filter. Accepts comma-separated values or repeated query params and matches tours that include at least one of the provided tags.',
+    type: String,
+    isArray: true,
+  })
+  @ApiQuery({
+    name: 'tourTypes',
+    required: false,
+    description:
+      'Optional tour-type filter. Accepts comma-separated values or repeated query params and matches tours whose type is one of the provided values.',
+    enum: ['private', 'group', 'tip_based', 'company'],
+    isArray: true,
+  })
   @ApiUnauthorizedResponse({ type: ErrorResponseDto })
   @ApiForbiddenResponse({ type: ErrorResponseDto })
   @Get()
-  findAll() {
-    return this.toursService.findAll();
+  findAll(@Query() query: AdminListToursDto) {
+    return this.toursService.findAll(query);
   }
 
   @ApiOperation({

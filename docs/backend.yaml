@@ -1872,6 +1872,34 @@ paths:
             pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
             example: en
             type: string
+        - name: tagKeys
+          required: false
+          in: query
+          description: >-
+            Optional tag-key filter. Accepts comma-separated values or repeated query params and matches tours that
+            include at least one of the provided tags.
+          schema:
+            example:
+              - history
+              - architecture
+            type: array
+            items:
+              type: string
+        - name: tourTypes
+          required: false
+          in: query
+          description: >-
+            Optional tour-type filter. Accepts comma-separated values or repeated query params and matches tours whose
+            type is one of the provided values.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - private
+                - group
+                - tip_based
+                - company
       responses:
         "200":
           description: Published public tours for the requested locale.
@@ -1973,7 +2001,35 @@ paths:
     get:
       description: Returns all tours with shared data, translation diagnostics, and audit metadata.
       operationId: ToursController_findAll
-      parameters: []
+      parameters:
+        - name: tagKeys
+          required: false
+          in: query
+          description: >-
+            Optional tag-key filter. Accepts comma-separated values or repeated query params and matches tours that
+            include at least one of the provided tags.
+          schema:
+            example:
+              - history
+              - architecture
+            type: array
+            items:
+              type: string
+        - name: tourTypes
+          required: false
+          in: query
+          description: >-
+            Optional tour-type filter. Accepts comma-separated values or repeated query params and matches tours whose
+            type is one of the provided values.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - private
+                - group
+                - tip_based
+                - company
       responses:
         "200":
           description: Admin tour records.
@@ -3534,6 +3590,7 @@ components:
               - private
               - group
               - tip_based
+              - company
         tourCommuteModes:
           type: array
           description: Supported commute modes between itinerary stops.
@@ -4199,6 +4256,7 @@ components:
             - private
             - group
             - tip_based
+            - company
         durationMinutes:
           type: number
           description: Total duration in minutes.
@@ -4398,6 +4456,7 @@ components:
             - private
             - group
             - tip_based
+            - company
         durationMinutes:
           type: object
           description: Total duration in minutes.
@@ -4477,6 +4536,7 @@ components:
             - private
             - group
             - tip_based
+            - company
           example: group
       required:
         - name
@@ -4627,6 +4687,7 @@ components:
             - private
             - group
             - tip_based
+            - company
           example: group
         durationMinutes:
           type: number

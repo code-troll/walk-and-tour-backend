@@ -44,7 +44,7 @@ describe('PublicToursService', () => {
     languagesRepository.findOne.mockResolvedValue(
       createLanguageEntity({ code: 'en', isEnabled: true }),
     );
-    toursRepository.find.mockResolvedValue([
+    const { queryBuilder } = createListQueryBuilderMock([
       createPublicTour(),
       createPublicTour({
         slug: 'draft-translation-tour',
@@ -57,8 +57,9 @@ describe('PublicToursService', () => {
         ],
       }),
     ] as TourEntity[]);
+    toursRepository.createQueryBuilder.mockReturnValue(queryBuilder as never);
 
-    const result = await service.findAll('en');
+    const result = await service.findAll('en', { locale: 'en' });
 
     expect(result).toEqual([
       expect.objectContaining({
@@ -119,12 +120,63 @@ describe('PublicToursService', () => {
         },
       }),
     ]);
+    expect(toursRepository.find).not.toHaveBeenCalled();
+  });
+
+  it('filters public tour listings by tags and tour types', async () => {
+    languagesRepository.findOne.mockResolvedValue(
+      createLanguageEntity({ code: 'en', isEnabled: true }),
+    );
+    const { queryBuilder, subQueryBuilder } = createListQueryBuilderMock([
+      createPublicTour({
+        id: 'tour-company-1',
+        slug: 'company-experience',
+        tourType: 'company',
+        tags: [
+          createTagEntity({
+            key: 'history',
+            labels: { en: 'History' },
+          }),
+        ],
+      }),
+      createPublicTour({
+        id: 'tour-group-1',
+        slug: 'group-architecture',
+        tourType: 'group',
+        tags: [
+          createTagEntity({
+            key: 'architecture',
+            labels: { en: 'Architecture' },
+          }),
+        ],
+      }),
+    ] as TourEntity[]);
+    toursRepository.createQueryBuilder.mockReturnValue(queryBuilder as never);
+
+    await service.findAll('en', {
+      locale: 'en',
+      tagKeys: ['history'],
+      tourTypes: ['company'],
+    });
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'tour.tourType IN (:...tourTypes)',
+      { tourTypes: ['company'] },
+    );
+    expect(subQueryBuilder.andWhere).toHaveBeenCalledWith(
+      'tour_tags_filter.tag_key IN (:...tagKeys)',
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'EXISTS (SELECT 1)',
+      { tagKeys: ['history'] },
+    );
+    expect(toursRepository.find).not.toHaveBeenCalled();
   });
 
   it('rejects unavailable locales', async () => {
     languagesRepository.findOne.mockResolvedValue(null);
 
-    await expect(service.findAll('fr')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findAll('fr', { locale: 'fr' })).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('returns a localized stop-based itinerary for a valid public tour', async () => {
@@ -380,4 +432,28 @@ function createTourMediaEntity(
     updatedAt: new Date('2026-03-12T09:00:00.000Z'),
     ...overrides,
   } as TourMediaEntity;
+}
+
+function createListQueryBuilderMock<T>(results: T[]) {
+  const subQueryBuilder = {
+    select: jest.fn().mockReturnThis(),
+    from: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    getQuery: jest.fn().mockReturnValue('(SELECT 1)'),
+  };
+
+  const queryBuilder = {
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    distinct: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    subQuery: jest.fn().mockReturnValue(subQueryBuilder),
+    getMany: jest.fn().mockResolvedValue(results),
+  };
+
+  return {
+    queryBuilder,
+    subQueryBuilder,
+  };
 }

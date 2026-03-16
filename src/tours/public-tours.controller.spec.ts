@@ -20,9 +20,15 @@ describe('PublicToursController', () => {
   });
 
   it('delegates public tour listing by locale', async () => {
-    await controller.findAll({ locale: 'en' });
+    const query = {
+      locale: 'en',
+      tagKeys: ['history'],
+      tourTypes: ['company'],
+    };
 
-    expect(publicToursService.findAll).toHaveBeenCalledWith('en');
+    await controller.findAll(query as never);
+
+    expect(publicToursService.findAll).toHaveBeenCalledWith('en', query);
   });
 
   it('delegates public tour detail by slug and locale', async () => {

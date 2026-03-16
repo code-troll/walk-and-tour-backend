@@ -21,8 +21,8 @@ The current suite focuses on branch-heavy and contract-heavy logic:
 - tag label maximum-length validation
 - tag deletion with cascade-removal of tour/blog join-table associations
 - tour schema policy and payload validation
-- tour public visibility and controller delegation
-- tour service creation and shared-tour update flows, including stop-based itinerary replacement, split translation create/update/publish flows, automatic translation readiness recalculation, and required localized list validation for `highlights`, `included`, and `notIncluded`
+- tour public visibility, list filtering, and controller delegation
+- tour service creation, list filtering, and shared-tour update flows, including stop-based itinerary replacement, split translation create/update/publish flows, automatic translation readiness recalculation, and required localized list validation for `highlights`, `included`, and `notIncluded`
 - translation deletion behavior and controller delegation for nested tour-translation routes
 - localized tour cancellation policy validation and response mapping
 - tour media attachment validation, including localized alt-text maps, cover image rules, and referenced media asset deletion blocking

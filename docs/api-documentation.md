@@ -42,6 +42,8 @@ That guide adds:
 - Tour writes are now split across base-tour endpoints and nested translation endpoints: shared tour saves do not accept translations, and translation publication changes only through `/publish` and `/unpublish` translation routes.
 - Tour translations can also be removed through `DELETE /api/admin/tours/:id/translations/:languageCode`.
 - Admin tour responses may include `null` for draft-only shared fields such as `contentSchema`, `rating`, `reviewCount`, `durationMinutes`, `startPoint`, `endPoint`, and `itinerary`.
+- Supported `tourType` values now include `company` in addition to `private`, `group`, and `tip_based`.
+- Admin and public tour list endpoints now support optional `tagKeys` and `tourTypes` query filters, accepting comma-separated values or repeated query params and matching any provided tag/type within each filter group.
 - Admin media now exposes a browsable shared library through `GET /api/admin/media` and `GET /api/admin/media/:id`, file streaming through `GET /api/admin/media/:id/content`, image/video upload through `POST /api/admin/media`, and deletion through `DELETE /api/admin/media/:id`.
 - Tours now manage media associations through `GET/POST /api/admin/tours/:id/media`, `PATCH/DELETE /api/admin/tours/:id/media/:mediaId`, and dedicated cover assignment routes.
 - Blog posts now manage hero media through `GET /api/admin/blog-posts/:id/media`, `POST /api/admin/blog-posts/:id/hero-media`, and `DELETE /api/admin/blog-posts/:id/hero-media`.

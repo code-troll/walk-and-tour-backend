@@ -1,0 +1,709 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TourMigrationInput",
+  "description": "Canonical input schema for preparing tour migration data. This file is designed for offline migration authoring rather than direct API submission. It groups optional dictionary records such as languages, tags, and media assets together with the tours that reference them through stable local refs and keys.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tours"],
+  "properties": {
+    "meta": {
+      "$ref": "#/$defs/Meta"
+    },
+    "languages": {
+      "type": "array",
+      "description": "Optional language records to create before inserting tour translations. Omit this section when all referenced language codes already exist in the target database.",
+      "items": {
+        "$ref": "#/$defs/Language"
+      }
+    },
+    "tags": {
+      "type": "array",
+      "description": "Optional tag dictionary records to create before attaching tags to tours. Omit when all tag keys already exist in the target database.",
+      "items": {
+        "$ref": "#/$defs/Tag"
+      }
+    },
+    "mediaAssets": {
+      "type": "array",
+      "description": "Optional media assets to create before attaching them to tours. Tours reference these records through local `ref` values instead of database UUIDs.",
+      "items": {
+        "$ref": "#/$defs/MediaAsset"
+      }
+    },
+    "tours": {
+      "type": "array",
+      "description": "Ordered tour records to materialize. Each entry contains all shared tour data plus nested localized translations and media attachments.",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Tour"
+      }
+    }
+  },
+  "$defs": {
+    "Meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional metadata for the import file itself. These fields are not persisted to the tour tables; they only help identify the source and version of the prepared migration input.",
+      "properties": {
+        "version": {
+          "type": "integer",
+          "description": "Format version of this migration input document. Start with `1` unless the import contract evolves later.",
+          "minimum": 1
+        },
+        "source": {
+          "type": "string",
+          "description": "Human-readable label for where the data came from, such as a spreadsheet export, content draft, or manual curation batch.",
+          "minLength": 1
+        },
+        "notes": {
+          "type": "array",
+          "description": "Optional free-form notes for migration preparation. This is documentation only and is not meant to be inserted into the database.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Language": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "name", "sortOrder"],
+      "description": "Language dictionary record. These fields map to the `languages` table and must match the locale codes used by tour translations.",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Locale code used by translations, for example `en`, `es`, or `en-US`.",
+          "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Admin-facing display name for the language.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "isEnabled": {
+          "type": "boolean",
+          "description": "Whether the locale should be publicly enabled. Defaults can be applied during migration generation if omitted."
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "Display order used by the admin and public locale lists.",
+          "minimum": 0
+        }
+      }
+    },
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "labels"],
+      "description": "Tag dictionary record. Tours attach tags through `tagKeys`, and each key should match either an existing or provided tag record.",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Stable tag identifier stored in `tags.key` and referenced from tours.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 100
+        },
+        "labels": {
+          "type": "object",
+          "description": "Localized display labels keyed by locale code.",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      }
+    },
+    "MediaAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref",
+        "mediaType",
+        "storagePath",
+        "contentType",
+        "size",
+        "originalFilename"
+      ],
+      "description": "Reusable media asset record. `ref` is a local import identifier that lets tours point to media without pre-assigning UUIDs.",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Local unique identifier used only inside this migration input file. Tours reference this value through `media.coverRef` and `media.items[].mediaRef`.",
+          "minLength": 1
+        },
+        "mediaType": {
+          "type": "string",
+          "description": "Asset type stored in `media_assets.media_type`.",
+          "enum": ["image", "video"]
+        },
+        "storagePath": {
+          "type": "string",
+          "description": "Resolved object path already present in the configured storage backend. The migration will persist this string as-is.",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "contentType": {
+          "type": "string",
+          "description": "MIME type of the stored asset.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "size": {
+          "type": "integer",
+          "description": "File size in bytes.",
+          "minimum": 0
+        },
+        "originalFilename": {
+          "type": "string",
+          "description": "Original uploaded filename for admin reference.",
+          "minLength": 1,
+          "maxLength": 255
+        }
+      }
+    },
+    "Coordinates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lat", "lng"],
+      "description": "Latitude and longitude pair in decimal degrees.",
+      "properties": {
+        "lat": {
+          "type": "number",
+          "description": "Latitude in decimal degrees."
+        },
+        "lng": {
+          "type": "number",
+          "description": "Longitude in decimal degrees."
+        }
+      }
+    },
+    "SharedPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Shared non-localized tour point metadata. The current persisted model stores only optional coordinates at the shared layer.",
+      "properties": {
+        "coordinates": {
+          "$ref": "#/$defs/Coordinates"
+        }
+      }
+    },
+    "LocalizedPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label"],
+      "description": "Localized point copy inside a translation payload.",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "User-facing label for the start or end point in one language.",
+          "minLength": 1
+        },
+        "coordinates": {
+          "$ref": "#/$defs/Coordinates"
+        }
+      }
+    },
+    "Price": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amount", "currency"],
+      "description": "Fixed price block for non-tip-based tours.",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "description": "Monetary amount stored in the shared tour record.",
+          "minimum": 0
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code paired with `amount`.",
+          "minLength": 1,
+          "maxLength": 10
+        }
+      }
+    },
+    "ItineraryConnection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commuteMode"],
+      "description": "Connection to the next itinerary stop. The final stop in a stop-based itinerary must omit this object.",
+      "properties": {
+        "durationMinutes": {
+          "type": "integer",
+          "description": "Estimated transfer time to the next stop.",
+          "minimum": 0
+        },
+        "commuteMode": {
+          "type": "string",
+          "description": "Transport mode used between stops.",
+          "enum": [
+            "walk",
+            "bike",
+            "bus",
+            "train",
+            "metro",
+            "tram",
+            "ferry",
+            "private-transport",
+            "boat",
+            "other"
+          ]
+        }
+      }
+    },
+    "SharedItineraryStop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "description": "Shared stop definition stored in `tour_itinerary_stops`. These stop ids are also the keys used by localized `itineraryStops` payload content.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable kebab-case stop identifier unique within the tour.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 100
+        },
+        "durationMinutes": {
+          "type": "integer",
+          "description": "Expected duration spent at this stop.",
+          "minimum": 0
+        },
+        "coordinates": {
+          "$ref": "#/$defs/Coordinates"
+        },
+        "nextConnection": {
+          "$ref": "#/$defs/ItineraryConnection"
+        }
+      }
+    },
+    "Itinerary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["variant"],
+      "description": "Shared itinerary structure. Use `description` when the localized content is a single narrative block, or `stops` when the route is modeled as ordered shared stops.",
+      "properties": {
+        "variant": {
+          "type": "string",
+          "description": "Itinerary mode used by the tour.",
+          "enum": ["description", "stops"]
+        },
+        "stops": {
+          "type": "array",
+          "description": "Ordered shared stops. Required when `variant` is `stops`, and must be omitted for descriptive tours.",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/SharedItineraryStop"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "variant": {
+                "const": "description"
+              }
+            },
+            "required": ["variant"]
+          },
+          "then": {
+            "not": {
+              "required": ["stops"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "variant": {
+                "const": "stops"
+              }
+            },
+            "required": ["variant"]
+          },
+          "then": {
+            "required": ["stops"]
+          }
+        }
+      ]
+    },
+    "LocalizedAltText": {
+      "type": "object",
+      "description": "Localized media alt text keyed by locale code.",
+      "propertyNames": {
+        "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 255
+      }
+    },
+    "TourMediaItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mediaRef", "orderIndex"],
+      "description": "A single tour-media attachment. `mediaRef` points to one entry in the top-level `mediaAssets` array.",
+      "properties": {
+        "mediaRef": {
+          "type": "string",
+          "description": "Local media reference resolved against `mediaAssets[].ref`.",
+          "minLength": 1
+        },
+        "orderIndex": {
+          "type": "integer",
+          "description": "Display order of the attachment within the tour gallery.",
+          "minimum": 0
+        },
+        "altText": {
+          "$ref": "#/$defs/LocalizedAltText"
+        }
+      }
+    },
+    "TourMedia": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional tour-level media block. Cover media must also be present in `items` so it can be attached before being assigned as the cover.",
+      "properties": {
+        "coverRef": {
+          "type": "string",
+          "description": "Local media ref to assign as `cover_media_id`. This ref should also appear in one of the attachment items.",
+          "minLength": 1
+        },
+        "items": {
+          "type": "array",
+          "description": "Tour media attachments in the order they should be inserted.",
+          "items": {
+            "$ref": "#/$defs/TourMediaItem"
+          }
+        }
+      }
+    },
+    "LocalizedItineraryStop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "description"],
+      "description": "Localized copy for one shared stop. The object key in `itineraryStops` must match a shared stop id from the parent tour itinerary.",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "User-facing stop title in one language.",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "description": "User-facing stop description in one language.",
+          "minLength": 1
+        }
+      }
+    },
+    "BaseTranslationPayloadProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Localized public title of the tour."
+        },
+        "cancellationType": {
+          "type": "string",
+          "description": "Localized cancellation policy text. This field is required by the current tour content validation rules."
+        },
+        "imageAlt": {
+          "type": "string",
+          "description": "Localized alt text for presentation layers that still rely on translation payload image copy."
+        },
+        "aboutTourDescription": {
+          "type": "string",
+          "description": "Localized descriptive paragraph about the overall tour."
+        },
+        "highlights": {
+          "type": "array",
+          "description": "Localized bullet list of main highlights. Complete published translations should provide only strings.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "included": {
+          "type": "array",
+          "description": "Localized bullet list of included items.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notIncluded": {
+          "type": "array",
+          "description": "Localized bullet list of excluded items.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "startPoint": {
+          "$ref": "#/$defs/LocalizedPoint"
+        },
+        "endPoint": {
+          "$ref": "#/$defs/LocalizedPoint"
+        }
+      }
+    },
+    "DescriptiveTranslationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Translation payload shape for tours whose shared itinerary variant is `description`.",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Localized public title of the tour."
+        },
+        "cancellationType": {
+          "type": "string",
+          "description": "Localized cancellation policy text."
+        },
+        "imageAlt": {
+          "type": "string",
+          "description": "Localized image alt text."
+        },
+        "aboutTourDescription": {
+          "type": "string",
+          "description": "Localized tour overview copy."
+        },
+        "highlights": {
+          "type": "array",
+          "description": "Localized highlights list.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "included": {
+          "type": "array",
+          "description": "Localized included-items list.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notIncluded": {
+          "type": "array",
+          "description": "Localized excluded-items list.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "startPoint": {
+          "$ref": "#/$defs/LocalizedPoint"
+        },
+        "endPoint": {
+          "$ref": "#/$defs/LocalizedPoint"
+        },
+        "itineraryDescription": {
+          "type": "string",
+          "description": "Localized itinerary narrative used for descriptive tours."
+        }
+      }
+    },
+    "StopsTranslationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Translation payload shape for tours whose shared itinerary variant is `stops`.",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Localized public title of the tour."
+        },
+        "cancellationType": {
+          "type": "string",
+          "description": "Localized cancellation policy text."
+        },
+        "imageAlt": {
+          "type": "string",
+          "description": "Localized image alt text."
+        },
+        "aboutTourDescription": {
+          "type": "string",
+          "description": "Localized tour overview copy."
+        },
+        "highlights": {
+          "type": "array",
+          "description": "Localized highlights list.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "included": {
+          "type": "array",
+          "description": "Localized included-items list.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notIncluded": {
+          "type": "array",
+          "description": "Localized excluded-items list.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "startPoint": {
+          "$ref": "#/$defs/LocalizedPoint"
+        },
+        "endPoint": {
+          "$ref": "#/$defs/LocalizedPoint"
+        },
+        "itineraryStops": {
+          "type": "object",
+          "description": "Localized stop content keyed by shared stop id.",
+          "additionalProperties": {
+            "$ref": "#/$defs/LocalizedItineraryStop"
+          }
+        }
+      }
+    },
+    "Translation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["languageCode", "payload"],
+      "description": "Localized tour translation record. `isReady` is intentionally omitted because the backend derives it from payload completeness; only `isPublished` should be provided when the migration intends to publish a translation after insertion.",
+      "properties": {
+        "languageCode": {
+          "type": "string",
+          "description": "Locale code for this translation. Must match either an existing language or one provided in the top-level `languages` array.",
+          "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+        },
+        "bookingReferenceId": {
+          "type": ["string", "null"],
+          "description": "Optional external booking reference stored alongside the translation."
+        },
+        "isPublished": {
+          "type": "boolean",
+          "description": "Whether the migration should mark this translation as published. Only complete translations should set this to `true`."
+        },
+        "payload": {
+          "description": "Localized content payload. For descriptive tours use `itineraryDescription`; for stop-based tours use `itineraryStops` keyed by shared stop id.",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/DescriptiveTranslationPayload"
+            },
+            {
+              "$ref": "#/$defs/StopsTranslationPayload"
+            }
+          ]
+        }
+      }
+    },
+    "Tour": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "name", "slug", "tourType", "translations"],
+      "description": "Full tour aggregate prepared for migration generation. Shared properties map to the `tours` table, while nested arrays drive the related join and translation tables.",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Local unique identifier for the tour within this document. It is not persisted directly, but helps map generated SQL and diagnostics.",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "description": "Shared non-localized admin-facing name stored on the tour record.",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "slug": {
+          "type": "string",
+          "description": "Stable public slug stored in `tours.slug`.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 150
+        },
+        "tourType": {
+          "type": "string",
+          "description": "Commercial model of the tour.",
+          "enum": ["private", "group", "tip_based", "company"]
+        },
+        "contentSchema": {
+          "type": "object",
+          "description": "Shared JSON Schema used by the backend to validate translation payloads. Keep this aligned with the payload structure used by the tour.",
+          "additionalProperties": true
+        },
+        "price": {
+          "description": "Fixed price for non-tip-based tours. Omit or set to `null` for tip-based tours.",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Price"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rating": {
+          "type": "number",
+          "description": "Optional aggregate rating stored on the shared tour record.",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "reviewCount": {
+          "type": "integer",
+          "description": "Optional review count stored on the shared tour record.",
+          "minimum": 0
+        },
+        "durationMinutes": {
+          "type": "integer",
+          "description": "Overall shared duration of the tour in minutes.",
+          "minimum": 0
+        },
+        "startPoint": {
+          "$ref": "#/$defs/SharedPoint"
+        },
+        "endPoint": {
+          "$ref": "#/$defs/SharedPoint"
+        },
+        "itinerary": {
+          "$ref": "#/$defs/Itinerary"
+        },
+        "tagKeys": {
+          "type": "array",
+          "description": "Ordered tag keys to attach to the tour. Each value must match an existing or provided tag record.",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "maxLength": 100
+          }
+        },
+        "media": {
+          "$ref": "#/$defs/TourMedia"
+        },
+        "translations": {
+          "type": "array",
+          "description": "Localized translations to create for the tour.",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Translation"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "tourType": {
+                "const": "tip_based"
+              }
+            },
+            "required": ["tourType"]
+          },
+          "then": {
+            "properties": {
+              "price": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

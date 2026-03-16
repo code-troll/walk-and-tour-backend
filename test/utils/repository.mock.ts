@@ -4,6 +4,7 @@ export interface RepositoryMock<_T> {
   findBy: jest.Mock;
   findAndCount: jest.Mock;
   count: jest.Mock;
+  createQueryBuilder: jest.Mock;
   create: jest.Mock;
   save: jest.Mock;
   update: jest.Mock;
@@ -17,6 +18,7 @@ export function createRepositoryMock<T>(): RepositoryMock<T> {
     findBy: jest.fn(),
     findAndCount: jest.fn(),
     count: jest.fn(),
+    createQueryBuilder: jest.fn(),
     create: jest.fn((value: Partial<T>) => value),
     save: jest.fn(async (value: T) => value),
     update: jest.fn(),

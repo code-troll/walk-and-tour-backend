@@ -11,6 +11,7 @@ import {
 
 import { LocaleQueryDto } from '../shared/dto/locale-query.dto';
 import { ErrorResponseDto, PublicTourResponseDto } from '../swagger/swagger.models';
+import { PublicListToursDto } from './dto/list-tours.dto';
 import { PublicToursService } from './public-tours.service';
 
 @ApiTags('Public Tours')
@@ -28,6 +29,22 @@ export class PublicToursController {
     description: 'Requested locale code.',
     example: 'en',
   })
+  @ApiQuery({
+    name: 'tagKeys',
+    required: false,
+    description:
+      'Optional tag-key filter. Accepts comma-separated values or repeated query params and matches tours that include at least one of the provided tags.',
+    type: String,
+    isArray: true,
+  })
+  @ApiQuery({
+    name: 'tourTypes',
+    required: false,
+    description:
+      'Optional tour-type filter. Accepts comma-separated values or repeated query params and matches tours whose type is one of the provided values.',
+    enum: ['private', 'group', 'tip_based', 'company'],
+    isArray: true,
+  })
   @ApiOkResponse({
     description: 'Published public tours for the requested locale.',
     type: PublicTourResponseDto,
@@ -36,8 +53,8 @@ export class PublicToursController {
   @ApiBadRequestResponse({ type: ErrorResponseDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
   @Get()
-  findAll(@Query() query: LocaleQueryDto) {
-    return this.publicToursService.findAll(query.locale);
+  findAll(@Query() query: PublicListToursDto) {
+    return this.publicToursService.findAll(query.locale, query);
   }
 
   @ApiOperation({

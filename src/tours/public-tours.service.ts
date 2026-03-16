@@ -1,11 +1,12 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 
 import { LanguageEntity } from '../languages/language.entity';
 import { getProviderConfig } from '../shared/config/provider.config';
 import { STORAGE_SERVICE, StorageService } from '../storage/storage-service.interface';
 import { TagEntity } from '../tags/tag.entity';
+import { PublicListToursDto } from './dto/list-tours.dto';
 import { TourMediaEntity } from './entities/tour-media.entity';
 import { TourTranslationEntity } from './entities/tour-translation.entity';
 import { TourEntity } from './entities/tour.entity';
@@ -16,6 +17,11 @@ const REQUIRED_LOCALIZED_LIST_FIELDS = [
   'included',
   'notIncluded',
 ] as const;
+
+interface TourListFilters {
+  tagKeys?: string[];
+  tourTypes?: string[];
+}
 
 @Injectable()
 export class PublicToursService {
@@ -29,22 +35,10 @@ export class PublicToursService {
     private readonly payloadValidationService: TourPayloadValidationService,
   ) {}
 
-  async findAll(locale: string): Promise<unknown[]> {
+  async findAll(locale: string, filters: PublicListToursDto): Promise<unknown[]> {
     await this.assertPublicLocale(locale);
 
-    const tours = await this.toursRepository.find({
-      relations: {
-        mediaItems: {
-          media: true,
-        },
-        tags: true,
-        stops: true,
-        translations: true,
-      },
-      order: {
-        updatedAt: 'DESC',
-      },
-    });
+    const tours = await this.buildListQuery(filters).getMany();
 
     return tours
       .map((tour) => this.toPublicResponse(tour, locale))
@@ -284,6 +278,10 @@ export class PublicToursService {
       return false;
     }
 
+    if (tour.tourType === 'company') {
+      return true;
+    }
+
     if (tour.tourType !== 'tip_based' && (!tour.priceAmount || !tour.priceCurrency)) {
       return false;
     }
@@ -381,5 +379,39 @@ export class PublicToursService {
   private buildContentUrl(tourSlug: string, mediaId: string): string {
     const { appBaseUrl } = getProviderConfig();
     return `${appBaseUrl.replace(/\/$/, '')}/api/public/tours/${encodeURIComponent(tourSlug)}/media/${mediaId}`;
+  }
+
+  private buildListQuery(filters: TourListFilters): SelectQueryBuilder<TourEntity> {
+    const query = this.toursRepository
+      .createQueryBuilder('tour')
+      .leftJoinAndSelect('tour.mediaItems', 'mediaItems')
+      .leftJoinAndSelect('mediaItems.media', 'media')
+      .leftJoinAndSelect('tour.tags', 'tags')
+      .leftJoinAndSelect('tour.stops', 'stops')
+      .leftJoinAndSelect('tour.translations', 'translations')
+      .distinct(true)
+      .orderBy('tour.updatedAt', 'DESC');
+
+    if (filters.tourTypes?.length) {
+      query.andWhere('tour.tourType IN (:...tourTypes)', {
+        tourTypes: filters.tourTypes,
+      });
+    }
+
+    if (filters.tagKeys?.length) {
+      const subquery = query
+        .subQuery()
+        .select('1')
+        .from('tour_tags', 'tour_tags_filter')
+        .where('tour_tags_filter.tour_id = tour.id')
+        .andWhere('tour_tags_filter.tag_key IN (:...tagKeys)')
+        .getQuery();
+
+      query.andWhere(`EXISTS ${subquery}`, {
+        tagKeys: filters.tagKeys,
+      });
+    }
+
+    return query;
   }
 }

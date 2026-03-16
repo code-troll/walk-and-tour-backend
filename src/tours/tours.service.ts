@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, SelectQueryBuilder } from 'typeorm';
 
 import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface';
 import { LanguageEntity } from '../languages/language.entity';
@@ -15,6 +15,7 @@ import { getProviderConfig } from '../shared/config/provider.config';
 import { TOUR_TYPES } from '../shared/domain';
 import { TagEntity } from '../tags/tag.entity';
 import { CreateTourDto } from './dto/create-tour.dto';
+import { AdminListToursDto } from './dto/list-tours.dto';
 import {
   AttachTourMediaDto,
   SetTourCoverMediaDto,
@@ -79,6 +80,11 @@ interface JsonPoint {
   coordinates?: JsonCoordinates;
 }
 
+interface TourListFilters {
+  tagKeys?: string[];
+  tourTypes?: string[];
+}
+
 @Injectable()
 export class ToursService {
   constructor(
@@ -100,21 +106,8 @@ export class ToursService {
     private readonly payloadValidationService: TourPayloadValidationService,
   ) {}
 
-  async findAll(): Promise<unknown[]> {
-    const tours = await this.toursRepository.find({
-      relations: {
-        coverMedia: true,
-        mediaItems: {
-          media: true,
-        },
-        tags: true,
-        stops: true,
-        translations: true,
-      },
-      order: {
-        createdAt: 'DESC',
-      },
-    });
+  async findAll(filters: AdminListToursDto = {}): Promise<unknown[]> {
+    const tours = await this.buildListQuery(filters, 'createdAt').getMany();
 
     return tours.map((tour) => this.toAdminResponse(tour));
   }
@@ -1006,6 +999,44 @@ export class ToursService {
         updatedAt: tour.updatedAt,
       },
     };
+  }
+
+  private buildListQuery(
+    filters: TourListFilters,
+    orderField: 'createdAt' | 'updatedAt',
+  ): SelectQueryBuilder<TourEntity> {
+    const query = this.toursRepository
+      .createQueryBuilder('tour')
+      .leftJoinAndSelect('tour.coverMedia', 'coverMedia')
+      .leftJoinAndSelect('tour.mediaItems', 'mediaItems')
+      .leftJoinAndSelect('mediaItems.media', 'media')
+      .leftJoinAndSelect('tour.tags', 'tags')
+      .leftJoinAndSelect('tour.stops', 'stops')
+      .leftJoinAndSelect('tour.translations', 'translations')
+      .distinct(true)
+      .orderBy(`tour.${orderField}`, 'DESC');
+
+    if (filters.tourTypes?.length) {
+      query.andWhere('tour.tourType IN (:...tourTypes)', {
+        tourTypes: filters.tourTypes,
+      });
+    }
+
+    if (filters.tagKeys?.length) {
+      const subquery = query
+        .subQuery()
+        .select('1')
+        .from('tour_tags', 'tour_tags_filter')
+        .where('tour_tags_filter.tour_id = tour.id')
+        .andWhere('tour_tags_filter.tag_key IN (:...tagKeys)')
+        .getQuery();
+
+      query.andWhere(`EXISTS ${subquery}`, {
+        tagKeys: filters.tagKeys,
+      });
+    }
+
+    return query;
   }
 
   private isTranslationPayloadValid(

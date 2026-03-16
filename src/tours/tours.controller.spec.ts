@@ -30,8 +30,11 @@ describe('ToursController', () => {
   });
 
   it('delegates list requests', async () => {
-    await controller.findAll();
-    expect(toursService.findAll).toHaveBeenCalled();
+    const query = { tagKeys: ['history'], tourTypes: ['company'] };
+
+    await controller.findAll(query as never);
+
+    expect(toursService.findAll).toHaveBeenCalledWith(query);
   });
 
   it('delegates detail requests', async () => {

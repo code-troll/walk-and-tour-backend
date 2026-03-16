@@ -163,7 +163,7 @@ The implementation may refine naming, but the following domain concepts are requ
 - Currency for paid tours
 - Rating as a decimal value from 1.0 to 5.0
 - Number of reviews as an admin-managed count
-- Tour type such as private, group, or tip-based
+- Tour type such as private, group, tip-based, or company
 - Cancellation type such as 12h, 24h, 48h, or 72h free cancellation
 - Duration in minutes
 - Starting point representation, which may be modeled in aggregate contracts as a point object with optional shared coordinates

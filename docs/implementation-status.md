@@ -70,3 +70,6 @@ The six planned backend layers are now implemented. The next step, if requested,
 - Tour writes are now split: shared tour data is saved through base-tour endpoints, translations are saved through nested translation endpoints, and translation publish/unpublish is only available through dedicated translation routes.
 - Tour translations can now be permanently removed through a dedicated nested delete endpoint.
 - Blog posts now follow the same publication model as tours: shared blog writes are separate from nested translation create/update/delete routes, only `blog_post_translations.is_published` is stored, and blog-level `publishedAt` is derived from translation publish actions.
+- Tour catalog imports now have a canonical authoring contract in `docs/tour-migration-input.schema.json`, plus a data migration that reads `tour-migration-input.json` and upserts the prepared tour catalog into the database.
+- Tour commercial models now include `company` alongside `private`, `group`, and `tip_based`.
+- Tour list endpoints now support filtering by one or many tag keys and one or many tour types for both admin and public reads.

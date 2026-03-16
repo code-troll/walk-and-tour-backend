@@ -1,4 +1,4 @@
-export const TOUR_TYPES = ['private', 'group', 'tip_based'] as const;
+export const TOUR_TYPES = ['private', 'group', 'tip_based', 'company'] as const;
 
 export const TOUR_COMMUTE_MODES = [
   'walk',

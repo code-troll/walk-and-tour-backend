@@ -3,6 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayUnique,
   IsArray,
+  IsIn,
   IsInt,
   IsNumber,
   IsObject,
@@ -16,6 +17,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
+import { TOUR_TYPES } from '../../shared/domain';
 import { PriceDto, SharedPointDto, TourItineraryDto } from './create-tour.dto';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -87,10 +89,11 @@ export class UpdateTourDto {
 
   @ApiPropertyOptional({
     description: 'Updated commercial model.',
-    enum: ['private', 'group', 'tip_based'],
+    enum: TOUR_TYPES,
     example: 'group',
   })
   @IsString()
+  @IsIn(TOUR_TYPES)
   @IsOptional()
   tourType?: string;
 

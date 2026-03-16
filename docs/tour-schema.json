@@ -57,7 +57,8 @@
       "enum": [
         "private",
         "group",
-        "tip_based"
+        "tip_based",
+        "company"
       ]
     },
     "durationMinutes": {

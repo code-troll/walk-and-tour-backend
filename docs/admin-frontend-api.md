@@ -64,7 +64,7 @@ Tour statuses:
 
 Tour enums:
 
-- `tourType`: `private | group | tip_based`
+- `tourType`: `private | group | tip_based | company`
 - `commuteMode`: `walk | bike | bus | train | metro | tram | ferry | private-transport | boat | other`
 
 Blog statuses:
@@ -538,6 +538,17 @@ Routes:
 | `POST` | `/api/admin/tours/:id/translations/:languageCode/publish` | `super_admin`, `editor` |
 | `POST` | `/api/admin/tours/:id/translations/:languageCode/unpublish` | `super_admin`, `editor` |
 
+Admin list filters:
+
+- `GET /api/admin/tours?tagKeys=history,architecture`
+- `GET /api/admin/tours?tourTypes=company,group`
+- `GET /api/admin/tours?tagKeys=history&tourTypes=company`
+- Both filters are optional.
+- `tagKeys` matches tours that contain at least one of the provided tags.
+- `tourTypes` matches tours whose `tourType` is one of the provided values.
+- When both are provided, both filters apply together.
+- Query params can be sent as comma-separated values or repeated params.
+
 Shared field note:
 
 - `name` belongs to the base `Tour` entity only.
@@ -808,6 +819,11 @@ Routes:
 Rules:
 
 - `locale` is required
+- `tagKeys` and `tourTypes` are optional list filters on `GET /api/public/tours`
+- `tagKeys` matches tours that contain at least one of the provided tags
+- `tourTypes` matches tours whose `tourType` is one of the provided values
+- when both are provided, both filters apply together
+- query params can be sent as comma-separated values or repeated params
 - no locale fallback exists
 - only tours with valid shared public data are returned
 - only locales that are enabled, `ready`, `published`, and schema-valid are returned

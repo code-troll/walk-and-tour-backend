@@ -113,6 +113,91 @@ describe('ToursService', () => {
     );
   });
 
+  it('filters admin tour listings by tags and tour types', async () => {
+    const { queryBuilder, subQueryBuilder } = createListQueryBuilderMock([
+      createTourEntity({
+        id: 'tour-company-1',
+        slug: 'company-experience',
+        tourType: 'company',
+        tags: [createTagEntity({ key: 'history', labels: { en: 'History' } })],
+      }),
+      createTourEntity({
+        id: 'tour-group-1',
+        slug: 'group-architecture',
+        tourType: 'group',
+        tags: [createTagEntity({ key: 'architecture', labels: { en: 'Architecture' } })],
+      }),
+    ] as TourEntity[]);
+    toursRepository.createQueryBuilder.mockReturnValue(queryBuilder as never);
+
+    await service.findAll({
+      tagKeys: ['history'],
+      tourTypes: ['company'],
+    });
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'tour.tourType IN (:...tourTypes)',
+      { tourTypes: ['company'] },
+    );
+    expect(subQueryBuilder.andWhere).toHaveBeenCalledWith(
+      'tour_tags_filter.tag_key IN (:...tagKeys)',
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'EXISTS (SELECT 1)',
+      { tagKeys: ['history'] },
+    );
+    expect(toursRepository.find).not.toHaveBeenCalled();
+  });
+
+  it('accepts company as a valid tour type on creation', async () => {
+    const persistedTour = createTourEntity({
+      tourType: 'company',
+      contentSchema: null,
+      priceAmount: null,
+      priceCurrency: null,
+      rating: null,
+      reviewCount: null,
+      durationMinutes: null,
+      startPoint: null,
+      endPoint: null,
+      itineraryVariant: null,
+      tags: [],
+      translations: [],
+      mediaItems: [],
+      coverMediaId: null,
+    });
+
+    toursRepository.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(persistedTour);
+    toursRepository.save.mockImplementation(async (value) => ({
+      id: 'tour-company-1',
+      ...value,
+    }));
+
+    const result = await service.create(
+      {
+        name: 'Company Experience',
+        slug: 'company-experience',
+        tourType: 'company',
+      },
+      createAdmin(),
+    );
+
+    expect(toursRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Company Experience',
+        slug: 'company-experience',
+        tourType: 'company',
+      }),
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        tourType: 'company',
+      }),
+    );
+  });
+
   it('updates shared tour data and recalculates affected translations', async () => {
     const translation = createTranslationEntity({
       languageCode: 'en',
@@ -207,6 +292,64 @@ describe('ToursService', () => {
           isPublished: false,
         }),
       ]),
+    );
+  });
+
+  it('accepts company as a valid tour type on shared updates', async () => {
+    const existingTour = createTourEntity({
+      tourType: 'company',
+      contentSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          cancellationType: { type: 'string' },
+          highlights: { type: 'array', items: { type: 'string' } },
+          included: { type: 'array', items: { type: 'string' } },
+          notIncluded: { type: 'array', items: { type: 'string' } },
+          startPoint: { type: 'object' },
+          endPoint: { type: 'object' },
+          itineraryDescription: { type: 'string' },
+        },
+        required: [
+          'title',
+          'cancellationType',
+          'highlights',
+          'included',
+          'notIncluded',
+          'startPoint',
+          'endPoint',
+          'itineraryDescription',
+        ],
+      },
+    });
+    const responseTour = createTourEntity({
+      tourType: 'company',
+    });
+
+    toursRepository.findOne
+      .mockResolvedValueOnce(existingTour)
+      .mockResolvedValueOnce(responseTour)
+      .mockResolvedValueOnce(responseTour);
+    toursRepository.save.mockImplementation(async (value) => value as TourEntity);
+    stopsRepository.delete.mockResolvedValue({} as never);
+
+    const result = await service.update(
+      'tour-1',
+      {
+        tourType: 'company',
+      },
+      createAdmin(),
+    );
+
+    expect(toursRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tourType: 'company',
+      }),
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        tourType: 'company',
+      }),
     );
   });
 
@@ -540,6 +683,16 @@ function createLanguageEntity(overrides: Partial<LanguageEntity> = {}): Language
   } as LanguageEntity;
 }
 
+function createTagEntity(overrides: Partial<TagEntity> = {}): TagEntity {
+  return {
+    key: 'history',
+    labels: { en: 'History' },
+    createdAt: new Date('2026-03-12T08:00:00.000Z'),
+    updatedAt: new Date('2026-03-12T09:00:00.000Z'),
+    ...overrides,
+  } as TagEntity;
+}
+
 function createMediaAssetEntity(
   overrides: Partial<MediaAssetEntity> = {},
 ): MediaAssetEntity {
@@ -573,4 +726,28 @@ function createTourMediaEntity(
     updatedAt: new Date('2026-03-12T09:00:00.000Z'),
     ...overrides,
   } as TourMediaEntity;
+}
+
+function createListQueryBuilderMock<T>(results: T[]) {
+  const subQueryBuilder = {
+    select: jest.fn().mockReturnThis(),
+    from: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    getQuery: jest.fn().mockReturnValue('(SELECT 1)'),
+  };
+
+  const queryBuilder = {
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    distinct: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    subQuery: jest.fn().mockReturnValue(subQueryBuilder),
+    getMany: jest.fn().mockResolvedValue(results),
+  };
+
+  return {
+    queryBuilder,
+    subQueryBuilder,
+  };
 }
