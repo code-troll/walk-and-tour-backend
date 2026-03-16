@@ -12,6 +12,7 @@ Swagger/OpenAPI is generated from the NestJS controllers, DTOs, and Swagger mode
 For human-oriented frontend documentation, use:
 
 - `docs/admin-frontend-api.md`
+- `docs/frontend-newsletter-handoff.md` for the public newsletter subscribe/confirm/unsubscribe frontend flow
 
 That guide adds:
 
