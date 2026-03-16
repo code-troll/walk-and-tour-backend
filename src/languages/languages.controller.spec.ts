@@ -1,3 +1,4 @@
+import { ADMIN_ROLES_KEY } from '../admin-auth/decorators/admin-roles.decorator';
 import { LanguagesController } from './languages.controller';
 import { LanguagesService } from './languages.service';
 
@@ -30,5 +31,17 @@ describe('LanguagesController', () => {
     const dto = { isEnabled: false };
     await controller.update('en', dto);
     expect(languagesService.update).toHaveBeenCalledWith('en', dto);
+  });
+
+  it('allows editors to list languages but keeps writes super-admin only', () => {
+    expect(
+      Reflect.getMetadata(ADMIN_ROLES_KEY, LanguagesController.prototype.findAll),
+    ).toEqual(['super_admin', 'editor']);
+    expect(
+      Reflect.getMetadata(ADMIN_ROLES_KEY, LanguagesController.prototype.create),
+    ).toEqual(['super_admin']);
+    expect(
+      Reflect.getMetadata(ADMIN_ROLES_KEY, LanguagesController.prototype.update),
+    ).toEqual(['super_admin']);
   });
 });

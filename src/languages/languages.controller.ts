@@ -26,7 +26,6 @@ import { LanguagesService } from './languages.service';
 @ApiBearerAuth('admin-auth')
 @Controller('admin/languages')
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
-@AdminRoles('super_admin')
 export class LanguagesController {
   constructor(private readonly languagesService: LanguagesService) {}
 
@@ -42,6 +41,7 @@ export class LanguagesController {
   @ApiUnauthorizedResponse({ type: ErrorResponseDto })
   @ApiForbiddenResponse({ type: ErrorResponseDto })
   @Get()
+  @AdminRoles('super_admin', 'editor')
   findAll() {
     return this.languagesService.findAll();
   }
@@ -59,6 +59,7 @@ export class LanguagesController {
   @ApiUnauthorizedResponse({ type: ErrorResponseDto })
   @ApiForbiddenResponse({ type: ErrorResponseDto })
   @Post()
+  @AdminRoles('super_admin')
   create(@Body() dto: CreateLanguageDto) {
     return this.languagesService.create(dto);
   }
@@ -81,6 +82,7 @@ export class LanguagesController {
   @ApiUnauthorizedResponse({ type: ErrorResponseDto })
   @ApiForbiddenResponse({ type: ErrorResponseDto })
   @Patch(':code')
+  @AdminRoles('super_admin')
   update(@Param('code') code: string, @Body() dto: UpdateLanguageDto) {
     return this.languagesService.update(code, dto);
   }

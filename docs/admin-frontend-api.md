@@ -132,7 +132,7 @@ Frontend implication:
 | Admin media | `/api/admin/media/*` | `super_admin`, `editor` |
 | Admin users | `/api/admin/users*` | `super_admin` |
 | Admin roles | `/api/admin/roles` | `super_admin` |
-| Languages | `/api/admin/languages*` | `super_admin` |
+| Languages | `/api/admin/languages*` | `super_admin` for write, `editor` also allowed on list |
 | Tags | `/api/admin/tags*` | `super_admin`, `editor` |
 | Tours | `/api/admin/tours*` | `super_admin`, `editor` |
 | Blog posts | `/api/admin/blog-posts*` | `super_admin`, `editor` |
@@ -473,7 +473,7 @@ Routes:
 
 | Method | Path | Roles |
 | --- | --- | --- |
-| `GET` | `/api/admin/languages` | `super_admin` |
+| `GET` | `/api/admin/languages` | `super_admin`, `editor` |
 | `POST` | `/api/admin/languages` | `super_admin` |
 | `PATCH` | `/api/admin/languages/:code` | `super_admin` |
 

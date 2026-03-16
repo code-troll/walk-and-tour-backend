@@ -68,6 +68,7 @@ The six planned backend layers are now implemented. The next step, if requested,
 - Blog posts now attach and clear shared hero media through dedicated media endpoints and return resolved `heroMedia` objects instead of raw hero storage refs.
 - Public media is now exposed through the generic `/api/media/:id/content` route in addition to the tour/blog-scoped public media routes.
 - Admin tag deletion now performs an application-level cascade by removing tag associations from tours and blog posts before deleting the tag record.
+- Editors can now read the admin languages catalog through `GET /api/admin/languages`, while language creation and updates remain restricted to `super_admin`.
 - Tour writes are now split: shared tour data is saved through base-tour endpoints, translations are saved through nested translation endpoints, and translation publish/unpublish is only available through dedicated translation routes.
 - Tour translations can now be permanently removed through a dedicated nested delete endpoint.
 - Blog posts now follow the same publication model as tours: shared blog writes are separate from nested translation create/update/delete routes, only `blog_post_translations.is_published` is stored, and blog-level `publishedAt` is derived from translation publish actions.
