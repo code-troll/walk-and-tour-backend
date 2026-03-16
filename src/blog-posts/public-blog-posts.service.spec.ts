@@ -58,7 +58,7 @@ describe('PublicBlogPostsService', () => {
         slug: 'royal-copenhagen',
         heroMedia: expect.objectContaining({
           id: 'media-1',
-          contentUrl: 'http://localhost:3000/api/public/blog-posts/royal-copenhagen/media/media-1',
+          contentUrl: 'http://api.dev.walkandtour.dk:3000/api/public/blog-posts/royal-copenhagen/media/media-1',
         }),
         translation: expect.objectContaining({
           locale: 'en',

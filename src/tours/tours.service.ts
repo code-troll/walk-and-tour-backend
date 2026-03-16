@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository, SelectQueryBuilder } from 'typeorm';
+import { EntityManager, In, Repository, SelectQueryBuilder } from 'typeorm';
 
 import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface';
 import { LanguageEntity } from '../languages/language.entity';
@@ -40,6 +40,7 @@ const REQUIRED_LOCALIZED_LIST_FIELDS = [
   'included',
   'notIncluded',
 ] as const;
+const TOUR_SORT_ORDER_CONSTRAINT = 'UQ_tours_sort_order';
 
 interface TourMediaAttachmentInput {
   mediaId: string;
@@ -107,7 +108,7 @@ export class ToursService {
   ) {}
 
   async findAll(filters: AdminListToursDto = {}): Promise<unknown[]> {
-    const tours = await this.buildListQuery(filters, 'createdAt').getMany();
+    const tours = await this.buildListQuery(filters).getMany();
 
     return tours.map((tour) => this.toAdminResponse(tour));
   }
@@ -141,6 +142,7 @@ export class ToursService {
     const tour = this.toursRepository.create({
       name: dto.name.trim(),
       slug: dto.slug,
+      sortOrder: dto.sortOrder ?? 0,
       coverMediaId: null,
       contentSchema: null,
       priceAmount: null,
@@ -157,7 +159,7 @@ export class ToursService {
       updatedBy: actor.id,
     });
 
-    const savedTour = await this.toursRepository.save(tour);
+    const savedTour = await this.createTourWithManualOrder(tour, dto.sortOrder);
 
     return this.findOne(savedTour.id);
   }
@@ -196,8 +198,14 @@ export class ToursService {
     existing.itineraryVariant = aggregate.itinerary?.variant ?? null;
     existing.tags = tags;
     existing.updatedBy = actor.id;
+    existing.sortOrder = dto.sortOrder ?? existing.sortOrder;
 
-    await this.toursRepository.save(existing);
+    if (dto.sortOrder !== undefined) {
+      await this.moveTourToSortOrder(existing, dto.sortOrder);
+    } else {
+      await this.toursRepository.save(existing);
+    }
+
     await this.replaceStops(existing.id, aggregate);
 
     const refreshed = await this.findEntityOrThrow(existing.id);
@@ -719,6 +727,110 @@ export class ToursService {
     return keys.map((key) => tags.find((tag) => tag.key === key) as TagEntity);
   }
 
+  private async createTourWithManualOrder(
+    tour: TourEntity,
+    requestedSortOrder: number | undefined,
+  ): Promise<TourEntity> {
+    return this.toursRepository.manager.transaction(async (manager) => {
+      await this.deferTourSortOrderConstraint(manager);
+      const orderedTours = await this.getToursInSortOrder(manager);
+      const targetSortOrder = this.normalizeInsertSortOrder(
+        requestedSortOrder,
+        orderedTours.length,
+      );
+
+      orderedTours.splice(targetSortOrder, 0, tour);
+
+      return this.persistOrderedTours(manager, orderedTours, tour);
+    });
+  }
+
+  private async moveTourToSortOrder(
+    tour: TourEntity,
+    requestedSortOrder: number,
+  ): Promise<TourEntity> {
+    return this.toursRepository.manager.transaction(async (manager) => {
+      await this.deferTourSortOrderConstraint(manager);
+      const orderedTours = await this.getToursInSortOrder(manager);
+      const toursWithoutCurrent = orderedTours.filter(
+        (existingTour) => existingTour.id !== tour.id,
+      );
+      const targetSortOrder = this.normalizeExistingTourSortOrder(
+        requestedSortOrder,
+        toursWithoutCurrent.length,
+      );
+
+      toursWithoutCurrent.splice(targetSortOrder, 0, tour);
+
+      return this.persistOrderedTours(manager, toursWithoutCurrent, tour);
+    });
+  }
+
+  private async deferTourSortOrderConstraint(manager: EntityManager): Promise<void> {
+    await manager.query(`SET CONSTRAINTS "${TOUR_SORT_ORDER_CONSTRAINT}" DEFERRED`);
+  }
+
+  private async getToursInSortOrder(manager: EntityManager): Promise<TourEntity[]> {
+    return manager.find(TourEntity, {
+      order: {
+        sortOrder: 'ASC',
+        createdAt: 'ASC',
+        id: 'ASC',
+      },
+    });
+  }
+
+  private normalizeInsertSortOrder(
+    requestedSortOrder: number | undefined,
+    totalTours: number,
+  ): number {
+    if (requestedSortOrder === undefined) {
+      return totalTours;
+    }
+
+    return Math.min(requestedSortOrder, totalTours);
+  }
+
+  private normalizeExistingTourSortOrder(
+    requestedSortOrder: number,
+    totalRemainingTours: number,
+  ): number {
+    return Math.min(requestedSortOrder, totalRemainingTours);
+  }
+
+  private async persistOrderedTours(
+    manager: EntityManager,
+    tours: TourEntity[],
+    focusTour: TourEntity,
+  ): Promise<TourEntity> {
+    const previousSortOrders = new Map(
+      tours
+        .filter((tour) => typeof tour.id === 'string')
+        .map((tour) => [tour.id, tour.sortOrder] as const),
+    );
+
+    tours.forEach((tour, index) => {
+      tour.sortOrder = index;
+    });
+
+    const changedTours = tours.filter(
+      (tour) =>
+        !tour.id ||
+        previousSortOrders.get(tour.id) !== tour.sortOrder ||
+        tour.id === focusTour.id,
+    );
+
+    const savedTours = await manager.save(TourEntity, changedTours);
+
+    return (
+      savedTours.find(
+        (savedTour) =>
+          savedTour.id === focusTour.id ||
+          (focusTour.id === undefined && savedTour.slug === focusTour.slug),
+      ) ?? focusTour
+    );
+  }
+
   private async replaceStops(id: string, aggregate: TourSharedInput): Promise<void> {
     await this.stopsRepository.delete({ tourId: id });
 
@@ -953,6 +1065,7 @@ export class ToursService {
     return {
       id: tour.id,
       name: tour.name,
+      sortOrder: tour.sortOrder,
       slug: tour.slug,
       coverMediaId: tour.coverMediaId,
       mediaItems: orderedMedia.map((item) => this.toAdminMediaItemResponse(tour, item)),
@@ -1003,7 +1116,6 @@ export class ToursService {
 
   private buildListQuery(
     filters: TourListFilters,
-    orderField: 'createdAt' | 'updatedAt',
   ): SelectQueryBuilder<TourEntity> {
     const query = this.toursRepository
       .createQueryBuilder('tour')
@@ -1014,7 +1126,7 @@ export class ToursService {
       .leftJoinAndSelect('tour.stops', 'stops')
       .leftJoinAndSelect('tour.translations', 'translations')
       .distinct(true)
-      .orderBy(`tour.${orderField}`, 'DESC');
+      .orderBy('tour.sortOrder', 'ASC');
 
     if (filters.tourTypes?.length) {
       query.andWhere('tour.tourType IN (:...tourTypes)', {

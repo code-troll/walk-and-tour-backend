@@ -198,4 +198,15 @@ export class CreateTourDto {
   @IsString()
   @IsIn(TOUR_TYPES)
   tourType!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Optional manual display position used by admin and public tour lists. When omitted, the tour is appended to the end.',
+    example: 3,
+    minimum: 0,
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  sortOrder?: number;
 }

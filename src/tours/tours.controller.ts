@@ -63,7 +63,8 @@ export class ToursController {
 
   @ApiOperation({
     summary: 'List tours for admin management',
-    description: 'Returns all tours with shared data, translation diagnostics, and audit metadata.',
+    description:
+      'Returns all tours with shared data, translation diagnostics, and audit metadata, ordered by the persisted manual tour sort order.',
   })
   @ApiOkResponse({
     description: 'Admin tour records.',
@@ -117,7 +118,7 @@ export class ToursController {
   @ApiOperation({
     summary: 'Create a tour',
     description:
-      'Creates a minimal draft tour with only the shared identifier fields. Shared content, schema, media, itinerary, tags, and translations are added later through PATCH.',
+      'Creates a minimal draft tour with the shared identifier fields and optional manual list position. Shared content, schema, media, itinerary, tags, and translations are added later through PATCH.',
   })
   @ApiCreatedResponse({
     description: 'Created admin tour record.',
@@ -138,7 +139,7 @@ export class ToursController {
   @ApiOperation({
     summary: 'Update a tour',
     description:
-      'Updates only shared tour data. It fully replaces the shared itinerary when provided and recalculates readiness for existing translations that depend on shared schema or stop structure.',
+      'Updates only shared tour data, including the manual list position when provided. It fully replaces the shared itinerary when provided and recalculates readiness for existing translations that depend on shared schema or stop structure.',
   })
   @ApiParam({
     name: 'id',

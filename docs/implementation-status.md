@@ -73,3 +73,4 @@ The six planned backend layers are now implemented. The next step, if requested,
 - Tour catalog imports now have a canonical authoring contract in `docs/tour-migration-input.schema.json`, plus a data migration that reads `tour-migration-input.json` and upserts the prepared tour catalog into the database.
 - Tour commercial models now include `company` alongside `private`, `group`, and `tip_based`.
 - Tour list endpoints now support filtering by one or many tag keys and one or many tour types for both admin and public reads.
+- Tours now persist a manual `sortOrder`, admin writes can set or move that order, and both admin/public tour list endpoints use it as their default ordering.

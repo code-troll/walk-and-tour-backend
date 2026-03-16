@@ -49,6 +49,7 @@ describe('ToursController', () => {
       name: 'Historic Center Main Tour',
       slug: 'historic-center',
       tourType: 'group',
+      sortOrder: 2,
     };
     const admin = { id: 'admin-1' };
 
@@ -58,7 +59,7 @@ describe('ToursController', () => {
   });
 
   it('delegates update requests with the authenticated admin', async () => {
-    const dto = { slug: 'historic-center' };
+    const dto = { slug: 'historic-center', sortOrder: 1 };
     const admin = { id: 'admin-1' };
 
     await controller.update(

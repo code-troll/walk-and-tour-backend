@@ -14,12 +14,12 @@ export interface ProviderConfig {
   railwayStorageUrlStyle: 'virtual-hosted' | 'path';
 }
 
-const DEFAULT_APP_BASE_URL = 'http://localhost:3000';
+const DEFAULT_APP_BASE_URL = 'http://api.dev.walkandtour.dk:3000';
 const DEFAULT_EMAIL_PROVIDER = 'console';
 const DEFAULT_EMAIL_FROM = 'Walk and Tour <no-reply@example.com>';
 const DEFAULT_STORAGE_DRIVER = 'local';
 const DEFAULT_LOCAL_STORAGE_ROOT = 'storage';
-const DEFAULT_LOCAL_STORAGE_PUBLIC_BASE_URL = 'http://localhost:3000/media';
+const DEFAULT_LOCAL_STORAGE_PUBLIC_BASE_URL = 'http://api.dev.walkandtour.dk:3000/media';
 const DEFAULT_RAILWAY_STORAGE_REGION = 'auto';
 const DEFAULT_RAILWAY_STORAGE_URL_STYLE = 'virtual-hosted';
 

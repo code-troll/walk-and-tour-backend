@@ -29,7 +29,7 @@ describe('PublicToursService', () => {
       putObject: jest.fn(),
       getObject: jest.fn(),
       deleteObject: jest.fn(),
-      getPublicUrl: jest.fn((path: string) => `http://localhost:3000/media/${path}`),
+      getPublicUrl: jest.fn((path: string) => `http://api.dev.walkandtour.dk:3000/media/${path}`),
     };
 
     service = new PublicToursService(
@@ -61,6 +61,7 @@ describe('PublicToursService', () => {
 
     const result = await service.findAll('en', { locale: 'en' });
 
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith('tour.sortOrder', 'ASC');
     expect(result).toEqual([
       expect.objectContaining({
         id: 'tour-1',
@@ -69,7 +70,7 @@ describe('PublicToursService', () => {
           mediaId: 'media-1',
           mediaType: 'image',
           storagePath: 'cover.jpg',
-          contentUrl: 'http://localhost:3000/api/public/tours/historic-center/media/media-1',
+          contentUrl: 'http://api.dev.walkandtour.dk:3000/api/public/tours/historic-center/media/media-1',
           altText: {
             en: 'Historic center skyline',
           },
@@ -78,7 +79,7 @@ describe('PublicToursService', () => {
           expect.objectContaining({
             mediaId: 'media-2',
             storagePath: '1.jpg',
-            contentUrl: 'http://localhost:3000/api/public/tours/historic-center/media/media-2',
+            contentUrl: 'http://api.dev.walkandtour.dk:3000/api/public/tours/historic-center/media/media-2',
             altText: {
               en: 'Stone alley in the old town',
             },
@@ -276,6 +277,7 @@ function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
   return {
     id: 'tour-1',
     name: 'Historic Center Main Tour',
+    sortOrder: 0,
     slug: 'historic-center',
     coverMediaId: 'media-1',
     coverMedia: createMediaAssetEntity({ id: 'media-1', storagePath: 'cover.jpg' }),

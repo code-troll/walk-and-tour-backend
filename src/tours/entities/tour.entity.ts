@@ -30,6 +30,9 @@ export class TourEntity {
   @Column({ type: 'varchar', length: 255 })
   name!: string;
 
+  @Column({ name: 'sort_order', type: 'integer' })
+  sortOrder!: number;
+
   @Column({ name: 'cover_media_id', type: 'uuid', nullable: true })
   coverMediaId!: string | null;
 

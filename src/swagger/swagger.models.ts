@@ -860,6 +860,13 @@ export class TourAdminResponseDto {
   name!: string;
 
   @ApiProperty({
+    description:
+      'Manual display position used by the default admin and public tour list ordering. Lower values appear first.',
+    example: 0,
+  })
+  sortOrder!: number;
+
+  @ApiProperty({
     description: 'Stable public slug.',
     example: 'historic-center',
   })

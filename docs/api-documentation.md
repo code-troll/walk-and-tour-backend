@@ -38,12 +38,13 @@ That guide adds:
 - Tour translation publication is represented as `isPublished` on `tour_translations`, while tour-level public visibility is derived from shared tour completeness plus at least one published-ready translation.
 - Blog translation publication is represented as `isPublished` on `blog_post_translations`; blog posts no longer store a parent publication status, and admin writes are split between shared blog routes and nested translation publish routes.
 - Tours now attach reusable media assets through dedicated nested admin routes, while public tour responses still expose resolved `coverMedia` and `galleryMedia`.
-- `POST /api/admin/tours` is intentionally minimal and accepts only `name`, `slug`, and `tourType`; the rest of the shared tour data is filled in later with `PATCH`.
+- Tours now persist a shared `sortOrder` field that controls the default ordering for both admin and public tour list endpoints.
+- `POST /api/admin/tours` is intentionally minimal and accepts `name`, `slug`, `tourType`, and optional `sortOrder`; the rest of the shared tour data is filled in later with `PATCH`.
 - Tour writes are now split across base-tour endpoints and nested translation endpoints: shared tour saves do not accept translations, and translation publication changes only through `/publish` and `/unpublish` translation routes.
 - Tour translations can also be removed through `DELETE /api/admin/tours/:id/translations/:languageCode`.
 - Admin tour responses may include `null` for draft-only shared fields such as `contentSchema`, `rating`, `reviewCount`, `durationMinutes`, `startPoint`, `endPoint`, and `itinerary`.
 - Supported `tourType` values now include `company` in addition to `private`, `group`, and `tip_based`.
-- Admin and public tour list endpoints now support optional `tagKeys` and `tourTypes` query filters, accepting comma-separated values or repeated query params and matching any provided tag/type within each filter group.
+- Admin and public tour list endpoints now return tours by `sortOrder` ascending and support optional `tagKeys` and `tourTypes` query filters, accepting comma-separated values or repeated query params and matching any provided tag/type within each filter group.
 - Admin media now exposes a browsable shared library through `GET /api/admin/media` and `GET /api/admin/media/:id`, file streaming through `GET /api/admin/media/:id/content`, image/video upload through `POST /api/admin/media`, and deletion through `DELETE /api/admin/media/:id`.
 - Tours now manage media associations through `GET/POST /api/admin/tours/:id/media`, `PATCH/DELETE /api/admin/tours/:id/media/:mediaId`, and dedicated cover assignment routes.
 - Blog posts now manage hero media through `GET /api/admin/blog-posts/:id/media`, `POST /api/admin/blog-posts/:id/hero-media`, and `DELETE /api/admin/blog-posts/:id/hero-media`.

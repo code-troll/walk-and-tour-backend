@@ -111,8 +111,8 @@ App URLs:
 
 Tour admin write flow:
 
-- `POST /api/admin/tours` creates the shared tour shell
-- `PATCH /api/admin/tours/:id` updates only shared tour fields
+- `POST /api/admin/tours` creates the shared tour shell and may optionally set its `sortOrder`
+- `PATCH /api/admin/tours/:id` updates only shared tour fields, including the persisted `sortOrder`
 - `POST /api/admin/tours/:id/translations` and `PATCH /api/admin/tours/:id/translations/:languageCode` manage localized translations independently
 - `DELETE /api/admin/tours/:id/translations/:languageCode` removes a locale translation
 - translation publication changes only through `POST /api/admin/tours/:id/translations/:languageCode/publish` and `/unpublish`

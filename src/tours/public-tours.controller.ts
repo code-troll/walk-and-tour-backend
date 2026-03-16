@@ -22,7 +22,7 @@ export class PublicToursController {
   @ApiOperation({
     summary: 'List public tours by locale',
     description:
-      'Returns only tours whose shared data is publicly valid and whose requested locale has a published, ready, and schema-valid translation.',
+      'Returns only tours whose shared data is publicly valid and whose requested locale has a published, ready, and schema-valid translation, ordered by the persisted manual tour sort order.',
   })
   @ApiQuery({
     name: 'locale',

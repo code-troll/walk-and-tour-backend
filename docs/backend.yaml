@@ -1861,7 +1861,7 @@ paths:
     get:
       description: >-
         Returns only tours whose shared data is publicly valid and whose requested locale has a published, ready, and
-        schema-valid translation.
+        schema-valid translation, ordered by the persisted manual tour sort order.
       operationId: PublicToursController_findAll
       parameters:
         - name: locale
@@ -1999,7 +1999,9 @@ paths:
         - Public Tours
   /api/admin/tours:
     get:
-      description: Returns all tours with shared data, translation diagnostics, and audit metadata.
+      description: >-
+        Returns all tours with shared data, translation diagnostics, and audit metadata, ordered by the persisted manual
+        tour sort order.
       operationId: ToursController_findAll
       parameters:
         - name: tagKeys
@@ -2058,8 +2060,8 @@ paths:
         - Admin Tours
     post:
       description: >-
-        Creates a minimal draft tour with only the shared identifier fields. Shared content, schema, media, itinerary,
-        tags, and translations are added later through PATCH.
+        Creates a minimal draft tour with the shared identifier fields and optional manual list position. Shared
+        content, schema, media, itinerary, tags, and translations are added later through PATCH.
       operationId: ToursController_create
       parameters: []
       requestBody:
@@ -2148,8 +2150,9 @@ paths:
         - Admin Tours
     patch:
       description: >-
-        Updates only shared tour data. It fully replaces the shared itinerary when provided and recalculates readiness
-        for existing translations that depend on shared schema or stop structure.
+        Updates only shared tour data, including the manual list position when provided. It fully replaces the shared
+        itinerary when provided and recalculates readiness for existing translations that depend on shared schema or
+        stop structure.
       operationId: ToursController_update
       parameters:
         - name: id
@@ -4415,6 +4418,10 @@ components:
           type: string
           description: Non-localized admin-facing name for the tour.
           example: Barcelona Historic Center Main Tour
+        sortOrder:
+          type: number
+          description: Manual display position used by the default admin and public tour list ordering. Lower values appear first.
+          example: 0
         slug:
           type: string
           description: Stable public slug.
@@ -4506,6 +4513,7 @@ components:
       required:
         - id
         - name
+        - sortOrder
         - slug
         - mediaItems
         - tourType
@@ -4538,6 +4546,13 @@ components:
             - tip_based
             - company
           example: group
+        sortOrder:
+          type: number
+          description: >-
+            Optional manual display position used by admin and public tour lists. When omitted, the tour is appended to
+            the end.
+          example: 3
+          minimum: 0
       required:
         - name
         - slug
@@ -4712,6 +4727,13 @@ components:
           type: array
           items:
             type: string
+        sortOrder:
+          type: number
+          description: >-
+            Updated manual display position used by admin and public tour lists. Values beyond the current range move
+            the tour to the end.
+          example: 2
+          minimum: 0
     TourMediaListResponseDto:
       type: object
       properties:

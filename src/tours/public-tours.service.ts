@@ -390,7 +390,7 @@ export class PublicToursService {
       .leftJoinAndSelect('tour.stops', 'stops')
       .leftJoinAndSelect('tour.translations', 'translations')
       .distinct(true)
-      .orderBy('tour.updatedAt', 'DESC');
+      .orderBy('tour.sortOrder', 'ASC');
 
     if (filters.tourTypes?.length) {
       query.andWhere('tour.tourType IN (:...tourTypes)', {

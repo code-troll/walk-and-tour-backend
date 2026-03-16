@@ -71,7 +71,7 @@ export class UpdateTourDto {
     minimum: 1,
     maximum: 5,
   })
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber({maxDecimalPlaces: 2})
   @Min(1)
   @Max(5)
   @IsOptional()
@@ -141,8 +141,18 @@ export class UpdateTourDto {
   })
   @IsArray()
   @ArrayUnique()
-  @IsString({ each: true })
+  @IsString({each: true})
   @IsOptional()
   tagKeys?: string[];
 
+  @ApiPropertyOptional({
+    description:
+      'Updated manual display position used by admin and public tour lists. Values beyond the current range move the tour to the end.',
+    example: 2,
+    minimum: 0,
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  sortOrder?: number;
 }
