@@ -25,8 +25,6 @@ export class AdminRolesGuard implements CanActivate {
       throw new ForbiddenException('Authenticated admin context is missing.');
     }
 
-    console.log(JSON.stringify(admin, null, 2), JSON.stringify(requiredRoles, null, 2));
-
     if (!requiredRoles.includes(admin.roleName)) {
       throw new ForbiddenException('Admin role is not allowed to perform this operation.');
     }
