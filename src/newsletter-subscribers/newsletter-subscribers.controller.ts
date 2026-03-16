@@ -1,18 +1,23 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   Header,
+  HttpStatus,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiFoundResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -20,6 +25,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
@@ -38,8 +44,18 @@ import { AdminExportNewsletterSubscribersDto } from './dto/admin-export-newslett
 import { AdminListNewsletterSubscribersDto } from './dto/admin-list-newsletter-subscribers.dto';
 import { NewsletterTokenDto } from './dto/newsletter-token.dto';
 import { NewsletterTokenQueryDto } from './dto/newsletter-token-query.dto';
+import {
+  NEWSLETTER_PUBLIC_RATE_LIMITS,
+  NewsletterPublicRateLimit,
+  NewsletterPublicRateLimitGuard,
+} from './newsletter-public-rate-limit.guard';
+import { buildNewsletterPublicRedirectUrl } from './newsletter-public-redirects';
 import { SubscribeNewsletterDto } from './dto/subscribe-newsletter.dto';
 import { NewsletterSubscribersService } from './newsletter-subscribers.service';
+
+interface RedirectResponse {
+  redirect(statusCode: number, url: string): void;
+}
 
 @Controller()
 export class NewsletterSubscribersController {
@@ -58,7 +74,10 @@ export class NewsletterSubscribersController {
     type: NewsletterSubscriptionRequestedResponseDto,
   })
   @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiTooManyRequestsResponse({ type: ErrorResponseDto })
   @Post('public/newsletter/subscribers/subscribe')
+  @UseGuards(NewsletterPublicRateLimitGuard)
+  @NewsletterPublicRateLimit(NEWSLETTER_PUBLIC_RATE_LIMITS.subscribe)
   subscribe(@Body() dto: SubscribeNewsletterDto): Promise<unknown> {
     return this.newsletterSubscribersService.subscribe(dto);
   }
@@ -75,7 +94,10 @@ export class NewsletterSubscribersController {
   })
   @ApiBadRequestResponse({ type: ErrorResponseDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiTooManyRequestsResponse({ type: ErrorResponseDto })
   @Post('public/newsletter/subscribers/confirm')
+  @UseGuards(NewsletterPublicRateLimitGuard)
+  @NewsletterPublicRateLimit(NEWSLETTER_PUBLIC_RATE_LIMITS.confirm)
   confirm(@Body() dto: NewsletterTokenDto): Promise<unknown> {
     return this.newsletterSubscribersService.confirm(dto.token);
   }
@@ -91,15 +113,41 @@ export class NewsletterSubscribersController {
     description: 'Opaque newsletter confirmation token.',
     example: '0123456789abcdef0123456789abcdef0123456789abcdef',
   })
-  @ApiOkResponse({
-    description: 'Newsletter subscription confirmed.',
-    type: NewsletterSubscriptionConfirmedResponseDto,
+  @ApiFoundResponse({
+    description:
+      'Redirects the browser to the configured public confirmation page with a success or error status.',
+    schema: {
+      type: 'object',
+      properties: {
+        location: {
+          type: 'string',
+          example: 'https://www.walkandtour.test/newsletter/confirm?status=success',
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({ type: ErrorResponseDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiTooManyRequestsResponse({ type: ErrorResponseDto })
   @Get('public/newsletter/subscribers/confirm')
-  confirmByLink(@Query() query: NewsletterTokenQueryDto): Promise<unknown> {
-    return this.newsletterSubscribersService.confirm(query.token);
+  @UseGuards(NewsletterPublicRateLimitGuard)
+  @NewsletterPublicRateLimit(NEWSLETTER_PUBLIC_RATE_LIMITS.confirm)
+  async confirmByLink(
+    @Query() query: NewsletterTokenQueryDto,
+    @Res() response: RedirectResponse,
+  ): Promise<void> {
+    try {
+      await this.newsletterSubscribersService.confirm(query.token);
+      response.redirect(
+        HttpStatus.FOUND,
+        buildNewsletterPublicRedirectUrl('confirm', 'success'),
+      );
+    } catch (error) {
+      response.redirect(
+        HttpStatus.FOUND,
+        mapNewsletterConfirmationRedirect(error),
+      );
+    }
   }
 
   @ApiTags('Public Newsletter Subscribers')
@@ -114,7 +162,10 @@ export class NewsletterSubscribersController {
   })
   @ApiBadRequestResponse({ type: ErrorResponseDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiTooManyRequestsResponse({ type: ErrorResponseDto })
   @Post('public/newsletter/subscribers/unsubscribe')
+  @UseGuards(NewsletterPublicRateLimitGuard)
+  @NewsletterPublicRateLimit(NEWSLETTER_PUBLIC_RATE_LIMITS.unsubscribe)
   unsubscribe(@Body() dto: NewsletterTokenDto): Promise<unknown> {
     return this.newsletterSubscribersService.unsubscribe(dto.token);
   }
@@ -130,15 +181,42 @@ export class NewsletterSubscribersController {
     description: 'Opaque newsletter unsubscribe token.',
     example: '0123456789abcdef0123456789abcdef0123456789abcdef',
   })
-  @ApiOkResponse({
-    description: 'Newsletter subscriber unsubscribed.',
-    type: NewsletterUnsubscribedResponseDto,
+  @ApiFoundResponse({
+    description:
+      'Redirects the browser to the configured public unsubscribe page with a success or error status.',
+    schema: {
+      type: 'object',
+      properties: {
+        location: {
+          type: 'string',
+          example:
+            'https://www.walkandtour.test/newsletter/unsubscribe?status=success',
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({ type: ErrorResponseDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiTooManyRequestsResponse({ type: ErrorResponseDto })
   @Get('public/newsletter/subscribers/unsubscribe')
-  unsubscribeByLink(@Query() query: NewsletterTokenQueryDto): Promise<unknown> {
-    return this.newsletterSubscribersService.unsubscribe(query.token);
+  @UseGuards(NewsletterPublicRateLimitGuard)
+  @NewsletterPublicRateLimit(NEWSLETTER_PUBLIC_RATE_LIMITS.unsubscribe)
+  async unsubscribeByLink(
+    @Query() query: NewsletterTokenQueryDto,
+    @Res() response: RedirectResponse,
+  ): Promise<void> {
+    try {
+      await this.newsletterSubscribersService.unsubscribe(query.token);
+      response.redirect(
+        HttpStatus.FOUND,
+        buildNewsletterPublicRedirectUrl('unsubscribe', 'success'),
+      );
+    } catch (error) {
+      response.redirect(
+        HttpStatus.FOUND,
+        mapNewsletterUnsubscribeRedirect(error),
+      );
+    }
   }
 
   @ApiTags('Admin Newsletter Subscribers')
@@ -231,4 +309,32 @@ export class NewsletterSubscribersController {
   findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<unknown> {
     return this.newsletterSubscribersService.findOne(id);
   }
+}
+
+function mapNewsletterConfirmationRedirect(error: unknown): string {
+  if (error instanceof NotFoundException) {
+    return buildNewsletterPublicRedirectUrl('confirm', 'error', 'invalid_token');
+  }
+
+  if (error instanceof BadRequestException) {
+    return buildNewsletterPublicRedirectUrl('confirm', 'error', 'invalid_state');
+  }
+
+  return buildNewsletterPublicRedirectUrl('confirm', 'error', 'server_error');
+}
+
+function mapNewsletterUnsubscribeRedirect(error: unknown): string {
+  if (error instanceof NotFoundException) {
+    return buildNewsletterPublicRedirectUrl(
+      'unsubscribe',
+      'error',
+      'invalid_token',
+    );
+  }
+
+  return buildNewsletterPublicRedirectUrl(
+    'unsubscribe',
+    'error',
+    'server_error',
+  );
 }

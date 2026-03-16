@@ -1,3 +1,5 @@
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+
 import { NewsletterSubscribersController } from './newsletter-subscribers.controller';
 import { NewsletterSubscribersService } from './newsletter-subscribers.service';
 
@@ -6,6 +8,7 @@ describe('NewsletterSubscribersController', () => {
   let newsletterSubscribersService: jest.Mocked<NewsletterSubscribersService>;
 
   beforeEach(() => {
+    process.env.NEWSLETTER_PUBLIC_APP_BASE_URL = 'https://www.walkandtour.test';
     newsletterSubscribersService = {
       subscribe: jest.fn(),
       confirm: jest.fn(),
@@ -35,10 +38,48 @@ describe('NewsletterSubscribersController', () => {
   });
 
   it('delegates public confirmation link requests', async () => {
-    await controller.confirmByLink({ token: 'confirmation-token' });
+    const response = createResponseMock();
+
+    await controller.confirmByLink({ token: 'confirmation-token' }, response);
 
     expect(newsletterSubscribersService.confirm).toHaveBeenCalledWith(
       'confirmation-token',
+    );
+    expect(response.redirect).toHaveBeenCalledWith(
+      302,
+      'https://www.walkandtour.test/newsletter/confirm?status=success',
+    );
+  });
+
+  it('redirects invalid confirmation tokens to the public error page', async () => {
+    const response = createResponseMock();
+
+    newsletterSubscribersService.confirm.mockRejectedValue(
+      new NotFoundException('Newsletter confirmation token is invalid.'),
+    );
+
+    await controller.confirmByLink({ token: 'confirmation-token' }, response);
+
+    expect(response.redirect).toHaveBeenCalledWith(
+      302,
+      'https://www.walkandtour.test/newsletter/confirm?status=error&reason=invalid_token',
+    );
+  });
+
+  it('redirects invalid confirmation states to the public error page', async () => {
+    const response = createResponseMock();
+
+    newsletterSubscribersService.confirm.mockRejectedValue(
+      new BadRequestException(
+        'Subscriber "subscriber@example.com" is not awaiting confirmation.',
+      ),
+    );
+
+    await controller.confirmByLink({ token: 'confirmation-token' }, response);
+
+    expect(response.redirect).toHaveBeenCalledWith(
+      302,
+      'https://www.walkandtour.test/newsletter/confirm?status=error&reason=invalid_state',
     );
   });
 
@@ -51,10 +92,31 @@ describe('NewsletterSubscribersController', () => {
   });
 
   it('delegates public unsubscribe link requests', async () => {
-    await controller.unsubscribeByLink({ token: 'unsubscribe-token' });
+    const response = createResponseMock();
+
+    await controller.unsubscribeByLink({ token: 'unsubscribe-token' }, response);
 
     expect(newsletterSubscribersService.unsubscribe).toHaveBeenCalledWith(
       'unsubscribe-token',
+    );
+    expect(response.redirect).toHaveBeenCalledWith(
+      302,
+      'https://www.walkandtour.test/newsletter/unsubscribe?status=success',
+    );
+  });
+
+  it('redirects invalid unsubscribe tokens to the public error page', async () => {
+    const response = createResponseMock();
+
+    newsletterSubscribersService.unsubscribe.mockRejectedValue(
+      new NotFoundException('Newsletter unsubscribe token is invalid.'),
+    );
+
+    await controller.unsubscribeByLink({ token: 'unsubscribe-token' }, response);
+
+    expect(response.redirect).toHaveBeenCalledWith(
+      302,
+      'https://www.walkandtour.test/newsletter/unsubscribe?status=error&reason=invalid_token',
     );
   });
 
@@ -82,3 +144,9 @@ describe('NewsletterSubscribersController', () => {
     expect(newsletterSubscribersService.exportCsv).toHaveBeenCalledWith(query);
   });
 });
+
+function createResponseMock(): { redirect: jest.Mock } {
+  return {
+    redirect: jest.fn(),
+  };
+}

@@ -1405,6 +1405,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponseDto"
+        "429":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
       summary: Start newsletter subscription
       tags:
         - NewsletterSubscribers
@@ -1439,6 +1445,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponseDto"
+        "429":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
       summary: Confirm newsletter subscription
       tags:
         - NewsletterSubscribers
@@ -1456,12 +1468,16 @@ paths:
             example: 0123456789abcdef0123456789abcdef0123456789abcdef
             type: string
       responses:
-        "200":
-          description: Newsletter subscription confirmed.
+        "302":
+          description: Redirects the browser to the configured public confirmation page with a success or error status.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NewsletterSubscriptionConfirmedResponseDto"
+                type: object
+                properties:
+                  location:
+                    type: string
+                    example: https://www.walkandtour.test/newsletter/confirm?status=success
         "400":
           description: ""
           content:
@@ -1469,6 +1485,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponseDto"
         "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "429":
           description: ""
           content:
             application/json:
@@ -1508,6 +1530,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponseDto"
+        "429":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
       summary: Unsubscribe from the newsletter
       tags:
         - NewsletterSubscribers
@@ -1525,12 +1553,16 @@ paths:
             example: 0123456789abcdef0123456789abcdef0123456789abcdef
             type: string
       responses:
-        "200":
-          description: Newsletter subscriber unsubscribed.
+        "302":
+          description: Redirects the browser to the configured public unsubscribe page with a success or error status.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NewsletterUnsubscribedResponseDto"
+                type: object
+                properties:
+                  location:
+                    type: string
+                    example: https://www.walkandtour.test/newsletter/unsubscribe?status=success
         "400":
           description: ""
           content:
@@ -1538,6 +1570,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponseDto"
         "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "429":
           description: ""
           content:
             application/json:

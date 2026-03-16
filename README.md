@@ -5,7 +5,7 @@ NestJS backend for Walk and Tour. The current implementation includes:
 - admin authentication and role-based authorization with Auth0-backed identity mapping
 - admin management for languages, tags, tours, blog posts, and newsletter subscribers
 - public read APIs for tours and blog posts
-- newsletter double opt-in lifecycle with provider-backed confirmation delivery
+- newsletter double opt-in lifecycle with provider-backed confirmation delivery and frontend redirect links
 - provider abstractions for email delivery and object storage
 
 Implementation tracking lives in `docs/implementation-status.md`.
@@ -47,6 +47,7 @@ Important groups:
   - `NODE_ENV`
   - `APP_NAME`
   - `APP_BASE_URL`
+  - `NEWSLETTER_PUBLIC_APP_BASE_URL`
   - `CORS_ALLOWED_ORIGINS`
 - database:
   - `DB_HOST`
@@ -423,7 +424,7 @@ Testing notes and the current coverage scope live in `docs/testing.md`.
 - Tags can be deleted through the admin API; deletion removes the tag from tours and blog posts before deleting the shared tag record.
 - Public tour visibility is strict: no locale fallback, no unpublished tours, no unpublished translations, and no invalid localized payloads.
 - Blog posts use shared metadata plus per-locale HTML translations.
-- Newsletter subscribers use double opt-in. Confirmation and unsubscribe links are tokenized.
+- Newsletter subscribers use double opt-in. Confirmation and unsubscribe links are tokenized, rate-limited, and browser-oriented GET links redirect to the configured public app.
 - Provider integrations are behind application-level abstractions so email/storage backends can change without rewriting domain modules.
 - Resend and Supabase support are present at the adapter layer; live provider verification depends on real credentials and environment configuration.
 - The OpenAPI export command uses a documentation-only Nest module, so it can regenerate `docs/backend.yaml` without a live database connection.

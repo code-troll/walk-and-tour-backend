@@ -22,6 +22,7 @@ Completed in this step:
 - Added application-level storage abstractions with local-filesystem and Railway S3-backed implementations behind one shared contract.
 - Added an admin media asset API backed by the shared storage abstraction for reusable tour and future content media.
 - Added direct-link GET confirmation and unsubscribe endpoints to support email-driven tokenized flows without changing subscriber persistence.
+- Updated newsletter direct-link GET confirmation and unsubscribe endpoints to redirect to the configured public app and added request throttling to the public newsletter routes.
 - Added configuration, Swagger updates, and unit coverage for provider and storage adapters.
 
 This layer intentionally does **not** include:

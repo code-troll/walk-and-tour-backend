@@ -38,6 +38,8 @@ That guide adds:
 - Tour translation publication is represented as `isPublished` on `tour_translations`, while tour-level public visibility is derived from shared tour completeness plus at least one published-ready translation.
 - Blog translation publication is represented as `isPublished` on `blog_post_translations`; blog posts no longer store a parent publication status, and admin writes are split between shared blog routes and nested translation publish routes.
 - Blog post translations now persist locale-specific `viewCount`; successful `GET /api/public/blog-posts/:slug` requests can increment only the requested translation at most once per translation and client IP hash every 24 hours.
+- Newsletter direct-link confirmation and unsubscribe routes now document `302` redirect behavior to the configured public app, while JSON POST confirm/unsubscribe routes remain API-oriented.
+- Public newsletter subscribe, confirm, and unsubscribe routes now document `429` rate-limit responses.
 - Tours now attach reusable media assets through dedicated nested admin routes, while public tour responses still expose resolved `coverMedia` and `galleryMedia`.
 - Tours now persist a shared `sortOrder` field that controls the default ordering for both admin and public tour list endpoints.
 - `POST /api/admin/tours` is intentionally minimal and accepts `name`, `slug`, `tourType`, and optional `sortOrder`; the rest of the shared tour data is filled in later with `PATCH`.

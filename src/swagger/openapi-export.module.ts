@@ -19,6 +19,10 @@ import { LanguagesController } from '../languages/languages.controller';
 import { LanguagesService } from '../languages/languages.service';
 import { MediaController } from '../media/media.controller';
 import { NewsletterSubscribersController } from '../newsletter-subscribers/newsletter-subscribers.controller';
+import {
+  NewsletterPublicRateLimitGuard,
+  NewsletterPublicRateLimitStore,
+} from '../newsletter-subscribers/newsletter-public-rate-limit.guard';
 import { NewsletterSubscribersService } from '../newsletter-subscribers/newsletter-subscribers.service';
 import { TagsController } from '../tags/tags.controller';
 import { TagsService } from '../tags/tags.service';
@@ -54,6 +58,8 @@ const EMPTY_SERVICE = {};
     { provide: PublicBlogPostsService, useValue: EMPTY_SERVICE },
     { provide: LanguagesService, useValue: EMPTY_SERVICE },
     { provide: NewsletterSubscribersService, useValue: EMPTY_SERVICE },
+    { provide: NewsletterPublicRateLimitGuard, useValue: EMPTY_SERVICE },
+    { provide: NewsletterPublicRateLimitStore, useValue: EMPTY_SERVICE },
     { provide: TagsService, useValue: EMPTY_SERVICE },
     { provide: PublicToursService, useValue: EMPTY_SERVICE },
     { provide: ToursService, useValue: EMPTY_SERVICE },

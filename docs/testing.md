@@ -31,7 +31,7 @@ The current suite focuses on branch-heavy and contract-heavy logic:
 - admin and public tour response shapes for descriptive and stop-based itineraries
 - blog post admin service behavior, including split translation create/update/delete/publish flows and derived `publishedAt` handling
 - blog public visibility and controller delegation
-- newsletter subscriber double opt-in, unsubscribe, admin search, and CSV export flows
+- newsletter subscriber double opt-in, redirect-based confirm/unsubscribe link flows, request throttling, admin search, and CSV export flows
 - provider-backed newsletter email delivery and storage adapter behavior, including Railway S3 request signing and URL-style handling
 - migration coverage for the provisioned production super-admin registration record
 - local development seed reset-and-reseed orchestration

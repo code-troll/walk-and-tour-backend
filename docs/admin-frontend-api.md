@@ -151,6 +151,7 @@ Authorization is enforced per route by `AdminRolesGuard`.
 | `403` | Authenticated but blocked | Missing role, `invited` admin, `disabled` admin |
 | `404` | Resource not found | Unknown UUID, slug, locale-backed resource, or token |
 | `409` | Conflict | Duplicate slug, duplicate language code, duplicate tag key, duplicate admin email/Auth0 mapping |
+| `429` | Request throttled | Too many repeated public newsletter requests from the same client IP |
 
 ### Error payload shape
 
@@ -876,9 +877,9 @@ Routes:
 | --- | --- | --- |
 | `POST` | `/api/public/newsletter/subscribers/subscribe` | Start or restart double opt-in |
 | `POST` | `/api/public/newsletter/subscribers/confirm` | Confirm by token in JSON body |
-| `GET` | `/api/public/newsletter/subscribers/confirm?token=...` | Confirm by direct email link |
+| `GET` | `/api/public/newsletter/subscribers/confirm?token=...` | Confirm by direct email link with frontend redirect |
 | `POST` | `/api/public/newsletter/subscribers/unsubscribe` | Unsubscribe by token in JSON body |
-| `GET` | `/api/public/newsletter/subscribers/unsubscribe?token=...` | Unsubscribe by direct email link |
+| `GET` | `/api/public/newsletter/subscribers/unsubscribe?token=...` | Unsubscribe by direct email link with frontend redirect |
 
 Subscribe request body:
 
@@ -893,12 +894,26 @@ Subscribe behavior:
 - new or reactivated requests move the subscriber to `pending_confirmation`
 - already subscribed emails are accepted without error and return `alreadySubscribed: true`
 - confirmation and unsubscribe links are provider-delivered by email
+- subscribe is rate-limited to 5 requests per 15 minutes per client IP
+- confirm and unsubscribe endpoints are each rate-limited to 20 requests per 15 minutes per client IP
 
 Confirm and unsubscribe token rules:
 
 - invalid token returns `404`
 - confirm requires `pending_confirmation`, otherwise `400`
 - unsubscribe is idempotent for already unsubscribed users
+
+Direct-link GET behavior:
+
+- `GET /api/public/newsletter/subscribers/confirm` issues a `302` redirect to `${NEWSLETTER_PUBLIC_APP_BASE_URL}/newsletter/confirm`
+- confirmation success redirect: `?status=success`
+- confirmation invalid token redirect: `?status=error&reason=invalid_token`
+- confirmation invalid state redirect: `?status=error&reason=invalid_state`
+- confirmation unexpected failure redirect: `?status=error&reason=server_error`
+- `GET /api/public/newsletter/subscribers/unsubscribe` issues a `302` redirect to `${NEWSLETTER_PUBLIC_APP_BASE_URL}/newsletter/unsubscribe`
+- unsubscribe success redirect: `?status=success`
+- unsubscribe invalid token redirect: `?status=error&reason=invalid_token`
+- unsubscribe unexpected failure redirect: `?status=error&reason=server_error`
 
 ## 8. Frontend Implementation Notes
 
