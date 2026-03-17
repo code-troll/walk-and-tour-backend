@@ -49,6 +49,7 @@ That guide adds:
 - Admin tour responses may include `null` for draft-only shared fields such as `contentSchema`, `rating`, `reviewCount`, `durationMinutes`, `startPoint`, `endPoint`, and `itinerary`.
 - Supported `tourType` values now include `company` in addition to `private`, `group`, and `tip_based`.
 - Admin and public tour list endpoints now return tours by `sortOrder` ascending and support optional `tagKeys` and `tourTypes` query filters, accepting comma-separated values or repeated query params and matching any provided tag/type within each filter group.
+- `GET /api/admin/tours` now returns a lightweight summary payload for admin list screens, while `GET /api/admin/tours/:id` continues to return the full tour aggregate and translation diagnostics.
 - Admin media now exposes a browsable shared library through `GET /api/admin/media` and `GET /api/admin/media/:id`, file streaming through `GET /api/admin/media/:id/content`, image/video upload through `POST /api/admin/media`, and deletion through `DELETE /api/admin/media/:id`.
 - Admin media list/detail/upload responses now expose both `adminContentUrl` and `publicContentUrl`; `publicContentUrl` points to `GET /api/media/:id/content`, while tour/blog attached media responses still use a single scoped `contentUrl`.
 - Tours now manage media associations through `GET/POST /api/admin/tours/:id/media`, `PATCH/DELETE /api/admin/tours/:id/media/:mediaId`, and dedicated cover assignment routes.

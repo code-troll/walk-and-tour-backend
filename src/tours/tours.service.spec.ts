@@ -157,6 +157,60 @@ describe('ToursService', () => {
     expect(toursRepository.find).not.toHaveBeenCalled();
   });
 
+  it('returns lightweight admin tour summaries for listings', async () => {
+    const { queryBuilder } = createListQueryBuilderMock([
+      createTourEntity({
+        id: 'tour-1',
+        name: 'Historic Center Main Tour',
+        slug: 'historic-center',
+        sortOrder: 0,
+        tourType: 'group',
+        translations: [
+          createTranslationEntity({
+            languageCode: 'en',
+            isReady: true,
+            isPublished: true,
+            bookingReferenceId: 'booking-ref-123',
+          }),
+          createTranslationEntity({
+            languageCode: 'es',
+            isReady: false,
+            isPublished: false,
+          }),
+        ],
+      }),
+    ] as TourEntity[]);
+    toursRepository.createQueryBuilder.mockReturnValue(queryBuilder as never);
+
+    const result = await service.findAll();
+
+    expect(result).toEqual([
+      {
+        id: 'tour-1',
+        name: 'Historic Center Main Tour',
+        sortOrder: 0,
+        slug: 'historic-center',
+        tourType: 'group',
+        translations: {
+          en: {
+            isReady: true,
+            isPublished: true,
+          },
+          es: {
+            isReady: false,
+            isPublished: false,
+          },
+        },
+        audit: {
+          createdBy: 'admin-1',
+          updatedBy: 'admin-1',
+          createdAt: new Date('2026-03-12T08:00:00.000Z'),
+          updatedAt: new Date('2026-03-12T09:00:00.000Z'),
+        },
+      },
+    ]);
+  });
+
   it('accepts company as a valid tour type on creation', async () => {
     const persistedTour = createTourEntity({
       tourType: 'company',

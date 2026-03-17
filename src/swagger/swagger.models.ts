@@ -803,6 +803,20 @@ export class TourAdminTranslationResponseDto {
   payload!: Record<string, unknown>;
 }
 
+export class TourAdminListTranslationResponseDto {
+  @ApiProperty({
+    description: 'Whether the translation currently satisfies all required completeness rules.',
+    example: true,
+  })
+  isReady!: boolean;
+
+  @ApiProperty({
+    description: 'Whether the translation is configured to be publicly exposed.',
+    example: true,
+  })
+  isPublished!: boolean;
+}
+
 export class TourTranslationAvailabilityResponseDto {
   @ApiProperty({
     description: 'Locale code being evaluated.',
@@ -847,6 +861,52 @@ export class TourTranslationAvailabilityResponseDto {
     example: true,
   })
   publiclyAvailable!: boolean;
+}
+
+export class TourAdminListResponseDto {
+  @ApiProperty({
+    description: 'Tour UUID.',
+    format: 'uuid',
+  })
+  id!: string;
+
+  @ApiProperty({
+    description: 'Non-localized admin-facing name for the tour.',
+    example: 'Barcelona Historic Center Main Tour',
+  })
+  name!: string;
+
+  @ApiProperty({
+    description:
+      'Manual display position used by the default admin and public tour list ordering. Lower values appear first.',
+    example: 0,
+  })
+  sortOrder!: number;
+
+  @ApiProperty({
+    description: 'Stable public slug.',
+    example: 'historic-center',
+  })
+  slug!: string;
+
+  @ApiProperty({
+    description: 'Tour commercial model.',
+    enum: TOUR_TYPES,
+  })
+  tourType!: (typeof TOUR_TYPES)[number];
+
+  @ApiProperty({
+    description: 'Localized translation status keyed by locale code.',
+    type: 'object',
+    additionalProperties: { $ref: getSchemaPath(TourAdminListTranslationResponseDto) },
+  })
+  translations!: Record<string, TourAdminListTranslationResponseDto>;
+
+  @ApiProperty({
+    description: 'Audit metadata for create and update operations.',
+    type: () => RecordAuditMetadataDto,
+  })
+  audit!: RecordAuditMetadataDto;
 }
 
 export class PublicTourTranslationResponseDto {
@@ -1572,7 +1632,9 @@ export const SWAGGER_EXTRA_MODELS = [
   TourAdminItineraryResponseDto,
   PublicTourItineraryResponseDto,
   TourAdminTranslationResponseDto,
+  TourAdminListTranslationResponseDto,
   TourTranslationAvailabilityResponseDto,
+  TourAdminListResponseDto,
   PublicTourTranslationResponseDto,
   TourAdminResponseDto,
   PublicTourResponseDto,

@@ -2069,8 +2069,8 @@ paths:
   /api/admin/tours:
     get:
       description: >-
-        Returns all tours with shared data, translation diagnostics, and audit metadata, ordered by the persisted manual
-        tour sort order.
+        Returns lightweight admin tour summaries with localized readiness/publication flags and audit metadata, ordered
+        by the persisted manual tour sort order.
       operationId: ToursController_findAll
       parameters:
         - name: tagKeys
@@ -2109,7 +2109,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/TourAdminResponseDto"
+                  $ref: "#/components/schemas/TourAdminListResponseDto"
         "401":
           description: ""
           content:
@@ -4385,6 +4385,74 @@ components:
         - tags
         - translation
         - itinerary
+    RecordAuditMetadataDto:
+      type: object
+      properties:
+        createdBy:
+          type: object
+          description: UUID of the admin that originally created the record.
+          format: uuid
+          nullable: true
+        updatedBy:
+          type: object
+          description: UUID of the admin that most recently updated the record.
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          description: Creation timestamp.
+          format: date-time
+        updatedAt:
+          type: string
+          description: Last update timestamp.
+          format: date-time
+      required:
+        - createdAt
+        - updatedAt
+    TourAdminListResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Tour UUID.
+          format: uuid
+        name:
+          type: string
+          description: Non-localized admin-facing name for the tour.
+          example: Barcelona Historic Center Main Tour
+        sortOrder:
+          type: number
+          description: Manual display position used by the default admin and public tour list ordering. Lower values appear first.
+          example: 0
+        slug:
+          type: string
+          description: Stable public slug.
+          example: historic-center
+        tourType:
+          type: string
+          description: Tour commercial model.
+          enum:
+            - private
+            - group
+            - tip_based
+            - company
+        translations:
+          type: object
+          description: Localized translation status keyed by locale code.
+          additionalProperties:
+            $ref: "#/components/schemas/TourAdminListTranslationResponseDto"
+        audit:
+          description: Audit metadata for create and update operations.
+          allOf:
+            - $ref: "#/components/schemas/RecordAuditMetadataDto"
+      required:
+        - id
+        - name
+        - sortOrder
+        - slug
+        - tourType
+        - translations
+        - audit
     TourAdminItineraryStopResponseDto:
       type: object
       properties:
@@ -4470,30 +4538,6 @@ components:
         - missingStopTranslations
         - isSchemaValid
         - publiclyAvailable
-    RecordAuditMetadataDto:
-      type: object
-      properties:
-        createdBy:
-          type: object
-          description: UUID of the admin that originally created the record.
-          format: uuid
-          nullable: true
-        updatedBy:
-          type: object
-          description: UUID of the admin that most recently updated the record.
-          format: uuid
-          nullable: true
-        createdAt:
-          type: string
-          description: Creation timestamp.
-          format: date-time
-        updatedAt:
-          type: string
-          description: Last update timestamp.
-          format: date-time
-      required:
-        - createdAt
-        - updatedAt
     TourAdminResponseDto:
       type: object
       properties:
@@ -5027,6 +5071,20 @@ components:
         - isReady
         - isPublished
         - payload
+    TourAdminListTranslationResponseDto:
+      type: object
+      properties:
+        isReady:
+          type: boolean
+          description: Whether the translation currently satisfies all required completeness rules.
+          example: true
+        isPublished:
+          type: boolean
+          description: Whether the translation is configured to be publicly exposed.
+          example: true
+      required:
+        - isReady
+        - isPublished
     BlogAdminTranslationResponseDto:
       type: object
       properties:

@@ -102,7 +102,7 @@ export class ToursService {
   async findAll(filters: AdminListToursDto = {}): Promise<unknown[]> {
     const tours = await this.buildListQuery(filters).getMany();
 
-    return tours.map((tour) => this.toAdminResponse(tour));
+    return tours.map((tour) => this.toAdminListResponse(tour));
   }
 
   async findOne(id: string): Promise<unknown> {
@@ -1097,6 +1097,33 @@ export class ToursService {
       })),
       translations,
       translationAvailability,
+      audit: {
+        createdBy: tour.createdBy,
+        updatedBy: tour.updatedBy,
+        createdAt: tour.createdAt,
+        updatedAt: tour.updatedAt,
+      },
+    };
+  }
+
+  private toAdminListResponse(tour: TourEntity): unknown {
+    const translations = Object.fromEntries(
+      tour.translations.map((translation) => [
+        translation.languageCode,
+        {
+          isReady: translation.isReady,
+          isPublished: translation.isPublished,
+        },
+      ]),
+    );
+
+    return {
+      id: tour.id,
+      name: tour.name,
+      sortOrder: tour.sortOrder,
+      slug: tour.slug,
+      tourType: tour.tourType,
+      translations,
       audit: {
         createdBy: tour.createdBy,
         updatedBy: tour.updatedBy,
