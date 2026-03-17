@@ -270,10 +270,6 @@ export class PublicToursService {
       return false;
     }
 
-    if (!tour.startPoint || !tour.endPoint) {
-      return false;
-    }
-
     if (tour.rating === null || tour.reviewCount === null || tour.durationMinutes === null) {
       return false;
     }
