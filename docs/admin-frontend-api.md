@@ -642,7 +642,19 @@ Update semantics:
 - updating shared tour fields recalculates readiness for existing translations and auto-unpublishes any translation that becomes not ready
 - updating a translation recalculates readiness and auto-unpublishes it when it becomes not ready
 
-Admin response shape includes:
+Admin list response shape includes:
+
+- `id`
+- shared `name`
+- `sortOrder`
+- `slug`
+- `tourType`
+- `translations` keyed by locale code, each with:
+  - `isReady`
+  - `isPublished`
+- `audit`
+
+Admin detail response shape includes:
 
 - shared `name`
 - shared tour data
@@ -663,6 +675,7 @@ Admin response shape includes:
 
 Frontend notes:
 
+- Use `GET /api/admin/tours` for lightweight table/list data and `GET /api/admin/tours/:id` when the editor needs the full shared payload and translation diagnostics.
 - Expect newly created tours to come back with nullable shared fields such as `contentSchema`, `rating`, `reviewCount`, `durationMinutes`, `startPoint`, `endPoint`, and `itinerary`.
 - Use `translationAvailability` to drive publishability indicators and per-locale warnings.
 - Do not assume a translation is public just because it exists or even because it is marked `isPublished`; shared tour completeness still gates public exposure.

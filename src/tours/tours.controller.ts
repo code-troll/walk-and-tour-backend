@@ -35,6 +35,7 @@ import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
 import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
 import {
   ErrorResponseDto,
+  TourAdminListResponseDto,
   TourAdminResponseDto,
   TourMediaListResponseDto,
 } from '../swagger/swagger.models';
@@ -64,11 +65,11 @@ export class ToursController {
   @ApiOperation({
     summary: 'List tours for admin management',
     description:
-      'Returns all tours with shared data, translation diagnostics, and audit metadata, ordered by the persisted manual tour sort order.',
+      'Returns lightweight admin tour summaries with localized readiness/publication flags and audit metadata, ordered by the persisted manual tour sort order.',
   })
   @ApiOkResponse({
     description: 'Admin tour records.',
-    type: TourAdminResponseDto,
+    type: TourAdminListResponseDto,
     isArray: true,
   })
   @ApiQuery({

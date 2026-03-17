@@ -87,8 +87,13 @@ describe('NewsletterPublicRateLimitGuard', () => {
   });
 });
 
+type PublicNewsletterHandler =
+  | NewsletterSubscribersController['subscribe']
+  | NewsletterSubscribersController['confirm']
+  | NewsletterSubscribersController['unsubscribe'];
+
 function createExecutionContext(
-  handler: Function,
+  handler: PublicNewsletterHandler,
   request: {
     headers?: Record<string, string | undefined>;
     ip?: string;
