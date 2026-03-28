@@ -45,7 +45,17 @@ export class PublicToursService {
     const tours = await this.buildListQuery(filters).getMany();
 
     return tours
-      .map((tour) => this.toPublicResponse(tour, locale))
+      .map((tour) => {
+        const response = this.toPublicResponse(tour, locale);
+
+        if (!response) {
+          this.logger.warn(
+            `Excluding tour "${tour.id}" (name: "${tour.name}") from public list for locale "${locale}"`,
+          );
+        }
+
+        return response;
+      })
       .filter((tour): tour is NonNullable<typeof tour> => tour !== null);
   }
 
