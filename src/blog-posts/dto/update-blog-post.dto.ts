@@ -1,7 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayUnique, IsArray, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
-
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+import { ArrayUnique, IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateBlogPostDto {
   @ApiPropertyOptional({
@@ -14,18 +12,6 @@ export class UpdateBlogPostDto {
   @MaxLength(255)
   @IsOptional()
   name?: string;
-
-  @ApiPropertyOptional({
-    description: 'Updated public slug.',
-    example: 'barcelona-historic-center-guide',
-    pattern: SLUG_PATTERN.source,
-    maxLength: 150,
-  })
-  @IsString()
-  @Matches(SLUG_PATTERN)
-  @MaxLength(150)
-  @IsOptional()
-  slug?: string;
 
   @ApiPropertyOptional({
     description: 'Replacement tag key list.',

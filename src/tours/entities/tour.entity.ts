@@ -8,7 +8,6 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
-  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
@@ -19,13 +18,9 @@ import { TourItineraryStopEntity } from './tour-itinerary-stop.entity';
 import { TourTranslationEntity } from './tour-translation.entity';
 
 @Entity({ name: 'tours' })
-@Unique('UQ_tours_slug', ['slug'])
 export class TourEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
-
-  @Column({ type: 'varchar', length: 150 })
-  slug!: string;
 
   @Column({ type: 'varchar', length: 255 })
   name!: string;

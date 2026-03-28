@@ -4,6 +4,7 @@ import { createRepositoryMock, RepositoryMock } from '../../test/utils/repositor
 import { LanguageEntity } from '../languages/language.entity';
 import { MediaAssetEntity } from '../media/media-asset.entity';
 import { StorageService } from '../storage/storage-service.interface';
+import { BlogPostTranslationEntity } from './blog-post-translation.entity';
 import { BlogPostViewEntity } from './blog-post-view.entity';
 import { BlogPostEntity } from './blog-post.entity';
 import { PublicBlogPostsService } from './public-blog-posts.service';
@@ -11,12 +12,14 @@ import { PublicBlogPostsService } from './public-blog-posts.service';
 describe('PublicBlogPostsService', () => {
   let service: PublicBlogPostsService;
   let blogPostsRepository: RepositoryMock<BlogPostEntity>;
+  let translationsRepository: RepositoryMock<BlogPostTranslationEntity>;
   let blogPostViewsRepository: RepositoryMock<BlogPostViewEntity>;
   let languagesRepository: RepositoryMock<LanguageEntity>;
   let storageService: jest.Mocked<StorageService>;
 
   beforeEach(() => {
     blogPostsRepository = createRepositoryMock<BlogPostEntity>();
+    translationsRepository = createRepositoryMock<BlogPostTranslationEntity>();
     blogPostViewsRepository = createRepositoryMock<BlogPostViewEntity>();
     languagesRepository = createRepositoryMock<LanguageEntity>();
     storageService = {
@@ -27,6 +30,7 @@ describe('PublicBlogPostsService', () => {
     };
     service = new PublicBlogPostsService(
       blogPostsRepository as never,
+      translationsRepository as never,
       blogPostViewsRepository as never,
       languagesRepository as never,
       storageService,
@@ -41,9 +45,9 @@ describe('PublicBlogPostsService', () => {
     blogPostsRepository.find.mockResolvedValue([
       createPublicBlogPost(),
       createPublicBlogPost({
-        slug: 'draft-post',
         translations: [
           {
+            slug: 'draft-post',
             languageCode: 'en',
             isPublished: false,
             title: 'Draft post',
@@ -78,7 +82,10 @@ describe('PublicBlogPostsService', () => {
       code: 'en',
       isEnabled: true,
     } as LanguageEntity);
-    blogPostsRepository.findOne.mockResolvedValue(createPublicBlogPost());
+    const blogPost = createPublicBlogPost();
+    const translation = blogPost.translations[0];
+    (translation as unknown as { blogPost: BlogPostEntity }).blogPost = blogPost;
+    translationsRepository.findOne.mockResolvedValue(translation);
     blogPostViewsRepository.manager.query
       .mockResolvedValueOnce([{ blog_post_translation_id: 'translation-1' }])
       .mockResolvedValueOnce(undefined);
@@ -104,7 +111,10 @@ describe('PublicBlogPostsService', () => {
       code: 'en',
       isEnabled: true,
     } as LanguageEntity);
-    blogPostsRepository.findOne.mockResolvedValue(createPublicBlogPost());
+    const blogPost2 = createPublicBlogPost();
+    const translation2 = blogPost2.translations[0];
+    (translation2 as unknown as { blogPost: BlogPostEntity }).blogPost = blogPost2;
+    translationsRepository.findOne.mockResolvedValue(translation2);
     blogPostViewsRepository.manager.query.mockResolvedValueOnce([]);
 
     await expect(
@@ -133,11 +143,24 @@ describe('PublicBlogPostsService', () => {
       code: 'en',
       isEnabled: true,
     } as LanguageEntity);
-    blogPostsRepository.findOne.mockResolvedValue(
-      createPublicBlogPost({
+    const unpubTranslation = {
+      id: 'translation-1',
+      blogPostId: 'blog-1',
+      slug: 'royal-copenhagen',
+      languageCode: 'en',
+      isPublished: false,
+      title: 'Royal Copenhagen',
+      summary: null,
+      htmlContent: '<p>Hello</p>',
+      seoTitle: null,
+      seoDescription: null,
+      imageRefs: [],
+      viewCount: 0,
+      blogPost: createPublicBlogPost({
         translations: [
           {
             languageCode: 'en',
+            slug: 'royal-copenhagen',
             isPublished: false,
             title: 'Royal Copenhagen',
             summary: null,
@@ -147,8 +170,9 @@ describe('PublicBlogPostsService', () => {
             imageRefs: [],
           },
         ] as unknown as BlogPostEntity['translations'],
-      }) as BlogPostEntity,
-    );
+      }),
+    };
+    translationsRepository.findOne.mockResolvedValue(unpubTranslation as unknown as BlogPostTranslationEntity);
 
     await expect(
       service.findOneBySlug('royal-copenhagen', 'en', createRequestContext()),
@@ -161,7 +185,6 @@ function createPublicBlogPost(overrides: Partial<BlogPostEntity> = {}): BlogPost
   return {
     id: 'blog-1',
     name: 'Royal Copenhagen Article',
-    slug: 'royal-copenhagen',
     heroMediaId: 'media-1',
     heroMedia: createMediaAssetEntity(),
     tags: [
@@ -174,6 +197,7 @@ function createPublicBlogPost(overrides: Partial<BlogPostEntity> = {}): BlogPost
       {
         id: 'translation-1',
         blogPostId: 'blog-1',
+        slug: 'royal-copenhagen',
         languageCode: 'en',
         isPublished: true,
         title: 'Royal Copenhagen',

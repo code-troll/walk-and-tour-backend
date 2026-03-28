@@ -14,6 +14,7 @@ import { BlogPostEntity } from './blog-post.entity';
 
 @Entity({ name: 'blog_post_translations' })
 @Unique('UQ_blog_post_translation_locale', ['blogPostId', 'languageCode'])
+@Unique('UQ_blog_post_translations_slug', ['slug'])
 export class BlogPostTranslationEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -35,6 +36,9 @@ export class BlogPostTranslationEntity {
   })
   @JoinColumn({ name: 'language_code', referencedColumnName: 'code' })
   language!: LanguageEntity;
+
+  @Column({ type: 'varchar', length: 150 })
+  slug!: string;
 
   @Column({ name: 'is_published', type: 'boolean', default: false })
   isPublished!: boolean;

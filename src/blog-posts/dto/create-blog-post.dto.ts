@@ -1,7 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayUnique, IsArray, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
-
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+import { ArrayUnique, IsArray, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateBlogPostDto {
   @ApiProperty({
@@ -14,17 +12,6 @@ export class CreateBlogPostDto {
   @IsNotEmpty()
   @MaxLength(255)
   name!: string;
-
-  @ApiProperty({
-    description: 'Stable public slug for the blog post.',
-    example: 'barcelona-historic-center-guide',
-    pattern: SLUG_PATTERN.source,
-    maxLength: 150,
-  })
-  @IsString()
-  @Matches(SLUG_PATTERN)
-  @MaxLength(150)
-  slug!: string;
 
   @ApiPropertyOptional({
     description: 'Assigned tag keys.',

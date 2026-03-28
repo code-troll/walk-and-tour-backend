@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 
@@ -25,9 +25,13 @@ interface TourListFilters {
 
 @Injectable()
 export class PublicToursService {
+  private readonly logger = new Logger(PublicToursService.name);
+
   constructor(
     @InjectRepository(TourEntity)
     private readonly toursRepository: Repository<TourEntity>,
+    @InjectRepository(TourTranslationEntity)
+    private readonly translationsRepository: Repository<TourTranslationEntity>,
     @InjectRepository(LanguageEntity)
     private readonly languagesRepository: Repository<LanguageEntity>,
     @Inject(STORAGE_SERVICE)
@@ -48,22 +52,31 @@ export class PublicToursService {
   async findOneBySlug(slug: string, locale: string): Promise<unknown> {
     await this.assertPublicLocale(locale);
 
-    const tour = await this.toursRepository.findOne({
+    const translation = await this.translationsRepository.findOne({
       where: { slug },
       relations: {
-        mediaItems: {
-          media: true,
+        tour: {
+          mediaItems: {
+            media: true,
+          },
+          tags: true,
+          stops: true,
+          translations: true,
         },
-        tags: true,
-        stops: true,
-        translations: true,
       },
     });
 
-    if (!tour) {
+    if (!translation) {
       throw new NotFoundException(`Tour "${slug}" was not found.`);
     }
 
+    if (translation.languageCode !== locale) {
+      throw new NotFoundException(
+        `Tour "${slug}" is not publicly available for locale "${locale}".`,
+      );
+    }
+
+    const tour = translation.tour;
     const response = this.toPublicResponse(tour, locale);
 
     if (!response) {
@@ -83,26 +96,34 @@ export class PublicToursService {
     contentType: string;
     originalFilename: string;
   }> {
-    const tour = await this.toursRepository.findOne({
+    const translation = await this.translationsRepository.findOne({
       where: { slug },
       relations: {
-        mediaItems: {
-          media: true,
+        tour: {
+          mediaItems: {
+            media: true,
+          },
+          stops: true,
+          translations: true,
         },
-        stops: true,
-        translations: true,
       },
     });
 
-    if (!tour || !this.isSharedTourPubliclyValid(tour)) {
+    if (!translation) {
+      throw new NotFoundException(`Tour "${slug}" was not found.`);
+    }
+
+    const tour = translation.tour;
+
+    if (!this.isSharedTourPubliclyValid(tour)) {
       throw new NotFoundException(`Tour "${slug}" was not found.`);
     }
 
     const isPublic = tour.translations.some(
-      (translation) =>
-        translation.isReady &&
-        translation.isPublished &&
-        this.isTranslationPubliclyValid(tour, translation),
+      (t) =>
+        t.isReady &&
+        t.isPublished &&
+        this.isTranslationPubliclyValid(tour, t),
     );
 
     if (!isPublic) {
@@ -185,9 +206,9 @@ export class PublicToursService {
 
     return {
       id: tour.id,
-      slug: tour.slug,
-      coverMedia: this.toResponseMediaItem(tour.slug, coverMedia),
-      galleryMedia: galleryMedia.map((item) => this.toResponseMediaItem(tour.slug, item)),
+      slug: translation.slug,
+      coverMedia: this.toResponseMediaItem(translation.slug, coverMedia),
+      galleryMedia: galleryMedia.map((item) => this.toResponseMediaItem(translation.slug, item)),
       price:
         tour.priceAmount && tour.priceCurrency
           ? {
@@ -230,6 +251,9 @@ export class PublicToursService {
   ): boolean {
     try {
       if (!tour.contentSchema || !tour.itineraryVariant) {
+        this.logger.warn(
+          `Tour "${tour.id}" translation "${translation.languageCode}" not valid: missing contentSchema or itineraryVariant`,
+        );
         return false;
       }
 
@@ -238,7 +262,11 @@ export class PublicToursService {
         translation.payload,
       );
 
-      if (this.getMissingRequiredLocalizedLists(translation.payload).length > 0) {
+      const missingLists = this.getMissingRequiredLocalizedLists(translation.payload);
+      if (missingLists.length > 0) {
+        this.logger.warn(
+          `Tour "${tour.id}" translation "${translation.languageCode}" not valid: missing required lists [${missingLists.join(', ')}]`,
+        );
         return false;
       }
 
@@ -254,23 +282,32 @@ export class PublicToursService {
             typeof localizedStop.title !== 'string' ||
             typeof localizedStop.description !== 'string'
           ) {
+            this.logger.warn(
+              `Tour "${tour.id}" translation "${translation.languageCode}" not valid: missing or incomplete stop "${stopId}"`,
+            );
             return false;
           }
         }
       }
 
       return true;
-    } catch {
+    } catch (error) {
+      this.logger.warn(
+        `Tour "${tour.id}" translation "${translation.languageCode}" not valid: payload validation failed — ${error instanceof Error ? error.message : String(error)}`,
+        { schema: tour.contentSchema, payload: translation.payload },
+      );
       return false;
     }
   }
 
   private isSharedTourPubliclyValid(tour: TourEntity): boolean {
     if (!tour.contentSchema || !tour.itineraryVariant) {
+      this.logger.warn(`Tour "${tour.id}" shared data not valid: missing contentSchema or itineraryVariant`);
       return false;
     }
 
     if (tour.rating === null || tour.reviewCount === null || tour.durationMinutes === null) {
+      this.logger.warn(`Tour "${tour.id}" shared data not valid: missing rating, reviewCount, or durationMinutes`);
       return false;
     }
 
@@ -279,14 +316,17 @@ export class PublicToursService {
     }
 
     if (tour.tourType !== 'tip_based' && (!tour.priceAmount || !tour.priceCurrency)) {
+      this.logger.warn(`Tour "${tour.id}" shared data not valid: non-tip-based tour missing price`);
       return false;
     }
 
     if (tour.tourType === 'tip_based' && (tour.priceAmount || tour.priceCurrency)) {
+      this.logger.warn(`Tour "${tour.id}" shared data not valid: tip-based tour should not have a price`);
       return false;
     }
 
     if (tour.itineraryVariant === 'stops' && tour.stops.length === 0) {
+      this.logger.warn(`Tour "${tour.id}" shared data not valid: stop-based itinerary has no stops`);
       return false;
     }
 

@@ -449,7 +449,7 @@ export class BlogPostsController {
   })
   @ApiParam({
     name: 'slug',
-    description: 'Public blog post slug.',
+    description: 'Public blog post translation slug.',
     example: 'barcelona-historic-center-guide',
   })
   @ApiQuery({
@@ -480,7 +480,7 @@ export class BlogPostsController {
   })
   @ApiParam({
     name: 'slug',
-    description: 'Public blog post slug.',
+    description: 'Public blog post translation slug.',
     example: 'barcelona-historic-center-guide',
   })
   @ApiParam({

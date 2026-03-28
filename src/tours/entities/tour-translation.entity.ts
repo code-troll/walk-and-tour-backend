@@ -14,6 +14,7 @@ import { TourEntity } from './tour.entity';
 
 @Entity({ name: 'tour_translations' })
 @Unique('UQ_tour_translation_locale', ['tourId', 'languageCode'])
+@Unique('UQ_tour_translations_slug', ['slug'])
 export class TourTranslationEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -35,6 +36,9 @@ export class TourTranslationEntity {
   })
   @JoinColumn({ name: 'language_code', referencedColumnName: 'code' })
   language!: LanguageEntity;
+
+  @Column({ type: 'varchar', length: 150 })
+  slug!: string;
 
   @Column({ name: 'is_ready', type: 'boolean', default: false })
   isReady!: boolean;

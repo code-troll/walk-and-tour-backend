@@ -43,17 +43,15 @@ describe('BlogPostsService', () => {
   });
 
   it('creates a minimal blog post without publication state on the parent record', async () => {
-    blogPostsRepository.findOne
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(
-        createBlogPostEntity({
-          heroMediaId: null,
-          heroMedia: null,
-          tags: [{ key: 'history', labels: { en: 'History' } }] as unknown as TagEntity[],
-          translations: [],
-          publishedAt: null,
-        }),
-      );
+    blogPostsRepository.findOne.mockResolvedValueOnce(
+      createBlogPostEntity({
+        heroMediaId: null,
+        heroMedia: null,
+        tags: [{ key: 'history', labels: { en: 'History' } }] as unknown as TagEntity[],
+        translations: [],
+        publishedAt: null,
+      }),
+    );
     blogPostsRepository.create.mockImplementation((value) => value);
     blogPostsRepository.save.mockImplementation(async (value) => ({
       id: 'blog-1',
@@ -66,7 +64,6 @@ describe('BlogPostsService', () => {
     const result = await service.create(
       {
         name: 'Royal Copenhagen Article',
-        slug: 'royal-copenhagen',
         tagKeys: ['history'],
       },
       actor,
@@ -75,7 +72,6 @@ describe('BlogPostsService', () => {
     expect(blogPostsRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Royal Copenhagen Article',
-        slug: 'royal-copenhagen',
         heroMediaId: null,
         createdBy: 'admin-1',
         updatedBy: 'admin-1',
@@ -113,12 +109,14 @@ describe('BlogPostsService', () => {
         }),
       );
     languagesRepository.findOne.mockResolvedValue({ code: 'en' } as LanguageEntity);
+    translationsRepository.findOne.mockResolvedValue(null);
     translationsRepository.create.mockImplementation((value) => value);
 
     await service.createTranslation(
       'blog-1',
       {
         languageCode: 'en',
+        slug: 'royal-copenhagen',
         title: 'Royal Copenhagen',
         htmlContent: '<p>Hello</p>',
       },
@@ -129,6 +127,7 @@ describe('BlogPostsService', () => {
       expect.objectContaining({
         blogPostId: 'blog-1',
         languageCode: 'en',
+        slug: 'royal-copenhagen',
         isPublished: false,
         title: 'Royal Copenhagen',
         htmlContent: '<p>Hello</p>',
@@ -268,29 +267,24 @@ describe('BlogPostsService', () => {
     );
   });
 
-  it('rejects duplicate blog post slugs on create', async () => {
-    blogPostsRepository.findOne.mockResolvedValue({ slug: 'royal-copenhagen' } as BlogPostEntity);
+  it('rejects duplicate translation slugs on createTranslation', async () => {
+    blogPostsRepository.findOne.mockResolvedValue(
+      createBlogPostEntity({ translations: [] }),
+    );
+    languagesRepository.findOne.mockResolvedValue({ code: 'en' } as LanguageEntity);
+    translationsRepository.findOne.mockResolvedValue({
+      slug: 'royal-copenhagen',
+    } as BlogPostTranslationEntity);
 
     await expect(
-      service.create(
-        {
-          name: 'Royal Copenhagen Article',
-          slug: 'royal-copenhagen',
-        },
-        actor,
-      ),
-    ).rejects.toBeInstanceOf(ConflictException);
-  });
-
-  it('rejects duplicate blog post slugs on update', async () => {
-    blogPostsRepository.findOne
-      .mockResolvedValueOnce(createBlogPostEntity())
-      .mockResolvedValueOnce({ id: 'blog-2', slug: 'conflict' } as BlogPostEntity);
-
-    await expect(
-      service.update(
+      service.createTranslation(
         'blog-1',
-        { slug: 'conflict' },
+        {
+          languageCode: 'en',
+          slug: 'royal-copenhagen',
+          title: 'Royal Copenhagen',
+          htmlContent: '<p>Hello</p>',
+        },
         actor,
       ),
     ).rejects.toBeInstanceOf(ConflictException);
@@ -301,7 +295,6 @@ function createBlogPostEntity(overrides: Partial<BlogPostEntity> = {}): BlogPost
   return {
     id: 'blog-1',
     name: 'Royal Copenhagen Article',
-    slug: 'royal-copenhagen',
     heroMediaId: 'media-1',
     heroMedia: createMediaAssetEntity(),
     tags: [
@@ -338,6 +331,7 @@ function createBlogPostTranslationEntity(
     id: 'translation-1',
     blogPostId: 'blog-1',
     languageCode: 'en',
+    slug: 'royal-copenhagen',
     isPublished: true,
     title: 'Royal Copenhagen',
     summary: null,

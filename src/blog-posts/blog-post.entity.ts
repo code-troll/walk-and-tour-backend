@@ -8,7 +8,6 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
-  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
@@ -17,13 +16,9 @@ import { TagEntity } from '../tags/tag.entity';
 import { BlogPostTranslationEntity } from './blog-post-translation.entity';
 
 @Entity({ name: 'blog_posts' })
-@Unique('UQ_blog_posts_slug', ['slug'])
 export class BlogPostEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
-
-  @Column({ type: 'varchar', length: 150 })
-  slug!: string;
 
   @Column({ type: 'varchar', length: 255 })
   name!: string;

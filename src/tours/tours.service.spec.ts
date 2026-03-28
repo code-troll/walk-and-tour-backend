@@ -73,9 +73,7 @@ describe('ToursService', () => {
       coverMediaId: null,
     });
 
-    toursRepository.findOne
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(persistedTour);
+    toursRepository.findOne.mockResolvedValueOnce(persistedTour);
     toursRepository.manager.find.mockResolvedValue([]);
     toursRepository.manager.save.mockImplementation(async (_entity, value) => [
       {
@@ -87,7 +85,6 @@ describe('ToursService', () => {
     const result = await service.create(
       {
         name: 'Historic Center Main Tour',
-        slug: 'historic-center',
         tourType: 'group',
       },
       createAdmin(),
@@ -96,7 +93,6 @@ describe('ToursService', () => {
     expect(toursRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Historic Center Main Tour',
-        slug: 'historic-center',
         tourType: 'group',
         sortOrder: 0,
         coverMediaId: null,
@@ -111,7 +107,6 @@ describe('ToursService', () => {
         id: 'tour-1',
         name: 'Historic Center Main Tour',
         sortOrder: 0,
-        slug: 'historic-center',
         coverMediaId: null,
         mediaItems: [],
         translations: {},
@@ -124,13 +119,11 @@ describe('ToursService', () => {
     const { queryBuilder, subQueryBuilder } = createListQueryBuilderMock([
       createTourEntity({
         id: 'tour-company-1',
-        slug: 'company-experience',
         tourType: 'company',
         tags: [createTagEntity({ key: 'history', labels: { en: 'History' } })],
       }),
       createTourEntity({
         id: 'tour-group-1',
-        slug: 'group-architecture',
         tourType: 'group',
         tags: [createTagEntity({ key: 'architecture', labels: { en: 'Architecture' } })],
       }),
@@ -162,7 +155,6 @@ describe('ToursService', () => {
       createTourEntity({
         id: 'tour-1',
         name: 'Historic Center Main Tour',
-        slug: 'historic-center',
         sortOrder: 0,
         tourType: 'group',
         translations: [
@@ -189,16 +181,17 @@ describe('ToursService', () => {
         id: 'tour-1',
         name: 'Historic Center Main Tour',
         sortOrder: 0,
-        slug: 'historic-center',
         tourType: 'group',
         translations: {
           en: {
             isReady: true,
             isPublished: true,
+            slug: 'historic-center',
           },
           es: {
             isReady: false,
             isPublished: false,
+            slug: 'historic-center',
           },
         },
         audit: {
@@ -229,9 +222,7 @@ describe('ToursService', () => {
       coverMediaId: null,
     });
 
-    toursRepository.findOne
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(persistedTour);
+    toursRepository.findOne.mockResolvedValueOnce(persistedTour);
     toursRepository.manager.find.mockResolvedValue([]);
     toursRepository.manager.save.mockImplementation(async (_entity, value) => [
       {
@@ -243,7 +234,6 @@ describe('ToursService', () => {
     const result = await service.create(
       {
         name: 'Company Experience',
-        slug: 'company-experience',
         tourType: 'company',
       },
       createAdmin(),
@@ -252,7 +242,6 @@ describe('ToursService', () => {
     expect(toursRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Company Experience',
-        slug: 'company-experience',
         tourType: 'company',
         sortOrder: 0,
       }),
@@ -268,7 +257,6 @@ describe('ToursService', () => {
   it('inserts a created tour at the requested sort order and shifts later tours', async () => {
     const persistedTour = createTourEntity({
       id: 'tour-3',
-      slug: 'new-tour',
       name: 'New Tour',
       sortOrder: 1,
       contentSchema: null,
@@ -286,17 +274,15 @@ describe('ToursService', () => {
       coverMediaId: null,
     });
     const existingTours = [
-      createTourEntity({ id: 'tour-1', slug: 'first-tour', sortOrder: 0 }),
-      createTourEntity({ id: 'tour-2', slug: 'second-tour', sortOrder: 1 }),
+      createTourEntity({ id: 'tour-1', sortOrder: 0 }),
+      createTourEntity({ id: 'tour-2', sortOrder: 1 }),
     ];
 
-    toursRepository.findOne
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(persistedTour);
+    toursRepository.findOne.mockResolvedValueOnce(persistedTour);
     toursRepository.manager.find.mockResolvedValue(existingTours);
     toursRepository.manager.save.mockImplementation(async (_entity, value) =>
       (value as TourEntity[]).map((tour) =>
-        tour.slug === 'new-tour'
+        tour.name === 'New Tour'
           ? { ...tour, id: 'tour-3' }
           : tour,
       ),
@@ -305,7 +291,6 @@ describe('ToursService', () => {
     await service.create(
       {
         name: 'New Tour',
-        slug: 'new-tour',
         tourType: 'group',
         sortOrder: 1,
       },
@@ -316,7 +301,7 @@ describe('ToursService', () => {
       TourEntity,
       expect.arrayContaining([
         expect.objectContaining({ id: 'tour-2', sortOrder: 2 }),
-        expect.objectContaining({ slug: 'new-tour', sortOrder: 1 }),
+        expect.objectContaining({ name: 'New Tour', sortOrder: 1 }),
       ]),
     );
   });
@@ -479,17 +464,15 @@ describe('ToursService', () => {
   it('moves a tour earlier when sortOrder is updated and shifts the displaced range', async () => {
     const existingTour = createTourEntity({
       id: 'tour-3',
-      slug: 'third-tour',
       sortOrder: 2,
     });
     const orderedTours = [
-      createTourEntity({ id: 'tour-1', slug: 'first-tour', sortOrder: 0 }),
-      createTourEntity({ id: 'tour-2', slug: 'second-tour', sortOrder: 1 }),
+      createTourEntity({ id: 'tour-1', sortOrder: 0 }),
+      createTourEntity({ id: 'tour-2', sortOrder: 1 }),
       existingTour,
     ];
     const refreshedTour = createTourEntity({
       id: 'tour-3',
-      slug: 'third-tour',
       sortOrder: 0,
     });
 
@@ -523,17 +506,15 @@ describe('ToursService', () => {
   it('moves a tour to the end when sortOrder is updated past the current range', async () => {
     const existingTour = createTourEntity({
       id: 'tour-1',
-      slug: 'first-tour',
       sortOrder: 0,
     });
     const orderedTours = [
       existingTour,
-      createTourEntity({ id: 'tour-2', slug: 'second-tour', sortOrder: 1 }),
-      createTourEntity({ id: 'tour-3', slug: 'third-tour', sortOrder: 2 }),
+      createTourEntity({ id: 'tour-2', sortOrder: 1 }),
+      createTourEntity({ id: 'tour-3', sortOrder: 2 }),
     ];
     const refreshedTour = createTourEntity({
       id: 'tour-1',
-      slug: 'first-tour',
       sortOrder: 2,
     });
 
@@ -665,11 +646,13 @@ describe('ToursService', () => {
     languagesRepository.findOne.mockResolvedValue(
       createLanguageEntity({ code: 'en' }),
     );
+    translationsRepository.findOne.mockResolvedValueOnce(null);
 
     await service.createTranslation(
       'tour-1',
       {
         languageCode: 'en',
+        slug: 'historic-center',
         payload: { title: 'Historic Center' },
       },
       createAdmin(),
@@ -679,6 +662,7 @@ describe('ToursService', () => {
       expect.objectContaining({
         tourId: 'tour-1',
         languageCode: 'en',
+        slug: 'historic-center',
         isReady: false,
         isPublished: false,
       }),
@@ -764,6 +748,7 @@ describe('ToursService', () => {
         'tour-1',
         {
           languageCode: 'en',
+          slug: 'historic-center',
           payload: { title: 'Historic Center' },
         },
         createAdmin(),
@@ -795,7 +780,6 @@ function createTourEntity(overrides: Partial<TourEntity> = {}): TourEntity {
     id: 'tour-1',
     name: 'Historic Center Main Tour',
     sortOrder: 0,
-    slug: 'historic-center',
     coverMediaId: null,
     coverMedia: null,
     mediaItems: [],
@@ -849,6 +833,7 @@ function createTranslationEntity(
     id: 'translation-1',
     tourId: 'tour-1',
     languageCode: 'en',
+    slug: 'historic-center',
     isReady: true,
     isPublished: false,
     bookingReferenceId: null,

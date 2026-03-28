@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 
 const LOCALE_CODE_PATTERN = /^[a-z]{2}(?:-[A-Z]{2})?$/;
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export class CreateBlogPostTranslationDto {
   @ApiProperty({
@@ -18,6 +19,17 @@ export class CreateBlogPostTranslationDto {
   @IsString()
   @Matches(LOCALE_CODE_PATTERN)
   languageCode!: string;
+
+  @ApiProperty({
+    description: 'Public slug for this translation.',
+    example: 'barcelona-historic-center-guide',
+    pattern: SLUG_PATTERN.source,
+    maxLength: 150,
+  })
+  @IsString()
+  @Matches(SLUG_PATTERN)
+  @MaxLength(150)
+  slug!: string;
 
   @ApiPropertyOptional({
     description: 'Localized title.',
@@ -75,6 +87,18 @@ export class CreateBlogPostTranslationDto {
 }
 
 export class UpdateBlogPostTranslationDto {
+  @ApiPropertyOptional({
+    description: 'Updated public slug.',
+    example: 'barcelona-historic-center-guide',
+    pattern: SLUG_PATTERN.source,
+    maxLength: 150,
+  })
+  @IsString()
+  @Matches(SLUG_PATTERN)
+  @MaxLength(150)
+  @IsOptional()
+  slug?: string;
+
   @ApiPropertyOptional({
     description: 'Updated localized title.',
     example: 'Barcelona Historic Center Guide',
