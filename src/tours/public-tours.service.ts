@@ -45,17 +45,7 @@ export class PublicToursService {
     const tours = await this.buildListQuery(filters).getMany();
 
     return tours
-      .map((tour) => {
-        const response = this.toPublicResponse(tour, locale);
-
-        if (!response) {
-          this.logger.warn(
-            `Excluding tour "${tour.id}" (name: "${tour.name}") from public list for locale "${locale}"`,
-          );
-        }
-
-        return response;
-      })
+      .map((tour) => this.toPublicResponse(tour, locale))
       .filter((tour): tour is NonNullable<typeof tour> => tour !== null);
   }
 
@@ -125,7 +115,7 @@ export class PublicToursService {
 
     const tour = translation.tour;
 
-    if (!this.isSharedTourPubliclyValid(tour)) {
+    if (this.getSharedInvalidReason(tour)) {
       throw new NotFoundException(`Tour "${slug}" was not found.`);
     }
 
@@ -133,7 +123,7 @@ export class PublicToursService {
       (t) =>
         t.isReady &&
         t.isPublished &&
-        this.isTranslationPubliclyValid(tour, t),
+        !this.getTranslationInvalidReason(tour, t),
     );
 
     if (!isPublic) {
@@ -171,7 +161,11 @@ export class PublicToursService {
   }
 
   private toPublicResponse(tour: TourEntity, locale: string): unknown | null {
-    if (!this.isSharedTourPubliclyValid(tour)) {
+    const sharedReason = this.getSharedInvalidReason(tour);
+    if (sharedReason) {
+      this.logger.warn(
+        `Excluding tour "${tour.id}" (name: "${tour.name}") for locale "${locale}": ${sharedReason}`,
+      );
       return null;
     }
 
@@ -182,7 +176,18 @@ export class PublicToursService {
         entry.isPublished,
     );
 
-    if (!translation || !this.isTranslationPubliclyValid(tour, translation)) {
+    if (!translation) {
+      this.logger.warn(
+        `Excluding tour "${tour.id}" (name: "${tour.name}") for locale "${locale}": no published and ready translation`,
+      );
+      return null;
+    }
+
+    const translationReason = this.getTranslationInvalidReason(tour, translation);
+    if (translationReason) {
+      this.logger.warn(
+        `Excluding tour "${tour.id}" (name: "${tour.name}") for locale "${locale}": ${translationReason}`,
+      );
       return null;
     }
 
@@ -255,16 +260,13 @@ export class PublicToursService {
     };
   }
 
-  private isTranslationPubliclyValid(
+  private getTranslationInvalidReason(
     tour: TourEntity,
     translation: TourTranslationEntity,
-  ): boolean {
+  ): string | null {
     try {
       if (!tour.contentSchema || !tour.itineraryVariant) {
-        this.logger.warn(
-          `Tour "${tour.id}" translation "${translation.languageCode}" not valid: missing contentSchema or itineraryVariant`,
-        );
-        return false;
+        return 'missing contentSchema or itineraryVariant';
       }
 
       this.payloadValidationService.validateOrThrow(
@@ -274,10 +276,7 @@ export class PublicToursService {
 
       const missingLists = this.getMissingRequiredLocalizedLists(translation.payload);
       if (missingLists.length > 0) {
-        this.logger.warn(
-          `Tour "${tour.id}" translation "${translation.languageCode}" not valid: missing required lists [${missingLists.join(', ')}]`,
-        );
-        return false;
+        return `missing required lists [${missingLists.join(', ')}]`;
       }
 
       if (tour.itineraryVariant === 'stops') {
@@ -292,55 +291,43 @@ export class PublicToursService {
             typeof localizedStop.title !== 'string' ||
             typeof localizedStop.description !== 'string'
           ) {
-            this.logger.warn(
-              `Tour "${tour.id}" translation "${translation.languageCode}" not valid: missing or incomplete stop "${stopId}"`,
-            );
-            return false;
+            return `missing or incomplete stop "${stopId}"`;
           }
         }
       }
 
-      return true;
+      return null;
     } catch (error) {
-      this.logger.warn(
-        `Tour "${tour.id}" translation "${translation.languageCode}" not valid: payload validation failed — ${error instanceof Error ? error.message : String(error)}`,
-        { schema: tour.contentSchema, payload: translation.payload },
-      );
-      return false;
+      return `payload validation failed — ${error instanceof Error ? error.message : String(error)}`;
     }
   }
 
-  private isSharedTourPubliclyValid(tour: TourEntity): boolean {
+  private getSharedInvalidReason(tour: TourEntity): string | null {
     if (!tour.contentSchema || !tour.itineraryVariant) {
-      this.logger.warn(`Tour "${tour.id}" shared data not valid: missing contentSchema or itineraryVariant`);
-      return false;
+      return 'missing contentSchema or itineraryVariant';
     }
 
     if (tour.rating === null || tour.reviewCount === null || tour.durationMinutes === null) {
-      this.logger.warn(`Tour "${tour.id}" shared data not valid: missing rating, reviewCount, or durationMinutes`);
-      return false;
+      return 'missing rating, reviewCount, or durationMinutes';
     }
 
     if (tour.tourType === 'company') {
-      return true;
+      return null;
     }
 
     if (tour.tourType !== 'tip_based' && (!tour.priceAmount || !tour.priceCurrency)) {
-      this.logger.warn(`Tour "${tour.id}" shared data not valid: non-tip-based tour missing price`);
-      return false;
+      return 'non-tip-based tour missing price';
     }
 
     if (tour.tourType === 'tip_based' && (tour.priceAmount || tour.priceCurrency)) {
-      this.logger.warn(`Tour "${tour.id}" shared data not valid: tip-based tour should not have a price`);
-      return false;
+      return 'tip-based tour should not have a price';
     }
 
     if (tour.itineraryVariant === 'stops' && tour.stops.length === 0) {
-      this.logger.warn(`Tour "${tour.id}" shared data not valid: stop-based itinerary has no stops`);
-      return false;
+      return 'stop-based itinerary has no stops';
     }
 
-    return true;
+    return null;
   }
 
   private getLocalizedStops(
