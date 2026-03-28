@@ -24,6 +24,8 @@ export class PublicBlogPostsService {
   constructor(
     @InjectRepository(BlogPostEntity)
     private readonly blogPostsRepository: Repository<BlogPostEntity>,
+    @InjectRepository(BlogPostTranslationEntity)
+    private readonly translationsRepository: Repository<BlogPostTranslationEntity>,
     @InjectRepository(BlogPostViewEntity)
     private readonly blogPostViewsRepository: Repository<BlogPostViewEntity>,
     @InjectRepository(LanguageEntity)
@@ -61,22 +63,28 @@ export class PublicBlogPostsService {
   ): Promise<unknown> {
     await this.assertPublicLocale(locale);
 
-    const blogPost = await this.blogPostsRepository.findOne({
+    const translation = await this.translationsRepository.findOne({
       where: { slug },
       relations: {
-        heroMedia: true,
-        tags: true,
-        translations: true,
+        blogPost: {
+          heroMedia: true,
+          tags: true,
+          translations: true,
+        },
       },
     });
 
-    if (!blogPost) {
+    if (!translation) {
       throw new NotFoundException(`Blog post "${slug}" was not found.`);
     }
 
-    const translation = this.findPublishedTranslation(blogPost, locale);
+    if (translation.languageCode !== locale) {
+      throw new NotFoundException(
+        `Blog post "${slug}" is not publicly available for locale "${locale}".`,
+      );
+    }
 
-    if (!translation) {
+    if (!translation.isPublished) {
       throw new NotFoundException(
         `Blog post "${slug}" is not publicly available for locale "${locale}".`,
       );
@@ -88,7 +96,7 @@ export class PublicBlogPostsService {
       translation.viewCount += 1;
     }
 
-    return this.toPublicResponse(blogPost, translation, locale);
+    return this.toPublicResponse(translation.blogPost, translation, locale);
   }
 
   async getMediaContent(
@@ -99,20 +107,24 @@ export class PublicBlogPostsService {
     contentType: string;
     originalFilename: string;
   }> {
-    const blogPost = await this.blogPostsRepository.findOne({
+    const translation = await this.translationsRepository.findOne({
       where: { slug },
       relations: {
-        heroMedia: true,
-        translations: true,
+        blogPost: {
+          heroMedia: true,
+          translations: true,
+        },
       },
     });
 
-    if (!blogPost) {
+    if (!translation) {
       throw new NotFoundException(`Blog post "${slug}" was not found.`);
     }
 
+    const blogPost = translation.blogPost;
+
     const hasPublicTranslation = blogPost.translations.some(
-      (translation) => translation.isPublished,
+      (t) => t.isPublished,
     );
 
     if (!hasPublicTranslation || !blogPost.heroMedia || blogPost.heroMedia.id !== mediaId) {
@@ -161,8 +173,8 @@ export class PublicBlogPostsService {
   ): unknown {
     return {
       id: blogPost.id,
-      slug: blogPost.slug,
-      heroMedia: this.toMediaResponse(blogPost, blogPost.heroMedia),
+      slug: translation.slug,
+      heroMedia: this.toMediaResponse(translation.slug, blogPost.heroMedia),
       tags: blogPost.tags.map((tag) => ({
         key: tag.key,
         label: tag.labels[locale] ?? null,
@@ -278,7 +290,7 @@ export class PublicBlogPostsService {
     };
   }
 
-  private toMediaResponse(blogPost: BlogPostEntity, media: BlogPostEntity['heroMedia']): {
+  private toMediaResponse(translationSlug: string, media: BlogPostEntity['heroMedia']): {
     id: string;
     mediaType: 'image' | 'video';
     storagePath: string;
@@ -295,7 +307,7 @@ export class PublicBlogPostsService {
       id: media.id,
       mediaType: media.mediaType,
       storagePath: media.storagePath,
-      contentUrl: this.buildContentUrl(blogPost.slug, media.id),
+      contentUrl: this.buildContentUrl(translationSlug, media.id),
       contentType: media.contentType,
       size: media.size,
       originalFilename: media.originalFilename,

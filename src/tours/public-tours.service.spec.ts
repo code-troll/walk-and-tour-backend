@@ -15,12 +15,14 @@ import { MediaAssetEntity } from '../media/media-asset.entity';
 describe('PublicToursService', () => {
   let service: PublicToursService;
   let toursRepository: RepositoryMock<TourEntity>;
+  let translationsRepository: RepositoryMock<TourTranslationEntity>;
   let languagesRepository: RepositoryMock<LanguageEntity>;
   let payloadValidationService: jest.Mocked<TourPayloadValidationService>;
   let storageService: jest.Mocked<StorageService>;
 
   beforeEach(() => {
     toursRepository = createRepositoryMock<TourEntity>();
+    translationsRepository = createRepositoryMock<TourTranslationEntity>();
     languagesRepository = createRepositoryMock<LanguageEntity>();
     payloadValidationService = {
       validateOrThrow: jest.fn(),
@@ -34,6 +36,7 @@ describe('PublicToursService', () => {
 
     service = new PublicToursService(
       toursRepository as never,
+      translationsRepository as never,
       languagesRepository as never,
       storageService,
       payloadValidationService,
@@ -47,7 +50,6 @@ describe('PublicToursService', () => {
     const { queryBuilder } = createListQueryBuilderMock([
       createPublicTour(),
       createPublicTour({
-        slug: 'draft-translation-tour',
         translations: [
           createTranslationEntity({
             languageCode: 'en',
@@ -131,7 +133,6 @@ describe('PublicToursService', () => {
     const { queryBuilder, subQueryBuilder } = createListQueryBuilderMock([
       createPublicTour({
         id: 'tour-company-1',
-        slug: 'company-experience',
         tourType: 'company',
         tags: [
           createTagEntity({
@@ -142,7 +143,6 @@ describe('PublicToursService', () => {
       }),
       createPublicTour({
         id: 'tour-group-1',
-        slug: 'group-architecture',
         tourType: 'group',
         tags: [
           createTagEntity({
@@ -184,51 +184,50 @@ describe('PublicToursService', () => {
     languagesRepository.findOne.mockResolvedValue(
       createLanguageEntity({ code: 'en', isEnabled: true }),
     );
-    toursRepository.findOne.mockResolvedValue(
-      createPublicTour({
-        itineraryVariant: 'stops',
-        stops: [
-          createStopEntity({
-            stopId: 'stop-2',
-            orderIndex: 1,
-            durationMinutes: 25,
-            coordinates: { lat: 55.2, lng: 12.2 },
-            nextConnection: null,
-          }),
-          createStopEntity({
-            stopId: 'stop-1',
-            orderIndex: 0,
-            durationMinutes: 10,
-            coordinates: { lat: 55.1, lng: 12.1 },
-            nextConnection: { commuteMode: 'walk', durationMinutes: 5 },
-          }),
-        ],
-        translations: [
-          createTranslationEntity({
-            languageCode: 'en',
-            payload: {
-              title: 'Historic Center',
-              cancellationType: 'Free cancellation up to 24 hours before the start time.',
-              highlights: ['Roman walls', 'Gothic Quarter lanes'],
-              included: ['Guide'],
-              notIncluded: ['Food'],
-              startPoint: { label: 'Town Hall' },
-              endPoint: { label: 'Canal' },
-              itineraryStops: {
-                'stop-1': {
-                  title: 'City Hall',
-                  description: 'Start at the square.',
-                },
-                'stop-2': {
-                  title: 'Cathedral',
-                  description: 'End at the cathedral.',
-                },
-              },
-            },
-          }),
-        ],
-      }) as TourEntity,
-    );
+    const stopsTranslation = createTranslationEntity({
+      languageCode: 'en',
+      payload: {
+        title: 'Historic Center',
+        cancellationType: 'Free cancellation up to 24 hours before the start time.',
+        highlights: ['Roman walls', 'Gothic Quarter lanes'],
+        included: ['Guide'],
+        notIncluded: ['Food'],
+        startPoint: { label: 'Town Hall' },
+        endPoint: { label: 'Canal' },
+        itineraryStops: {
+          'stop-1': {
+            title: 'City Hall',
+            description: 'Start at the square.',
+          },
+          'stop-2': {
+            title: 'Cathedral',
+            description: 'End at the cathedral.',
+          },
+        },
+      },
+    });
+    const stopsTour = createPublicTour({
+      itineraryVariant: 'stops',
+      stops: [
+        createStopEntity({
+          stopId: 'stop-2',
+          orderIndex: 1,
+          durationMinutes: 25,
+          coordinates: { lat: 55.2, lng: 12.2 },
+          nextConnection: null,
+        }),
+        createStopEntity({
+          stopId: 'stop-1',
+          orderIndex: 0,
+          durationMinutes: 10,
+          coordinates: { lat: 55.1, lng: 12.1 },
+          nextConnection: { commuteMode: 'walk', durationMinutes: 5 },
+        }),
+      ],
+      translations: [stopsTranslation],
+    }) as TourEntity;
+    stopsTranslation.tour = stopsTour;
+    translationsRepository.findOne.mockResolvedValue(stopsTranslation);
 
     const result = await service.findOneBySlug('historic-center', 'en');
 
@@ -262,7 +261,10 @@ describe('PublicToursService', () => {
     languagesRepository.findOne.mockResolvedValue(
       createLanguageEntity({ code: 'en', isEnabled: true }),
     );
-    toursRepository.findOne.mockResolvedValue(createPublicTour() as TourEntity);
+    const translation = createTranslationEntity({ languageCode: 'en' });
+    const tour = createPublicTour({ translations: [translation] }) as TourEntity;
+    translation.tour = tour;
+    translationsRepository.findOne.mockResolvedValue(translation);
     payloadValidationService.validateOrThrow.mockImplementation(() => {
       throw new Error('invalid');
     });
@@ -278,7 +280,6 @@ function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
     id: 'tour-1',
     name: 'Historic Center Main Tour',
     sortOrder: 0,
-    slug: 'historic-center',
     coverMediaId: 'media-1',
     coverMedia: createMediaAssetEntity({ id: 'media-1', storagePath: 'cover.jpg' }),
     mediaItems: [
@@ -368,6 +369,7 @@ function createTranslationEntity(
   return {
     id: 'translation-1',
     tourId: 'tour-1',
+    slug: 'historic-center',
     languageCode: 'en',
     isReady: true,
     isPublished: true,

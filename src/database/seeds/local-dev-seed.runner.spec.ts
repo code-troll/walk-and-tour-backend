@@ -188,7 +188,6 @@ describe('LocalDevSeedRunner', () => {
     expect(toursService.create).toHaveBeenCalledWith(
       {
         name: 'Historic Center Highlights Catalog Entry',
-        slug: 'historic-center-highlights',
         tourType: 'group',
       },
       expect.objectContaining({
@@ -231,6 +230,7 @@ describe('LocalDevSeedRunner', () => {
       'tour-1',
       expect.objectContaining({
         languageCode: 'en',
+        slug: 'historic-center-highlights',
         payload: expect.objectContaining({
           cancellationType: expect.any(String),
           highlights: expect.any(Array),
@@ -253,7 +253,6 @@ describe('LocalDevSeedRunner', () => {
     expect(blogPostsService.create).toHaveBeenCalledWith(
       {
         name: 'Barcelona Historic Center Guide Article',
-        slug: 'barcelona-historic-center-guide',
         tagKeys: ['history', 'architecture', 'family-friendly'],
       },
       expect.objectContaining({
@@ -264,6 +263,7 @@ describe('LocalDevSeedRunner', () => {
       'blog-1',
       expect.objectContaining({
         languageCode: 'en',
+        slug: 'barcelona-historic-center-guide',
         title: 'Barcelona Historic Center Guide',
         htmlContent: expect.any(String),
       }),

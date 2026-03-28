@@ -746,6 +746,12 @@ export class PublicTourItineraryResponseDto {
 
 export class TourAdminTranslationResponseDto {
   @ApiProperty({
+    description: 'Public slug for this translation.',
+    example: 'historic-center',
+  })
+  slug!: string;
+
+  @ApiProperty({
     description: 'Whether the translation currently satisfies all required completeness rules.',
     example: true,
   })
@@ -804,6 +810,12 @@ export class TourAdminTranslationResponseDto {
 }
 
 export class TourAdminListTranslationResponseDto {
+  @ApiProperty({
+    description: 'Public slug for this translation.',
+    example: 'historic-center',
+  })
+  slug!: string;
+
   @ApiProperty({
     description: 'Whether the translation currently satisfies all required completeness rules.',
     example: true,
@@ -882,12 +894,6 @@ export class TourAdminListResponseDto {
     example: 0,
   })
   sortOrder!: number;
-
-  @ApiProperty({
-    description: 'Stable public slug.',
-    example: 'historic-center',
-  })
-  slug!: string;
 
   @ApiProperty({
     description: 'Tour commercial model.',
@@ -976,12 +982,6 @@ export class TourAdminResponseDto {
     example: 0,
   })
   sortOrder!: number;
-
-  @ApiProperty({
-    description: 'Stable public slug.',
-    example: 'historic-center',
-  })
-  slug!: string;
 
   @ApiPropertyOptional({
     description: 'Attached image asset UUID used as the tour cover.',
@@ -1183,6 +1183,12 @@ export class PublicTourResponseDto {
 
 export class BlogAdminTranslationResponseDto {
   @ApiProperty({
+    description: 'Public slug for this translation.',
+    example: 'barcelona-historic-center-guide',
+  })
+  slug!: string;
+
+  @ApiProperty({
     description: 'Whether the translation is published.',
     example: true,
   })
@@ -1264,12 +1270,6 @@ export class BlogAdminResponseDto {
     example: 'Barcelona Historic Center SEO Article',
   })
   name!: string;
-
-  @ApiProperty({
-    description: 'Stable public slug.',
-    example: 'barcelona-historic-center-guide',
-  })
-  slug!: string;
 
   @ApiPropertyOptional({
     description: 'Optional hero media asset UUID.',

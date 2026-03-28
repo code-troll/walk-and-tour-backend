@@ -9,7 +9,6 @@ import {
   IsObject,
   IsOptional,
   IsString,
-  Matches,
   Max,
   MaxLength,
   Min,
@@ -18,8 +17,6 @@ import {
 
 import { TOUR_TYPES } from '../../shared/domain';
 import { PriceDto, SharedPointDto, TourItineraryDto } from './create-tour.dto';
-
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export class UpdateTourDto {
   @ApiPropertyOptional({
@@ -32,18 +29,6 @@ export class UpdateTourDto {
   @MaxLength(255)
   @IsOptional()
   name?: string;
-
-  @ApiPropertyOptional({
-    description: 'Updated public slug.',
-    example: 'historic-center',
-    pattern: SLUG_PATTERN.source,
-    maxLength: 150,
-  })
-  @IsString()
-  @Matches(SLUG_PATTERN)
-  @MaxLength(150)
-  @IsOptional()
-  slug?: string;
 
   @ApiPropertyOptional({
     description: 'Updated shared JSON Schema for localized payload validation.',

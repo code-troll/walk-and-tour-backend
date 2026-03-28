@@ -16,7 +16,6 @@ import {
 } from 'class-validator';
 
 import { TOUR_COMMUTE_MODES, TOUR_TYPES } from '../../shared/domain';
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const STOP_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export class TourCoordinatesDto {
@@ -178,17 +177,6 @@ export class CreateTourDto {
   @IsNotEmpty()
   @MaxLength(255)
   name!: string;
-
-  @ApiProperty({
-    description: 'Stable public slug for the tour.',
-    example: 'historic-center',
-    pattern: SLUG_PATTERN.source,
-    maxLength: 150,
-  })
-  @IsString()
-  @Matches(SLUG_PATTERN)
-  @MaxLength(150)
-  slug!: string;
 
   @ApiProperty({
     description: 'Commercial model of the tour. Required during minimal creation.',

@@ -65,7 +65,7 @@ export class PublicToursController {
   })
   @ApiParam({
     name: 'slug',
-    description: 'Public tour slug.',
+    description: 'Public tour translation slug.',
     example: 'historic-center',
   })
   @ApiQuery({
@@ -94,7 +94,7 @@ export class PublicToursController {
   })
   @ApiParam({
     name: 'slug',
-    description: 'Public tour slug.',
+    description: 'Public tour translation slug.',
     example: 'historic-center',
   })
   @ApiParam({

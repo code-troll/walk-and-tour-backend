@@ -137,7 +137,6 @@ const STOPS_TOUR_SCHEMA = {
 const SEEDED_TOURS = [
   {
     name: 'Historic Center Highlights Catalog Entry',
-    slug: 'historic-center-highlights',
     coverMediaRef: {
       ref: 'tours/historic-center-highlights/cover.jpg',
       altText: localizedAltText({
@@ -170,6 +169,7 @@ const SEEDED_TOURS = [
     translations: [
       {
         languageCode: 'en',
+        slug: 'historic-center-highlights',
         isPublished: true,
         bookingReferenceId: 'historic-center-en',
         payload: {
@@ -190,6 +190,7 @@ const SEEDED_TOURS = [
       },
       {
         languageCode: 'es',
+        slug: 'lo-mejor-del-centro-historico',
         isPublished: true,
         bookingReferenceId: 'historic-center-es',
         payload: {
@@ -210,6 +211,7 @@ const SEEDED_TOURS = [
       },
       {
         languageCode: 'it',
+        slug: 'il-meglio-del-centro-storico',
         isPublished: true,
         bookingReferenceId: 'historic-center-it',
         payload: {
@@ -232,7 +234,6 @@ const SEEDED_TOURS = [
   },
   {
     name: 'Gaudi and Modernisme Route Catalog Entry',
-    slug: 'gaudi-and-modernisme-route',
     coverMediaRef: {
       ref: 'tours/gaudi-and-modernisme-route/cover.jpg',
       altText: localizedAltText({
@@ -275,6 +276,7 @@ const SEEDED_TOURS = [
     translations: [
       {
         languageCode: 'en',
+        slug: 'gaudi-and-modernisme-route',
         isPublished: true,
         bookingReferenceId: 'gaudi-route-en',
         payload: {
@@ -307,6 +309,7 @@ const SEEDED_TOURS = [
       },
       {
         languageCode: 'es',
+        slug: 'ruta-gaudi-y-modernismo',
         isPublished: false,
         bookingReferenceId: 'gaudi-route-es',
         payload: {
@@ -325,6 +328,7 @@ const SEEDED_TOURS = [
       },
       {
         languageCode: 'it',
+        slug: 'percorso-gaudi-e-modernismo',
         isPublished: true,
         bookingReferenceId: 'gaudi-route-it',
         payload: {
@@ -359,7 +363,6 @@ const SEEDED_TOURS = [
   },
   {
     name: 'Born After Dark Draft Tour',
-    slug: 'born-after-dark',
     coverMediaRef: { ref: 'tours/born-after-dark/cover.jpg' },
     galleryMediaRefs: [{ ref: 'tours/born-after-dark/gallery-1.jpg' }],
     contentSchema: DESCRIPTION_TOUR_SCHEMA,
@@ -375,6 +378,7 @@ const SEEDED_TOURS = [
     translations: [
       {
         languageCode: 'en',
+        slug: 'born-after-dark',
         isPublished: true,
         bookingReferenceId: 'born-after-dark-en',
         payload: {
@@ -397,7 +401,6 @@ const SEEDED_TOURS = [
   },
   {
     name: 'Barceloneta Sunset Tip Tour Catalog Entry',
-    slug: 'barceloneta-sunset-tip-tour',
     coverMediaRef: { ref: 'tours/barceloneta-sunset-tip-tour/cover.jpg' },
     galleryMediaRefs: [{ ref: 'tours/barceloneta-sunset-tip-tour/gallery-1.jpg' }],
     contentSchema: DESCRIPTION_TOUR_SCHEMA,
@@ -412,6 +415,7 @@ const SEEDED_TOURS = [
     translations: [
       {
         languageCode: 'en',
+        slug: 'barceloneta-sunset-tip-tour',
         isPublished: false,
         payload: {
           title: 'Barceloneta Sunset Tip Tour',
@@ -426,12 +430,12 @@ const SEEDED_TOURS = [
 const SEEDED_BLOG_POSTS = [
   {
     name: 'Barcelona Historic Center Guide Article',
-    slug: 'barcelona-historic-center-guide',
     heroMediaRef: 'blog/barcelona-historic-center-guide/hero.jpg',
     tagKeys: ['history', 'architecture', 'family-friendly'],
     translations: [
       {
         languageCode: 'en',
+        slug: 'barcelona-historic-center-guide',
         isPublished: true,
         title: 'Barcelona Historic Center Guide',
         summary: 'A practical guide to moving through the old city.',
@@ -443,6 +447,7 @@ const SEEDED_BLOG_POSTS = [
       },
       {
         languageCode: 'es',
+        slug: 'guia-del-centro-historico-de-barcelona',
         isPublished: true,
         title: 'Guia del Centro Historico de Barcelona',
         summary: 'Una guia practica para recorrer el casco antiguo.',
@@ -454,6 +459,7 @@ const SEEDED_BLOG_POSTS = [
       },
       {
         languageCode: 'it',
+        slug: 'guida-al-centro-storico-di-barcellona',
         isPublished: true,
         title: 'Guida al Centro Storico di Barcellona',
         summary: 'Una guida pratica per attraversare la citta vecchia.',
@@ -467,12 +473,12 @@ const SEEDED_BLOG_POSTS = [
   },
   {
     name: 'Best Tapas After Your Tour Article',
-    slug: 'best-tapas-after-your-tour',
     heroMediaRef: 'blog/best-tapas-after-your-tour/hero.jpg',
     tagKeys: ['food', 'local-life'],
     translations: [
       {
         languageCode: 'en',
+        slug: 'best-tapas-after-your-tour',
         isPublished: true,
         title: 'Best Tapas After Your Tour',
         summary: 'Three neighborhoods worth staying in after the walking route ends.',
@@ -484,6 +490,7 @@ const SEEDED_BLOG_POSTS = [
       },
       {
         languageCode: 'es',
+        slug: 'las-mejores-tapas-despues-del-tour',
         isPublished: false,
         title: 'Las Mejores Tapas Despues del Tour',
         summary: 'Barrios recomendados para seguir la tarde.',
@@ -497,12 +504,12 @@ const SEEDED_BLOG_POSTS = [
   },
   {
     name: 'Behind the Scenes Tour Planning Article',
-    slug: 'behind-the-scenes-tour-planning',
     heroMediaRef: 'blog/behind-the-scenes-tour-planning/hero.jpg',
     tagKeys: ['local-life'],
     translations: [
       {
         languageCode: 'en',
+        slug: 'behind-the-scenes-tour-planning',
         isPublished: false,
         title: 'Behind the Scenes of Tour Planning',
         summary: 'An internal editorial draft for admin previews.',
@@ -697,7 +704,6 @@ export class LocalDevSeedRunner {
       const created = await this.deps.toursService.create(
         {
           name: tour.name,
-          slug: tour.slug,
           tourType: tour.tourType,
         },
         actor,
@@ -705,7 +711,6 @@ export class LocalDevSeedRunner {
 
       const {
         name: _name,
-        slug: _slug,
         tourType: _tourType,
         translations,
         coverMediaRef,
@@ -715,7 +720,7 @@ export class LocalDevSeedRunner {
 
       const seededMedia = await this.seedTourMediaAssets(
         actor.id,
-        tour.slug,
+        tour.name,
         coverMediaRef ?? null,
         galleryMediaRefs ?? [],
       );
@@ -747,6 +752,7 @@ export class LocalDevSeedRunner {
           created.id,
           {
             languageCode: translation.languageCode,
+            slug: translation.slug,
             bookingReferenceId:
               'bookingReferenceId' in translation
                 ? translation.bookingReferenceId
@@ -782,6 +788,7 @@ export class LocalDevSeedRunner {
           created.id,
           {
             languageCode: translation.languageCode,
+            slug: translation.slug,
             title: translation.title,
             summary: translation.summary,
             htmlContent: translation.htmlContent,

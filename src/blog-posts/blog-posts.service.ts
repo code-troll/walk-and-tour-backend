@@ -24,7 +24,6 @@ import { BlogPostEntity } from './blog-post.entity';
 
 interface BlogSharedInput {
   name: string;
-  slug: string;
   tagKeys: string[];
 }
 
@@ -64,20 +63,11 @@ export class BlogPostsService {
   }
 
   async create(dto: CreateBlogPostDto, actor: AuthenticatedAdmin): Promise<unknown> {
-    const existing = await this.blogPostsRepository.findOne({
-      where: { slug: dto.slug },
-    });
-
-    if (existing) {
-      throw new ConflictException(`Blog post slug "${dto.slug}" already exists.`);
-    }
-
     const aggregate = this.buildSharedAggregate(dto);
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);
 
     const blogPost = this.blogPostsRepository.create({
       name: aggregate.name,
-      slug: aggregate.slug,
       heroMediaId: null,
       tags,
       createdBy: actor.id,
@@ -97,21 +87,10 @@ export class BlogPostsService {
   ): Promise<unknown> {
     const existing = await this.findEntityOrThrow(id);
 
-    if (dto.slug && dto.slug !== existing.slug) {
-      const slugCollision = await this.blogPostsRepository.findOne({
-        where: { slug: dto.slug },
-      });
-
-      if (slugCollision) {
-        throw new ConflictException(`Blog post slug "${dto.slug}" already exists.`);
-      }
-    }
-
     const aggregate = this.buildSharedAggregate(dto, existing);
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);
 
     existing.name = aggregate.name;
-    existing.slug = aggregate.slug;
     existing.tags = tags;
     existing.updatedBy = actor.id;
 
@@ -138,9 +117,12 @@ export class BlogPostsService {
       );
     }
 
+    await this.assertSlugAvailable(dto.slug);
+
     const translation = this.translationsRepository.create({
       blogPostId: id,
       languageCode: dto.languageCode,
+      slug: dto.slug,
       isPublished: false,
       title: dto.title ?? '',
       summary: dto.summary ?? null,
@@ -166,6 +148,11 @@ export class BlogPostsService {
     const blogPost = await this.findEntityOrThrow(id);
     await this.assertLanguageExists(languageCode);
     const translation = this.findTranslationOrThrow(blogPost, languageCode);
+
+    if (dto.slug && dto.slug !== translation.slug) {
+      await this.assertSlugAvailable(dto.slug);
+      translation.slug = dto.slug;
+    }
 
     if ('title' in dto) {
       translation.title = dto.title ?? '';
@@ -298,19 +285,24 @@ export class BlogPostsService {
     return this.findOne(id);
   }
 
+  private async assertSlugAvailable(slug: string): Promise<void> {
+    const existing = await this.translationsRepository.findOne({
+      where: { slug },
+    });
+
+    if (existing) {
+      throw new ConflictException(`Blog post translation slug "${slug}" already exists.`);
+    }
+  }
+
   private buildSharedAggregate(
     source: CreateBlogPostDto | UpdateBlogPostDto,
     existing?: BlogPostEntity,
   ): BlogSharedInput {
     const aggregate: BlogSharedInput = {
       name: source.name ?? existing?.name ?? '',
-      slug: source.slug ?? existing?.slug ?? '',
       tagKeys: source.tagKeys ?? existing?.tags.map((tag) => tag.key) ?? [],
     };
-
-    if (!aggregate.slug) {
-      throw new BadRequestException('Blog post slug is required.');
-    }
 
     if (!aggregate.name || aggregate.name.trim().length === 0) {
       throw new BadRequestException('Blog post name is required.');
@@ -451,6 +443,7 @@ export class BlogPostsService {
       blogPost.translations.map((translation) => [
         translation.languageCode,
         {
+          slug: translation.slug,
           isPublished: translation.isPublished,
           viewCount: translation.viewCount,
           title: translation.title,
@@ -466,7 +459,6 @@ export class BlogPostsService {
     return {
       id: blogPost.id,
       name: blogPost.name,
-      slug: blogPost.slug,
       heroMediaId: blogPost.heroMediaId,
       heroMedia: this.toMediaResponse(blogPost, blogPost.heroMedia),
       tagKeys: blogPost.tags.map((tag) => tag.key),

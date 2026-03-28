@@ -43,7 +43,6 @@ const TOUR_SORT_ORDER_CONSTRAINT = 'UQ_tours_sort_order';
 
 interface TourSharedInput {
   name: string;
-  slug: string;
   contentSchema: Record<string, unknown> | null;
   price: { amount: number; currency: string } | null;
   rating: number | null;
@@ -123,17 +122,8 @@ export class ToursService {
       throw new BadRequestException(`Tour type "${dto.tourType}" is invalid.`);
     }
 
-    const existing = await this.toursRepository.findOne({
-      where: { slug: dto.slug },
-    });
-
-    if (existing) {
-      throw new ConflictException(`Tour slug "${dto.slug}" already exists.`);
-    }
-
     const tour = this.toursRepository.create({
       name: dto.name.trim(),
-      slug: dto.slug,
       sortOrder: dto.sortOrder ?? 0,
       coverMediaId: null,
       contentSchema: null,
@@ -163,21 +153,10 @@ export class ToursService {
   ): Promise<unknown> {
     const existing = await this.findEntityOrThrow(id);
 
-    if (dto.slug && dto.slug !== existing.slug) {
-      const slugCollision = await this.toursRepository.findOne({
-        where: { slug: dto.slug },
-      });
-
-      if (slugCollision) {
-        throw new ConflictException(`Tour slug "${dto.slug}" already exists.`);
-      }
-    }
-
     const aggregate = await this.buildSharedAggregate(dto, existing);
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);
 
     existing.name = aggregate.name;
-    existing.slug = aggregate.slug;
     existing.contentSchema = aggregate.contentSchema;
     existing.priceAmount = aggregate.price ? aggregate.price.amount.toFixed(2) : null;
     existing.priceCurrency = aggregate.price?.currency ?? null;
@@ -225,10 +204,12 @@ export class ToursService {
     }
 
     this.validateDraftPayloadAgainstSchema(tour, dto.payload);
+    await this.assertSlugAvailable(dto.slug);
 
     const translation = this.translationsRepository.create({
       tourId: id,
       languageCode: dto.languageCode,
+      slug: dto.slug,
       bookingReferenceId: dto.bookingReferenceId ?? null,
       payload: dto.payload,
       isReady: this.calculateTranslationReadiness(tour, dto.payload),
@@ -253,6 +234,11 @@ export class ToursService {
 
     const nextPayload = dto.payload ?? translation.payload;
     this.validateDraftPayloadAgainstSchema(tour, nextPayload);
+
+    if (dto.slug && dto.slug !== translation.slug) {
+      await this.assertSlugAvailable(dto.slug);
+      translation.slug = dto.slug;
+    }
 
     translation.payload = nextPayload;
 
@@ -486,7 +472,6 @@ export class ToursService {
 
     const aggregate: TourSharedInput = {
       name: source.name ?? existing?.name ?? '',
-      slug: source.slug ?? existing?.slug ?? '',
       contentSchema,
       price:
         source.price === null
@@ -521,10 +506,6 @@ export class ToursService {
   }
 
   private validateSharedRules(aggregate: TourSharedInput): void {
-    if (!aggregate.slug) {
-      throw new BadRequestException('Tour slug is required.');
-    }
-
     if (!aggregate.name || aggregate.name.trim().length === 0) {
       throw new BadRequestException('Tour name is required.');
     }
@@ -570,6 +551,16 @@ export class ToursService {
 
     if (aggregate.itinerary.variant === 'description' && aggregate.itinerary.stops?.length) {
       throw new BadRequestException('Descriptive itineraries cannot include shared stops.');
+    }
+  }
+
+  private async assertSlugAvailable(slug: string): Promise<void> {
+    const existing = await this.translationsRepository.findOne({
+      where: { slug },
+    });
+
+    if (existing) {
+      throw new ConflictException(`Tour translation slug "${slug}" already exists.`);
     }
   }
 
@@ -818,7 +809,7 @@ export class ToursService {
       savedTours.find(
         (savedTour) =>
           savedTour.id === focusTour.id ||
-          (focusTour.id === undefined && savedTour.slug === focusTour.slug),
+          (focusTour.id === undefined && savedTour.name === focusTour.name),
       ) ?? focusTour
     );
   }
@@ -1016,6 +1007,7 @@ export class ToursService {
       tour.translations.map((translation) => [
         translation.languageCode,
         {
+          slug: translation.slug,
           isReady: translation.isReady,
           isPublished: translation.isPublished,
           bookingReferenceId: translation.bookingReferenceId,
@@ -1058,7 +1050,6 @@ export class ToursService {
       id: tour.id,
       name: tour.name,
       sortOrder: tour.sortOrder,
-      slug: tour.slug,
       coverMediaId: tour.coverMediaId,
       mediaItems: orderedMedia.map((item) => this.toAdminMediaItemResponse(tour, item)),
       contentSchema: tour.contentSchema,
@@ -1111,6 +1102,7 @@ export class ToursService {
       tour.translations.map((translation) => [
         translation.languageCode,
         {
+          slug: translation.slug,
           isReady: translation.isReady,
           isPublished: translation.isPublished,
         },
@@ -1121,7 +1113,6 @@ export class ToursService {
       id: tour.id,
       name: tour.name,
       sortOrder: tour.sortOrder,
-      slug: tour.slug,
       tourType: tour.tourType,
       translations,
       audit: {

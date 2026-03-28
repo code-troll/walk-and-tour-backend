@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsObject, IsOptional, IsString, Matches } from 'class-validator';
+import { IsObject, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 const LOCALE_CODE_PATTERN = /^[a-z]{2}(?:-[A-Z]{2})?$/;
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export class CreateTourTranslationDto {
   @ApiProperty({
@@ -12,6 +13,17 @@ export class CreateTourTranslationDto {
   @IsString()
   @Matches(LOCALE_CODE_PATTERN)
   languageCode!: string;
+
+  @ApiProperty({
+    description: 'Public slug for this translation.',
+    example: 'historic-center',
+    pattern: SLUG_PATTERN.source,
+    maxLength: 150,
+  })
+  @IsString()
+  @Matches(SLUG_PATTERN)
+  @MaxLength(150)
+  slug!: string;
 
   @ApiPropertyOptional({
     description: 'Optional external booking reference for this locale. Set `null` to clear it on update.',
@@ -42,6 +54,18 @@ export class CreateTourTranslationDto {
 }
 
 export class UpdateTourTranslationDto {
+  @ApiPropertyOptional({
+    description: 'Updated public slug.',
+    example: 'historic-center',
+    pattern: SLUG_PATTERN.source,
+    maxLength: 150,
+  })
+  @IsString()
+  @Matches(SLUG_PATTERN)
+  @MaxLength(150)
+  @IsOptional()
+  slug?: string;
+
   @ApiPropertyOptional({
     description: 'Updated external booking reference for this locale. Set `null` to clear it.',
     example: 'booking-ref-123',
