@@ -71,6 +71,9 @@ export class TourEntity {
   @Column({ name: 'itinerary_variant', type: 'varchar', length: 20, nullable: true })
   itineraryVariant!: string | null;
 
+  @Column({ name: 'card_tag_key', type: 'varchar', length: 100, nullable: true })
+  cardTagKey!: string | null;
+
   @ManyToMany(() => TagEntity)
   @JoinTable({
     name: 'tour_tags',
