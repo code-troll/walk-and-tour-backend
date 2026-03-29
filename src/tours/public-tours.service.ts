@@ -245,6 +245,7 @@ export class PublicToursService {
         shared: tour.endPoint,
         localized: this.getObjectField(payload, 'endPoint'),
       },
+      cardTagKey: tour.cardTagKey,
       tags: tour.tags.map((tag: TagEntity) => ({
         key: tag.key,
         label: tag.labels[locale] ?? null,

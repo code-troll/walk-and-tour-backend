@@ -168,6 +168,9 @@ export class ToursService {
     existing.endPoint = aggregate.endPoint;
     existing.itineraryVariant = aggregate.itinerary?.variant ?? null;
     existing.tags = tags;
+    if ('cardTagKey' in dto) {
+      existing.cardTagKey = dto.cardTagKey ?? null;
+    }
     existing.updatedBy = actor.id;
     existing.sortOrder = dto.sortOrder ?? existing.sortOrder;
 
@@ -1088,6 +1091,7 @@ export class ToursService {
                   : [],
             }
           : null,
+      cardTagKey: tour.cardTagKey,
       tagKeys: tour.tags.map((tag) => tag.key),
       tags: tour.tags.map((tag) => ({
         key: tag.key,

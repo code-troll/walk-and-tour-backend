@@ -1059,6 +1059,13 @@ export class TourAdminResponseDto {
   })
   itinerary!: TourAdminItineraryResponseDto | null;
 
+  @ApiPropertyOptional({
+    description: 'Tag key shown on the public tour card. When null, the first tag is used.',
+    example: 'history',
+    nullable: true,
+  })
+  cardTagKey!: string | null;
+
   @ApiProperty({
     description: 'Ordered tag keys assigned to the tour.',
     type: [String],
@@ -1160,6 +1167,13 @@ export class PublicTourResponseDto {
     type: () => PublicPointResponseDto,
   })
   endPoint!: PublicPointResponseDto;
+
+  @ApiPropertyOptional({
+    description: 'Tag key selected for the public tour card. When null, the first tag is used.',
+    example: 'history',
+    nullable: true,
+  })
+  cardTagKey!: string | null;
 
   @ApiProperty({
     description: 'Localized tag labels for the requested locale.',

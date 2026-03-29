@@ -130,6 +130,15 @@ export class UpdateTourDto {
   tagKeys?: string[];
 
   @ApiPropertyOptional({
+    description: 'Tag key to display on the public tour card. Set `null` to clear (first tag is used).',
+    example: 'history',
+    nullable: true,
+  })
+  @IsString()
+  @IsOptional()
+  cardTagKey?: string | null;
+
+  @ApiPropertyOptional({
     description:
       'Updated manual display position used by admin and public tour lists. Values beyond the current range move the tour to the end.',
     example: 2,
