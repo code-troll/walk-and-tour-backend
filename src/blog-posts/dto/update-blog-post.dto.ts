@@ -25,4 +25,13 @@ export class UpdateBlogPostDto {
   @IsOptional()
   tagKeys?: string[];
 
+  @ApiPropertyOptional({
+    description: 'Tag key to display on the public blog post card. Set `null` to clear (first tag is used).',
+    example: 'history',
+    nullable: true,
+  })
+  @IsString()
+  @IsOptional()
+  cardTagKey?: string | null;
+
 }

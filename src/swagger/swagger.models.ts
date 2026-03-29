@@ -1313,6 +1313,13 @@ export class BlogAdminResponseDto {
   })
   heroMedia!: MediaAssetResponseDto | null;
 
+  @ApiPropertyOptional({
+    description: 'Tag key shown on the public blog post card. When null, the first tag is used.',
+    example: 'history',
+    nullable: true,
+  })
+  cardTagKey!: string | null;
+
   @ApiProperty({
     description: 'Ordered tag keys assigned to the post.',
     type: [String],
@@ -1415,6 +1422,13 @@ export class PublicBlogResponseDto {
     nullable: true,
   })
   heroMedia!: MediaAssetResponseDto | null;
+
+  @ApiPropertyOptional({
+    description: 'Tag key selected for the public blog post card. When null, the first tag is used.',
+    example: 'history',
+    nullable: true,
+  })
+  cardTagKey!: string | null;
 
   @ApiProperty({
     description: 'Localized tag labels for the requested locale.',

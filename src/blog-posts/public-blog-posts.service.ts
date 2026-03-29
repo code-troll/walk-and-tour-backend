@@ -175,6 +175,7 @@ export class PublicBlogPostsService {
       id: blogPost.id,
       slug: translation.slug,
       heroMedia: this.toMediaResponse(translation.slug, blogPost.heroMedia),
+      cardTagKey: blogPost.cardTagKey,
       tags: blogPost.tags.map((tag) => ({
         key: tag.key,
         label: tag.labels[locale] ?? null,
