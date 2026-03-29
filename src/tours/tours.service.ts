@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -79,6 +80,8 @@ interface TourListFilters {
 
 @Injectable()
 export class ToursService {
+  private readonly logger = new Logger(ToursService.name);
+
   constructor(
     @InjectRepository(TourEntity)
     private readonly toursRepository: Repository<TourEntity>,
@@ -1196,7 +1199,10 @@ export class ToursService {
       }
 
       return true;
-    } catch {
+    } catch (error) {
+      this.logger.warn(
+        `Tour "${tour.id}" translation "${translation.languageCode}" schema validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return false;
     }
   }
