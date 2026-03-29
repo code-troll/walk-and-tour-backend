@@ -1168,6 +1168,20 @@ export class PublicTourResponseDto {
   tags!: PublicTagResponseDto[];
 
   @ApiProperty({
+    description: 'All published translations available for this tour, with their locale and slug.',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        locale: { type: 'string', example: 'en' },
+        slug: { type: 'string', example: 'en-historic-center' },
+      },
+      required: ['locale', 'slug'],
+    },
+  })
+  availableTranslations!: { locale: string; slug: string }[];
+
+  @ApiProperty({
     description: 'Published localized translation payload selected for the requested locale.',
     type: () => PublicTourTranslationResponseDto,
   })

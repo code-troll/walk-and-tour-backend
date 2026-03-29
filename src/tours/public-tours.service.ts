@@ -70,14 +70,16 @@ export class PublicToursService {
       throw new NotFoundException(`Tour "${slug}" was not found.`);
     }
 
-    if (translation.languageCode !== locale) {
-      throw new NotFoundException(
-        `Tour "${slug}" is not publicly available for locale "${locale}".`,
-      );
-    }
+    // Use the requested locale if the slug belongs to it, otherwise
+    // fall back to the locale that owns the slug so the frontend
+    // receives the tour data with availableTranslations for the dialog.
+    const effectiveLocale =
+      translation.languageCode === locale
+        ? locale
+        : translation.languageCode;
 
     const tour = translation.tour;
-    const response = this.toPublicResponse(tour, locale);
+    const response = this.toPublicResponse(tour, effectiveLocale);
 
     if (!response) {
       throw new NotFoundException(
@@ -247,6 +249,17 @@ export class PublicToursService {
         key: tag.key,
         label: tag.labels[locale] ?? null,
       })),
+      availableTranslations: tour.translations
+        .filter(
+          (t) =>
+            t.isReady &&
+            t.isPublished &&
+            !this.getTranslationInvalidReason(tour, t),
+        )
+        .map((t) => ({
+          locale: t.languageCode,
+          slug: t.slug,
+        })),
       translation: {
         locale,
         bookingReferenceId: translation.bookingReferenceId,
