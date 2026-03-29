@@ -271,6 +271,13 @@ export class ToursService {
       translation.bookingReferenceId = dto.bookingReferenceId ?? null;
     }
 
+    const sharedBlockers = this.getSharedPublicationBlockers(tour);
+    if (sharedBlockers.length > 0) {
+      throw new BadRequestException(
+        `Tour cannot be published: ${sharedBlockers.join(' ')}`,
+      );
+    }
+
     translation.isReady = this.calculateTranslationReadiness(tour, translation.payload);
 
     if (!translation.isReady) {
@@ -1190,32 +1197,46 @@ export class ToursService {
     }
   }
 
-  private isSharedTourPubliclyValid(tour: TourEntity): boolean {
+  private getSharedPublicationBlockers(tour: TourEntity): string[] {
+    const blockers: string[] = [];
+
     if (!tour.contentSchema) {
-      return false;
+      blockers.push('Content schema is not configured.');
     }
 
-    if (tour.rating === null || tour.reviewCount === null || tour.durationMinutes === null) {
-      return false;
+    if (!tour.itineraryVariant) {
+      blockers.push('Itinerary variant is not configured.');
     }
 
-    if (!tour.startPoint || !tour.endPoint || !tour.itineraryVariant) {
-      return false;
+    if (tour.rating === null) {
+      blockers.push('Rating is not set.');
     }
 
-    if (tour.tourType !== 'tip_based' && (!tour.priceAmount || !tour.priceCurrency)) {
-      return false;
+    if (tour.reviewCount === null) {
+      blockers.push('Review count is not set.');
+    }
+
+    if (tour.durationMinutes === null) {
+      blockers.push('Duration is not set.');
+    }
+
+    if (tour.tourType !== 'company' && tour.tourType !== 'tip_based' && (!tour.priceAmount || !tour.priceCurrency)) {
+      blockers.push('Price and currency are required for this tour type.');
     }
 
     if (tour.tourType === 'tip_based' && (tour.priceAmount || tour.priceCurrency)) {
-      return false;
+      blockers.push('Tip-based tours must not have a fixed price.');
     }
 
     if (tour.itineraryVariant === 'stops' && tour.stops.length === 0) {
-      return false;
+      blockers.push('Stop-based itinerary requires at least one stop.');
     }
 
-    return true;
+    return blockers;
+  }
+
+  private isSharedTourPubliclyValid(tour: TourEntity): boolean {
+    return this.getSharedPublicationBlockers(tour).length === 0;
   }
 
   private getStringListField(
