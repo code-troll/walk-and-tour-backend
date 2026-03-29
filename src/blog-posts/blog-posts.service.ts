@@ -92,6 +92,9 @@ export class BlogPostsService {
 
     existing.name = aggregate.name;
     existing.tags = tags;
+    if ('cardTagKey' in dto) {
+      existing.cardTagKey = dto.cardTagKey ?? null;
+    }
     existing.updatedBy = actor.id;
 
     await this.blogPostsRepository.save(existing);
@@ -461,6 +464,7 @@ export class BlogPostsService {
       name: blogPost.name,
       heroMediaId: blogPost.heroMediaId,
       heroMedia: this.toMediaResponse(blogPost, blogPost.heroMedia),
+      cardTagKey: blogPost.cardTagKey,
       tagKeys: blogPost.tags.map((tag) => tag.key),
       tags: blogPost.tags.map((tag) => ({
         key: tag.key,

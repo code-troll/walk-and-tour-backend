@@ -30,6 +30,9 @@ export class BlogPostEntity {
   @JoinColumn({ name: 'hero_media_id' })
   heroMedia!: MediaAssetEntity | null;
 
+  @Column({ name: 'card_tag_key', type: 'varchar', length: 100, nullable: true })
+  cardTagKey!: string | null;
+
   @ManyToMany(() => TagEntity)
   @JoinTable({
     name: 'blog_post_tags',
