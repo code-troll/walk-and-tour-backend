@@ -9,6 +9,7 @@ describe('LocalFilesystemStorageService', () => {
     const root = await mkdtemp(join(tmpdir(), 'walk-and-tour-storage-'));
     const service = new LocalFilesystemStorageService({
       appBaseUrl: 'https://backend.example.com',
+      publicSiteBaseUrl: 'https://walkandtour.dk',
       emailProvider: 'console',
       emailFrom: 'Walk and Tour <no-reply@example.com>',
       storageDriver: 'local',

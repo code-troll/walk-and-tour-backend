@@ -11,6 +11,7 @@ describe('RailwayS3StorageService', () => {
     const service = new RailwayS3StorageService(
       {
         appBaseUrl: 'https://backend.example.com',
+        publicSiteBaseUrl: 'https://walkandtour.dk',
         emailProvider: 'console',
         emailFrom: 'Walk and Tour <no-reply@example.com>',
         storageDriver: 'railway',
@@ -55,6 +56,7 @@ describe('RailwayS3StorageService', () => {
   it('builds path-style urls when configured', () => {
     const service = new RailwayS3StorageService({
       appBaseUrl: 'https://backend.example.com',
+      publicSiteBaseUrl: 'https://walkandtour.dk',
       emailProvider: 'console',
       emailFrom: 'Walk and Tour <no-reply@example.com>',
       storageDriver: 'railway',
@@ -76,6 +78,7 @@ describe('RailwayS3StorageService', () => {
   it('fails when Railway storage configuration is missing', async () => {
     const service = new RailwayS3StorageService({
       appBaseUrl: 'https://backend.example.com',
+      publicSiteBaseUrl: 'https://walkandtour.dk',
       emailProvider: 'console',
       emailFrom: 'Walk and Tour <no-reply@example.com>',
       storageDriver: 'railway',
