@@ -5,9 +5,22 @@ export interface SendNewsletterConfirmationEmailInput {
   preferredLocale?: string | null;
 }
 
+export interface SendProposalLinkEmailInput {
+  recipientEmail: string;
+  recipientName: string | null;
+  proposalUrl: string;
+  firstVersionTitle: string;
+  language: string;
+  publicBaseUrl: string;
+}
+
 export interface EmailProvider {
   sendNewsletterConfirmation(
     input: SendNewsletterConfirmationEmailInput,
+  ): Promise<void>;
+
+  sendProposalLink(
+    input: SendProposalLinkEmailInput,
   ): Promise<void>;
 }
 

@@ -4,6 +4,7 @@ import { ProviderConfig } from '../../shared/config/provider.config';
 import {
   EmailProvider,
   SendNewsletterConfirmationEmailInput,
+  SendProposalLinkEmailInput,
 } from './email-provider.interface';
 
 @Injectable()
@@ -24,6 +25,23 @@ export class ConsoleEmailProvider implements EmailProvider {
         confirmationUrl: input.confirmationUrl,
         unsubscribeUrl: input.unsubscribeUrl,
         preferredLocale: input.preferredLocale ?? null,
+      }),
+    );
+  }
+
+  async sendProposalLink(
+    input: SendProposalLinkEmailInput,
+  ): Promise<void> {
+    this.logger.log(
+      JSON.stringify({
+        provider: 'console',
+        from: this.config.emailFrom,
+        to: input.recipientEmail,
+        subject: `Your tour proposal: ${input.firstVersionTitle}`,
+        recipientName: input.recipientName,
+        proposalUrl: input.proposalUrl,
+        language: input.language,
+        publicBaseUrl: input.publicBaseUrl,
       }),
     );
   }
