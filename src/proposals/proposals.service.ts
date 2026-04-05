@@ -232,11 +232,14 @@ export class ProposalsService {
     await this.versionsRepository.remove(version);
 
     const remainingCount = await this.versionsRepository.count({ where: { proposalId } });
+    console.log(remainingCount, proposal.publicationStatus);
     if (remainingCount === 0 && proposal.publicationStatus === 'published') {
-      await this.proposalsRepository.update(
-        { id: proposalId },
-        { publicationStatus: 'unpublished', updatedBy: actor.id } as any,
-      );
+      await this.proposalsRepository
+        .createQueryBuilder()
+        .update(ProposalEntity)
+        .set({ publicationStatus: 'unpublished', updatedBy: actor.id })
+        .where('id = :id', { id: proposalId })
+        .execute();
     } else {
       await this.touchProposal(proposal.id, actor.id);
     }

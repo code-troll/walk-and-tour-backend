@@ -6,13 +6,26 @@ describe('ProposalsService.removeVersion auto-unpublish', () => {
   let service: ProposalsService;
   let mockProposalsRepo: any;
   let mockVersionsRepo: any;
+  let mockQueryBuilderExecute: jest.Mock;
+  let mockQueryBuilderSet: jest.Mock;
 
   const actor = { id: 'admin-1', email: 'admin@test.com', roleName: 'super_admin' as const, status: 'active' as const, auth0UserId: 'auth0|123' };
 
   beforeEach(() => {
+    mockQueryBuilderExecute = jest.fn().mockResolvedValue(undefined);
+    mockQueryBuilderSet = jest.fn();
+
+    const mockQueryBuilder = {
+      update: jest.fn().mockReturnThis(),
+      set: (...args: unknown[]) => { mockQueryBuilderSet(...args); return mockQueryBuilder; },
+      where: jest.fn().mockReturnThis(),
+      execute: mockQueryBuilderExecute,
+    };
+
     mockProposalsRepo = {
       findOne: jest.fn(),
       update: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
     };
     mockVersionsRepo = {
       remove: jest.fn(),
@@ -22,10 +35,10 @@ describe('ProposalsService.removeVersion auto-unpublish', () => {
     service = new ProposalsService(
       mockProposalsRepo,
       mockVersionsRepo,
-      {} as any, // proposalMediaRepository
-      {} as any, // mediaAssetsRepository
-      {} as any, // storageService
-      {} as any, // emailProvider
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
     );
   });
 
@@ -54,26 +67,28 @@ describe('ProposalsService.removeVersion auto-unpublish', () => {
     const proposal = buildProposal({ publicationStatus: 'published' });
     mockProposalsRepo.findOne.mockResolvedValue(proposal);
     mockVersionsRepo.remove.mockResolvedValue(undefined);
-    mockVersionsRepo.count.mockResolvedValue(0); // no versions remain after delete
+    mockVersionsRepo.count.mockResolvedValue(0);
 
     await service.removeVersion('proposal-1', 'version-1', actor);
 
     expect(mockVersionsRepo.remove).toHaveBeenCalledWith(proposal.versions[0]);
     expect(mockVersionsRepo.count).toHaveBeenCalledWith({ where: { proposalId: 'proposal-1' } });
-    expect(mockProposalsRepo.update).toHaveBeenCalledWith(
-      { id: 'proposal-1' },
-      expect.objectContaining({ publicationStatus: 'unpublished', updatedBy: 'admin-1' }),
-    );
+    expect(mockQueryBuilderSet).toHaveBeenCalledWith({
+      publicationStatus: 'unpublished',
+      updatedBy: 'admin-1',
+    });
+    expect(mockQueryBuilderExecute).toHaveBeenCalled();
   });
 
   it('does not change publication status when versions remain', async () => {
     const proposal = buildProposal({ publicationStatus: 'published' });
     mockProposalsRepo.findOne.mockResolvedValue(proposal);
     mockVersionsRepo.remove.mockResolvedValue(undefined);
-    mockVersionsRepo.count.mockResolvedValue(1); // one version still remains
+    mockVersionsRepo.count.mockResolvedValue(1);
 
     await service.removeVersion('proposal-1', 'version-1', actor);
 
+    expect(mockQueryBuilderExecute).not.toHaveBeenCalled();
     expect(mockProposalsRepo.update).toHaveBeenCalledWith(
       { id: 'proposal-1' },
       { updatedBy: 'admin-1' },
@@ -88,7 +103,7 @@ describe('ProposalsService.removeVersion auto-unpublish', () => {
 
     await service.removeVersion('proposal-1', 'version-1', actor);
 
-    // Should just touch, not set publicationStatus
+    expect(mockQueryBuilderExecute).not.toHaveBeenCalled();
     expect(mockProposalsRepo.update).toHaveBeenCalledWith(
       { id: 'proposal-1' },
       { updatedBy: 'admin-1' },
