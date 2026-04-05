@@ -231,8 +231,8 @@ export class ProposalsService {
     const version = this.findVersionOrThrow(proposal, versionId);
     await this.versionsRepository.remove(version);
 
-    const remainingCount = (proposal.versions?.length ?? 1) - 1;
-    if (remainingCount <= 0 && proposal.publicationStatus === 'published') {
+    const remainingCount = await this.versionsRepository.count({ where: { proposalId } });
+    if (remainingCount === 0 && proposal.publicationStatus === 'published') {
       await this.proposalsRepository.update(
         { id: proposalId },
         { publicationStatus: 'unpublished', updatedBy: actor.id } as any,
