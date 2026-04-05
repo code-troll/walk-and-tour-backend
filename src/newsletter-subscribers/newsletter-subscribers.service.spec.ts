@@ -30,6 +30,7 @@ describe('NewsletterSubscribersService', () => {
     } as unknown as jest.Mocked<NewsletterTokenService>;
     emailProvider = {
       sendNewsletterConfirmation: jest.fn(),
+      sendProposalLink: jest.fn(),
     };
 
     service = new NewsletterSubscribersService(

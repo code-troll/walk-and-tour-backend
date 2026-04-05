@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+import { ProposalMediaEntity } from '../proposals/entities/proposal-media.entity';
 import { TourMediaEntity } from '../tours/entities/tour-media.entity';
 
 @Entity({ name: 'media_assets' })
@@ -36,6 +37,11 @@ export class MediaAssetEntity {
     cascade: false,
   })
   tourUsages!: TourMediaEntity[];
+
+  @OneToMany(() => ProposalMediaEntity, (proposalMedia) => proposalMedia.media, {
+    cascade: false,
+  })
+  proposalUsages!: ProposalMediaEntity[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

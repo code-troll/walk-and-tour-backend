@@ -8,6 +8,9 @@ import { BlogPostEntity } from '../blog-posts/blog-post.entity';
 import { LanguageEntity } from '../languages/language.entity';
 import { MediaAssetEntity } from '../media/media-asset.entity';
 import { NewsletterSubscriberEntity } from '../newsletter-subscribers/newsletter-subscriber.entity';
+import { ProposalMediaEntity } from '../proposals/entities/proposal-media.entity';
+import { ProposalVersionEntity } from '../proposals/entities/proposal-version.entity';
+import { ProposalEntity } from '../proposals/entities/proposal.entity';
 import { TagEntity } from '../tags/tag.entity';
 import { TourMediaEntity } from '../tours/entities/tour-media.entity';
 import { TourItineraryStopEntity } from '../tours/entities/tour-itinerary-stop.entity';
@@ -34,6 +37,9 @@ export function getTypeOrmOptions(): TypeOrmModuleOptions {
       NewsletterSubscriberEntity,
       TagEntity,
       MediaAssetEntity,
+      ProposalEntity,
+      ProposalVersionEntity,
+      ProposalMediaEntity,
       TourEntity,
       TourMediaEntity,
       TourItineraryStopEntity,

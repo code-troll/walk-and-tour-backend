@@ -1,0 +1,150 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+  Min,
+  ValidateIf,
+  ValidateNested,
+  IsNotEmpty,
+} from 'class-validator';
+
+export class ProposalPointDto {
+  @ApiProperty({ description: 'Latitude in decimal degrees.', example: 41.3874 })
+  @IsNumber()
+  lat!: number;
+
+  @ApiProperty({ description: 'Longitude in decimal degrees.', example: 2.1686 })
+  @IsNumber()
+  lng!: number;
+
+  @ApiPropertyOptional({ description: 'Human-readable label for the point.', example: 'Placa Catalunya' })
+  @IsString()
+  @IsOptional()
+  label?: string;
+}
+
+export class CreateProposalVersionDto {
+  @ApiPropertyOptional({
+    description: 'Display order for the version tab.',
+    example: 0,
+    minimum: 0,
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  orderIndex?: number;
+
+  @ApiPropertyOptional({
+    description: 'Tour date (ISO date string, e.g. 2026-05-15).',
+    example: '2026-05-15',
+  })
+  @IsString()
+  @IsOptional()
+  tourDate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tour duration in minutes.',
+    example: 180,
+    minimum: 0,
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  durationMinutes?: number;
+
+  @ApiProperty({
+    description: 'Title of this proposal version.',
+    example: 'Classic Walking Tour',
+    maxLength: 255,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  title!: string;
+
+  @ApiPropertyOptional({ description: 'General description of the proposal version.' })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({ description: 'Itinerary description for this version.' })
+  @IsString()
+  @IsOptional()
+  itineraryDescription?: string;
+
+  @ApiProperty({
+    description: 'Price amount for this version.',
+    example: 150,
+    minimum: 0,
+  })
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  priceAmount!: number;
+
+  @ApiProperty({
+    description: 'Currency code for the price.',
+    example: 'EUR',
+    maxLength: 10,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(10)
+  priceCurrency!: string;
+
+  @ApiPropertyOptional({
+    description: 'List of items included in this version.',
+    type: [String],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  included?: string[];
+
+  @ApiPropertyOptional({
+    description: 'List of items not included in this version.',
+    type: [String],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  notIncluded?: string[];
+
+  @ApiPropertyOptional({ description: 'Cancellation policy text.' })
+  @IsString()
+  @IsOptional()
+  cancellationPolicy?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tour start point.',
+    type: () => ProposalPointDto,
+  })
+  @ValidateNested()
+  @Type(() => ProposalPointDto)
+  @IsOptional()
+  startPoint?: ProposalPointDto;
+
+  @ApiPropertyOptional({
+    description: 'Tour end point.',
+    type: () => ProposalPointDto,
+  })
+  @ValidateNested()
+  @Type(() => ProposalPointDto)
+  @IsOptional()
+  endPoint?: ProposalPointDto;
+
+  @ApiPropertyOptional({
+    description: 'External Stripe Payment Link URL.',
+    example: 'https://buy.stripe.com/test_abc123',
+    maxLength: 500,
+  })
+  @IsUrl()
+  @MaxLength(500)
+  @IsOptional()
+  stripePaymentLink?: string;
+}
