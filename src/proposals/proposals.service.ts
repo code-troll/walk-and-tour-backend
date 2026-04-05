@@ -13,7 +13,6 @@ import { Repository } from 'typeorm';
 import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface';
 import { MediaAssetEntity } from '../media/media-asset.entity';
 import { EMAIL_PROVIDER, EmailProvider } from '../providers/email/email-provider.interface';
-import { getProviderConfig } from '../shared/config/provider.config';
 import { STORAGE_SERVICE, StorageService } from '../storage/storage-service.interface';
 import { AdminListProposalsDto } from './dto/list-proposals.dto';
 import { CreateProposalDto } from './dto/create-proposal.dto';
@@ -231,7 +230,16 @@ export class ProposalsService {
     const proposal = await this.findEntityOrThrow(proposalId);
     const version = this.findVersionOrThrow(proposal, versionId);
     await this.versionsRepository.remove(version);
-    await this.touchProposal(proposal.id, actor.id);
+
+    const remainingCount = (proposal.versions?.length ?? 1) - 1;
+    if (remainingCount <= 0 && proposal.publicationStatus === 'published') {
+      await this.proposalsRepository.update(
+        { id: proposalId },
+        { publicationStatus: 'unpublished', updatedBy: actor.id } as any,
+      );
+    } else {
+      await this.touchProposal(proposal.id, actor.id);
+    }
   }
 
   // ─── Media ─────────────────────────────────────────────────

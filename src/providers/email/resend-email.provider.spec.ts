@@ -11,6 +11,7 @@ describe('ResendEmailProvider', () => {
     const provider = new ResendEmailProvider(
       {
         appBaseUrl: 'https://backend.example.com',
+        publicSiteBaseUrl: 'https://walkandtour.dk',
         emailProvider: 'resend',
         emailFrom: 'Walk and Tour <no-reply@example.com>',
         resendApiKey: 'resend-key',
@@ -52,6 +53,7 @@ describe('ResendEmailProvider', () => {
   it('fails when the resend api key is missing', async () => {
     const provider = new ResendEmailProvider({
       appBaseUrl: 'https://backend.example.com',
+      publicSiteBaseUrl: 'https://walkandtour.dk',
       emailProvider: 'resend',
       emailFrom: 'Walk and Tour <no-reply@example.com>',
       storageDriver: 'local',

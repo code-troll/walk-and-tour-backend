@@ -9,7 +9,6 @@ import {
   IsUrl,
   MaxLength,
   Min,
-  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
