@@ -13,7 +13,6 @@ import { Repository } from 'typeorm';
 import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface';
 import { MediaAssetEntity } from '../media/media-asset.entity';
 import { EMAIL_PROVIDER, EmailProvider } from '../providers/email/email-provider.interface';
-import { getProviderConfig } from '../shared/config/provider.config';
 import { STORAGE_SERVICE, StorageService } from '../storage/storage-service.interface';
 import { AdminListProposalsDto } from './dto/list-proposals.dto';
 import { CreateProposalDto } from './dto/create-proposal.dto';

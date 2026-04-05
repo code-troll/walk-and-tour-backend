@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -108,7 +107,7 @@ export class ProposalsController {
   @Post(':id/send')
   async sendToRecipient(@Param('id', new ParseUUIDPipe()) id: string) {
     const config = getProviderConfig();
-    const publicBaseUrl = config.newsletterPublicAppBaseUrl ?? config.appBaseUrl;
+    const publicBaseUrl = config.publicSiteBaseUrl;
     await this.proposalsService.sendToRecipient(id, publicBaseUrl);
     return { message: 'Proposal link sent to recipient.' };
   }

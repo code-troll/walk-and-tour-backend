@@ -1,5 +1,6 @@
 export interface ProviderConfig {
   appBaseUrl: string;
+  publicSiteBaseUrl: string;
   newsletterPublicAppBaseUrl?: string;
   emailProvider: 'console' | 'resend';
   emailFrom: string;
@@ -16,6 +17,7 @@ export interface ProviderConfig {
 }
 
 const DEFAULT_APP_BASE_URL = 'http://api.dev.walkandtour.dk:3000';
+const DEFAULT_PUBLIC_SITE_BASE_URL = 'https://walkandtour.dk';
 const DEFAULT_NEWSLETTER_PUBLIC_APP_BASE_URL = 'http://dev.walkandtour.dk:3001';
 const DEFAULT_EMAIL_PROVIDER = 'console';
 const DEFAULT_EMAIL_FROM = 'Walk and Tour <no-reply@example.com>';
@@ -28,6 +30,7 @@ const DEFAULT_RAILWAY_STORAGE_URL_STYLE = 'virtual-hosted';
 export function getProviderConfig(): ProviderConfig {
   return {
     appBaseUrl: process.env.APP_BASE_URL ?? DEFAULT_APP_BASE_URL,
+    publicSiteBaseUrl: process.env.PUBLIC_SITE_BASE_URL ?? DEFAULT_PUBLIC_SITE_BASE_URL,
     newsletterPublicAppBaseUrl:
       process.env.NEWSLETTER_PUBLIC_APP_BASE_URL ??
       process.env.APP_BASE_URL ??
