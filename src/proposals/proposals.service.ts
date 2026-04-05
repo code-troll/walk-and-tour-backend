@@ -232,7 +232,6 @@ export class ProposalsService {
     await this.versionsRepository.remove(version);
 
     const remainingCount = await this.versionsRepository.count({ where: { proposalId } });
-    console.log(remainingCount, proposal.publicationStatus);
     if (remainingCount === 0 && proposal.publicationStatus === 'published') {
       await this.proposalsRepository
         .createQueryBuilder()
