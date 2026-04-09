@@ -18,6 +18,9 @@ export class ProposalEntity {
   @Column({ type: 'varchar', length: 24, unique: true })
   hash!: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  name!: string | null;
+
   @Column({ type: 'varchar', length: 10 })
   language!: string;
 

@@ -15,6 +15,16 @@ import {
 
 export class UpdateProposalDto {
   @ApiPropertyOptional({
+    description: 'General name of the proposal (used as its display name in the frontend).',
+    example: 'Rome Highlights Private Tour',
+    maxLength: 255,
+  })
+  @IsString()
+  @MaxLength(255)
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({
     description: 'Language code for the proposal content.',
     example: 'en',
     maxLength: 10,
