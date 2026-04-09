@@ -59,7 +59,7 @@ export class ProposalsService {
     if (query.search?.trim()) {
       const pattern = `%${query.search.trim()}%`;
       qb.andWhere(
-        '(proposal.recipientName ILIKE :pattern OR proposal.recipientEmail ILIKE :pattern)',
+        '(proposal.name ILIKE :pattern OR proposal.recipientName ILIKE :pattern OR proposal.recipientEmail ILIKE :pattern)',
         { pattern },
       );
     }
@@ -79,6 +79,7 @@ export class ProposalsService {
     const proposal = await this.proposalsRepository.save(
       this.proposalsRepository.create({
         hash,
+        name: dto.name ?? null,
         language: dto.language,
         recipientName: dto.recipientName ?? null,
         recipientEmail: dto.recipientEmail ?? null,
@@ -109,6 +110,7 @@ export class ProposalsService {
     }
 
     const updates: Record<string, unknown> = { updatedBy: actor.id };
+    if (dto.name !== undefined) updates.name = dto.name ?? null;
     if (dto.language !== undefined) updates.language = dto.language;
     if (dto.recipientName !== undefined) updates.recipientName = dto.recipientName ?? null;
     if (dto.recipientEmail !== undefined) updates.recipientEmail = dto.recipientEmail ?? null;
@@ -415,6 +417,7 @@ export class ProposalsService {
     return {
       id: proposal.id,
       hash: proposal.hash,
+      name: proposal.name,
       language: proposal.language,
       recipientName: proposal.recipientName,
       recipientEmail: proposal.recipientEmail,
@@ -468,6 +471,7 @@ export class ProposalsService {
 
   private toPublicResponse(proposal: ProposalEntity): unknown {
     return {
+      name: proposal.name,
       language: proposal.language,
       recipientName: proposal.recipientName,
       expiresAt: proposal.expiresAt,

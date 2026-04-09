@@ -45,6 +45,7 @@ describe('ProposalsService.removeVersion auto-unpublish', () => {
   const buildProposal = (overrides: Partial<ProposalEntity> = {}): ProposalEntity => ({
     id: 'proposal-1',
     hash: 'abc123',
+    name: null,
     language: 'en',
     recipientName: null,
     recipientEmail: null,
