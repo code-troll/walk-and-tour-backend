@@ -16,6 +16,7 @@ export interface RepositoryMock<_T> {
   save: jest.Mock;
   update: jest.Mock;
   delete: jest.Mock;
+  remove: jest.Mock;
   manager: RepositoryManagerMock;
 }
 
@@ -45,6 +46,7 @@ export function createRepositoryMock<T>(): RepositoryMock<T> {
     save: jest.fn(async (value: T) => value),
     update: jest.fn(),
     delete: jest.fn(),
+    remove: jest.fn(async (value: T) => value),
     manager,
   };
 }

@@ -11,6 +11,7 @@ import { NewsletterSubscribersModule } from './newsletter-subscribers/newsletter
 import { ProposalsModule } from './proposals/proposals.module';
 import { StorageModule } from './storage/storage.module';
 import { TagsModule } from './tags/tags.module';
+import { TeamMembersModule } from './team-members/team-members.module';
 import { ToursModule } from './tours/tours.module';
 
 @Module({
@@ -25,6 +26,7 @@ import { ToursModule } from './tours/tours.module';
     ProposalsModule,
     StorageModule,
     TagsModule,
+    TeamMembersModule,
     ToursModule,
   ],
   controllers: [HealthController],
