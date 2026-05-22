@@ -8,6 +8,9 @@ export class RefactorTeamMembersSchema1775737741741 implements MigrationInterfac
     await queryRunner.query(`ALTER TABLE "team_members" ADD COLUMN "name" varchar(255) NOT NULL DEFAULT ''`);
     await queryRunner.query(`ALTER TABLE "team_members" ADD COLUMN "image_alt" varchar(255)`);
 
+    // Remove incomplete rows (no photo) before enforcing NOT NULL
+    await queryRunner.query(`DELETE FROM "team_members" WHERE "photo_media_id" IS NULL`);
+
     // Make photo_media_id required
     await queryRunner.query(`ALTER TABLE "team_members" ALTER COLUMN "photo_media_id" SET NOT NULL`);
 
