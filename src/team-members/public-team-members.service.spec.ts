@@ -20,7 +20,7 @@ describe('PublicTeamMembersService', () => {
     );
   });
 
-  it('returns published team members with translations for the requested locale', async () => {
+  it('returns published team members with role from translations', async () => {
     languagesRepository.findOne.mockResolvedValue({
       code: 'en',
       isEnabled: true,
@@ -28,16 +28,19 @@ describe('PublicTeamMembersService', () => {
     teamMembersRepository.find.mockResolvedValue([
       createPublicTeamMember({
         id: 'member-1',
+        name: 'Ayelen Salazar',
+        imageAlt: 'Photo',
         orderIndex: 0,
         translations: [
-          { languageCode: 'en', name: 'Ayelen Salazar', role: 'Founder', imageAlt: 'Photo' },
+          { languageCode: 'en', role: 'Founder' },
         ] as unknown as TeamMemberEntity['translations'],
       }),
       createPublicTeamMember({
         id: 'member-2',
+        name: 'Maria Fantozzi',
         orderIndex: 1,
         translations: [
-          { languageCode: 'en', name: 'Maria Fantozzi', role: 'Partnerships', imageAlt: null },
+          { languageCode: 'en', role: 'Partnerships' },
         ] as unknown as TeamMemberEntity['translations'],
       }),
     ] as TeamMemberEntity[]);
@@ -68,7 +71,7 @@ describe('PublicTeamMembersService', () => {
     teamMembersRepository.find.mockResolvedValue([
       createPublicTeamMember({
         translations: [
-          { languageCode: 'es', name: 'Ayelen Salazar', role: 'Fundadora', imageAlt: null },
+          { languageCode: 'es', role: 'Fundadora' },
         ] as unknown as TeamMemberEntity['translations'],
       }),
     ] as TeamMemberEntity[]);
@@ -87,7 +90,7 @@ describe('PublicTeamMembersService', () => {
       createPublicTeamMember({
         linkedinUrl: 'https://linkedin.com/in/test',
         translations: [
-          { languageCode: 'en', name: 'Test', role: 'Role', imageAlt: null },
+          { languageCode: 'en', role: 'Role' },
         ] as unknown as TeamMemberEntity['translations'],
       }),
     ] as TeamMemberEntity[]);
@@ -97,29 +100,6 @@ describe('PublicTeamMembersService', () => {
     expect(result).toEqual([
       expect.objectContaining({
         linkedinUrl: 'https://linkedin.com/in/test',
-      }),
-    ]);
-  });
-
-  it('returns null photoMedia when no photo is attached', async () => {
-    languagesRepository.findOne.mockResolvedValue({
-      code: 'en',
-      isEnabled: true,
-    } as LanguageEntity);
-    teamMembersRepository.find.mockResolvedValue([
-      createPublicTeamMember({
-        photoMedia: null,
-        translations: [
-          { languageCode: 'en', name: 'Test', role: 'Role', imageAlt: null },
-        ] as unknown as TeamMemberEntity['translations'],
-      }),
-    ] as TeamMemberEntity[]);
-
-    const result = await service.findAll('en');
-
-    expect(result).toEqual([
-      expect.objectContaining({
-        photoMedia: null,
       }),
     ]);
   });
@@ -153,18 +133,15 @@ function createPublicTeamMember(
 ): TeamMemberEntity {
   const base = {
     id: 'member-1',
+    name: 'Ayelen Salazar',
     orderIndex: 0,
     photoMediaId: 'media-1',
     photoMedia: createMediaAssetEntity(),
+    imageAlt: null,
     linkedinUrl: null,
     isPublished: true,
     translations: [
-      {
-        languageCode: 'en',
-        name: 'Ayelen Salazar',
-        role: 'Founder & Director',
-        imageAlt: null,
-      },
+      { languageCode: 'en', role: 'Founder & Director' },
     ],
     createdBy: 'admin-1',
     updatedBy: 'admin-1',

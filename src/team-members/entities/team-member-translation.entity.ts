@@ -37,13 +37,7 @@ export class TeamMemberTranslationEntity {
   language!: LanguageEntity;
 
   @Column({ type: 'varchar', length: 255 })
-  name!: string;
-
-  @Column({ type: 'varchar', length: 255 })
   role!: string;
-
-  @Column({ name: 'image_alt', type: 'varchar', length: 255, nullable: true })
-  imageAlt!: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

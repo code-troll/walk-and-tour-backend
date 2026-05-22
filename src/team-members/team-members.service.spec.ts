@@ -67,6 +67,7 @@ describe('TeamMembersService', () => {
     expect(result).toEqual(
       expect.objectContaining({
         id: 'member-1',
+        name: 'Ayelen Salazar',
         orderIndex: 0,
       }),
     );
@@ -82,7 +83,8 @@ describe('TeamMembersService', () => {
 
   // ── create ─────────────────────────────────────────────────────
 
-  it('creates a team member with auto-calculated orderIndex', async () => {
+  it('creates a team member with name and photo required', async () => {
+    mediaAssetsRepository.findOne.mockResolvedValue(createMediaAssetEntity());
     const queryBuilder = {
       select: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ maxIndex: 2 }),
@@ -96,17 +98,25 @@ describe('TeamMembersService', () => {
     teamMembersRepository.findOne.mockResolvedValue(
       createTeamMemberEntity({
         id: 'member-new',
+        name: 'Ayelen Salazar',
         orderIndex: 3,
+        photoMediaId: 'media-1',
         translations: [],
       }),
     );
 
-    const result = await service.create({}, actor);
+    const result = await service.create(
+      { name: 'Ayelen Salazar', mediaId: 'media-1' },
+      actor,
+    );
 
+    expect(mediaAssetsRepository.findOne).toHaveBeenCalledWith({ where: { id: 'media-1' } });
     expect(teamMembersRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
+        name: 'Ayelen Salazar',
         orderIndex: 3,
-        photoMediaId: null,
+        photoMediaId: 'media-1',
+        imageAlt: null,
         linkedinUrl: null,
         isPublished: false,
         createdBy: 'admin-1',
@@ -118,23 +128,31 @@ describe('TeamMembersService', () => {
     );
   });
 
-  it('creates a team member with explicit orderIndex and linkedinUrl', async () => {
+  it('rejects creation with an unknown media asset', async () => {
+    mediaAssetsRepository.findOne.mockResolvedValue(null);
+
+    await expect(
+      service.create({ name: 'Test', mediaId: 'nonexistent' }, actor),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('creates a team member with optional fields', async () => {
+    mediaAssetsRepository.findOne.mockResolvedValue(createMediaAssetEntity());
     teamMembersRepository.create.mockImplementation((value) => value);
     teamMembersRepository.save.mockImplementation(async (value) => ({
       id: 'member-new',
       ...value,
     }));
     teamMembersRepository.findOne.mockResolvedValue(
-      createTeamMemberEntity({
-        id: 'member-new',
-        orderIndex: 5,
-        linkedinUrl: 'https://linkedin.com/in/test',
-      }),
+      createTeamMemberEntity({ id: 'member-new' }),
     );
 
     await service.create(
       {
+        name: 'Test',
+        mediaId: 'media-1',
         orderIndex: 5,
+        imageAlt: 'Photo of Test',
         linkedinUrl: 'https://linkedin.com/in/test',
         isPublished: true,
       },
@@ -144,6 +162,7 @@ describe('TeamMembersService', () => {
     expect(teamMembersRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         orderIndex: 5,
+        imageAlt: 'Photo of Test',
         linkedinUrl: 'https://linkedin.com/in/test',
         isPublished: true,
       }),
@@ -152,29 +171,28 @@ describe('TeamMembersService', () => {
 
   // ── update ─────────────────────────────────────────────────────
 
-  it('updates shared team member fields', async () => {
+  it('updates shared team member fields including name and imageAlt', async () => {
     teamMembersRepository.findOne
       .mockResolvedValueOnce(createTeamMemberEntity())
       .mockResolvedValueOnce(
         createTeamMemberEntity({
+          name: 'Updated Name',
+          imageAlt: 'New alt',
           isPublished: true,
-          linkedinUrl: 'https://linkedin.com/in/updated',
         }),
       );
 
     const result = await service.update(
       'member-1',
-      {
-        isPublished: true,
-        linkedinUrl: 'https://linkedin.com/in/updated',
-      },
+      { name: 'Updated Name', imageAlt: 'New alt', isPublished: true },
       actor,
     );
 
     expect(teamMembersRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
+        name: 'Updated Name',
+        imageAlt: 'New alt',
         isPublished: true,
-        linkedinUrl: 'https://linkedin.com/in/updated',
         updatedBy: 'admin-1',
       }),
     );
@@ -183,19 +201,15 @@ describe('TeamMembersService', () => {
     );
   });
 
-  it('clears linkedinUrl when set to null', async () => {
+  it('clears imageAlt when set to null', async () => {
     teamMembersRepository.findOne
-      .mockResolvedValueOnce(
-        createTeamMemberEntity({ linkedinUrl: 'https://linkedin.com/in/test' }),
-      )
-      .mockResolvedValueOnce(
-        createTeamMemberEntity({ linkedinUrl: null }),
-      );
+      .mockResolvedValueOnce(createTeamMemberEntity({ imageAlt: 'Old alt' }))
+      .mockResolvedValueOnce(createTeamMemberEntity({ imageAlt: null }));
 
-    await service.update('member-1', { linkedinUrl: null }, actor);
+    await service.update('member-1', { imageAlt: null }, actor);
 
     expect(teamMembersRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({ linkedinUrl: null }),
+      expect.objectContaining({ imageAlt: null }),
     );
   });
 
@@ -223,9 +237,7 @@ describe('TeamMembersService', () => {
   it('sets the photo media on a team member', async () => {
     teamMembersRepository.findOne
       .mockResolvedValueOnce(createTeamMemberEntity())
-      .mockResolvedValueOnce(
-        createTeamMemberEntity({ photoMediaId: 'media-2' }),
-      );
+      .mockResolvedValueOnce(createTeamMemberEntity({ photoMediaId: 'media-2' }));
     mediaAssetsRepository.findOne.mockResolvedValue(
       createMediaAssetEntity({ id: 'media-2' }),
     );
@@ -234,10 +246,7 @@ describe('TeamMembersService', () => {
 
     expect(teamMembersRepository.update).toHaveBeenCalledWith(
       { id: 'member-1' },
-      {
-        photoMediaId: 'media-2',
-        updatedBy: 'admin-1',
-      },
+      { photoMediaId: 'media-2', updatedBy: 'admin-1' },
     );
   });
 
@@ -250,38 +259,14 @@ describe('TeamMembersService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  // ── clearPhoto ─────────────────────────────────────────────────
-
-  it('clears the photo media from a team member', async () => {
-    teamMembersRepository.findOne.mockResolvedValue(
-      createTeamMemberEntity({ photoMediaId: 'media-1' }),
-    );
-
-    await service.clearPhoto('member-1', actor);
-
-    expect(teamMembersRepository.update).toHaveBeenCalledWith(
-      { id: 'member-1' },
-      {
-        photoMediaId: null,
-        updatedBy: 'admin-1',
-      },
-    );
-  });
-
   // ── createTranslation ──────────────────────────────────────────
 
-  it('creates a translation for a team member', async () => {
+  it('creates a role translation for a team member', async () => {
     teamMembersRepository.findOne
       .mockResolvedValueOnce(createTeamMemberEntity({ translations: [] }))
       .mockResolvedValueOnce(
         createTeamMemberEntity({
-          translations: [
-            createTranslationEntity({
-              languageCode: 'en',
-              name: 'Ayelen Salazar',
-              role: 'Founder',
-            }),
-          ],
+          translations: [createTranslationEntity({ languageCode: 'en', role: 'Founder' })],
         }),
       );
     languagesRepository.findOne.mockResolvedValue({ code: 'en' } as LanguageEntity);
@@ -289,12 +274,7 @@ describe('TeamMembersService', () => {
 
     await service.createTranslation(
       'member-1',
-      {
-        languageCode: 'en',
-        name: 'Ayelen Salazar',
-        role: 'Founder',
-        imageAlt: 'Photo of Ayelen',
-      },
+      { languageCode: 'en', role: 'Founder' },
       actor,
     );
 
@@ -302,9 +282,7 @@ describe('TeamMembersService', () => {
       expect.objectContaining({
         teamMemberId: 'member-1',
         languageCode: 'en',
-        name: 'Ayelen Salazar',
         role: 'Founder',
-        imageAlt: 'Photo of Ayelen',
       }),
     );
     expect(teamMembersRepository.update).toHaveBeenCalledWith(
@@ -316,19 +294,13 @@ describe('TeamMembersService', () => {
   it('rejects duplicate translations for the same locale', async () => {
     teamMembersRepository.findOne.mockResolvedValue(
       createTeamMemberEntity({
-        translations: [
-          createTranslationEntity({ languageCode: 'en' }),
-        ],
+        translations: [createTranslationEntity({ languageCode: 'en' })],
       }),
     );
     languagesRepository.findOne.mockResolvedValue({ code: 'en' } as LanguageEntity);
 
     await expect(
-      service.createTranslation(
-        'member-1',
-        { languageCode: 'en', name: 'Test', role: 'Test' },
-        actor,
-      ),
+      service.createTranslation('member-1', { languageCode: 'en', role: 'Test' }, actor),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
@@ -339,17 +311,13 @@ describe('TeamMembersService', () => {
     languagesRepository.findOne.mockResolvedValue(null);
 
     await expect(
-      service.createTranslation(
-        'member-1',
-        { languageCode: 'fr', name: 'Test', role: 'Test' },
-        actor,
-      ),
+      service.createTranslation('member-1', { languageCode: 'fr', role: 'Test' }, actor),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   // ── updateTranslation ──────────────────────────────────────────
 
-  it('updates a translation for a team member', async () => {
+  it('updates a role translation for a team member', async () => {
     teamMembersRepository.findOne
       .mockResolvedValueOnce(
         createTeamMemberEntity({
@@ -358,57 +326,14 @@ describe('TeamMembersService', () => {
       )
       .mockResolvedValueOnce(
         createTeamMemberEntity({
-          translations: [
-            createTranslationEntity({
-              languageCode: 'en',
-              name: 'Updated Name',
-              role: 'Updated Role',
-            }),
-          ],
+          translations: [createTranslationEntity({ languageCode: 'en', role: 'Updated Role' })],
         }),
       );
 
-    await service.updateTranslation(
-      'member-1',
-      'en',
-      { name: 'Updated Name', role: 'Updated Role' },
-      actor,
-    );
+    await service.updateTranslation('member-1', 'en', { role: 'Updated Role' }, actor);
 
     expect(translationsRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'Updated Name',
-        role: 'Updated Role',
-      }),
-    );
-  });
-
-  it('clears imageAlt when set to null', async () => {
-    teamMembersRepository.findOne
-      .mockResolvedValueOnce(
-        createTeamMemberEntity({
-          translations: [
-            createTranslationEntity({ languageCode: 'en', imageAlt: 'Alt text' }),
-          ],
-        }),
-      )
-      .mockResolvedValueOnce(
-        createTeamMemberEntity({
-          translations: [
-            createTranslationEntity({ languageCode: 'en', imageAlt: null }),
-          ],
-        }),
-      );
-
-    await service.updateTranslation(
-      'member-1',
-      'en',
-      { imageAlt: null },
-      actor,
-    );
-
-    expect(translationsRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({ imageAlt: null }),
+      expect.objectContaining({ role: 'Updated Role' }),
     );
   });
 
@@ -418,7 +343,7 @@ describe('TeamMembersService', () => {
     );
 
     await expect(
-      service.updateTranslation('member-1', 'en', { name: 'Test' }, actor),
+      service.updateTranslation('member-1', 'en', { role: 'Test' }, actor),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -452,16 +377,13 @@ describe('TeamMembersService', () => {
 
   // ── toAdminResponse ────────────────────────────────────────────
 
-  it('returns the correct admin response shape', async () => {
+  it('returns the correct admin response shape with name and imageAlt on base', async () => {
     teamMembersRepository.findOne.mockResolvedValue(
       createTeamMemberEntity({
+        name: 'Ayelen Salazar',
+        imageAlt: 'Photo',
         translations: [
-          createTranslationEntity({
-            languageCode: 'en',
-            name: 'Ayelen Salazar',
-            role: 'Founder',
-            imageAlt: 'Photo',
-          }),
+          createTranslationEntity({ languageCode: 'en', role: 'Founder' }),
         ],
       }),
     );
@@ -471,16 +393,14 @@ describe('TeamMembersService', () => {
     expect(result).toEqual(
       expect.objectContaining({
         id: 'member-1',
+        name: 'Ayelen Salazar',
+        imageAlt: 'Photo',
         orderIndex: 0,
         photoMediaId: 'media-1',
         linkedinUrl: null,
         isPublished: false,
         translations: {
-          en: {
-            name: 'Ayelen Salazar',
-            role: 'Founder',
-            imageAlt: 'Photo',
-          },
+          en: { role: 'Founder' },
         },
         translationAvailability: [{ languageCode: 'en' }],
         audit: expect.objectContaining({
@@ -497,9 +417,11 @@ function createTeamMemberEntity(
 ): TeamMemberEntity {
   return {
     id: 'member-1',
+    name: 'Ayelen Salazar',
     orderIndex: 0,
     photoMediaId: 'media-1',
     photoMedia: createMediaAssetEntity(),
+    imageAlt: null,
     linkedinUrl: null,
     isPublished: false,
     translations: [
@@ -520,9 +442,7 @@ function createTranslationEntity(
     id: 'trans-1',
     teamMemberId: 'member-1',
     languageCode: 'en',
-    name: 'Ayelen Salazar',
     role: 'Founder & Director',
-    imageAlt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,

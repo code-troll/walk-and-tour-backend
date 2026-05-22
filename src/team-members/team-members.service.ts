@@ -54,11 +54,14 @@ export class TeamMembersService {
   }
 
   async create(dto: CreateTeamMemberDto, actor: AuthenticatedAdmin): Promise<unknown> {
+    await this.getMediaAssetOrThrow(dto.mediaId);
     const orderIndex = dto.orderIndex ?? (await this.getNextOrderIndex());
 
     const member = this.teamMembersRepository.create({
+      name: dto.name.trim(),
       orderIndex,
-      photoMediaId: null,
+      photoMediaId: dto.mediaId,
+      imageAlt: dto.imageAlt ?? null,
       linkedinUrl: dto.linkedinUrl ?? null,
       isPublished: dto.isPublished ?? false,
       createdBy: actor.id,
@@ -76,6 +79,14 @@ export class TeamMembersService {
     actor: AuthenticatedAdmin,
   ): Promise<unknown> {
     const existing = await this.findEntityOrThrow(id);
+
+    if ('name' in dto && dto.name !== undefined) {
+      existing.name = dto.name.trim();
+    }
+
+    if ('imageAlt' in dto) {
+      existing.imageAlt = dto.imageAlt ?? null;
+    }
 
     if ('orderIndex' in dto && dto.orderIndex !== undefined) {
       existing.orderIndex = dto.orderIndex;
@@ -120,18 +131,6 @@ export class TeamMembersService {
     return this.findOne(id);
   }
 
-  async clearPhoto(id: string, actor: AuthenticatedAdmin): Promise<void> {
-    await this.findEntityOrThrow(id);
-
-    await this.teamMembersRepository.update(
-      { id },
-      {
-        photoMediaId: null,
-        updatedBy: actor.id,
-      },
-    );
-  }
-
   async createTranslation(
     id: string,
     dto: CreateTeamMemberTranslationDto,
@@ -153,9 +152,7 @@ export class TeamMembersService {
     const translation = this.translationsRepository.create({
       teamMemberId: id,
       languageCode: dto.languageCode,
-      name: dto.name,
       role: dto.role,
-      imageAlt: dto.imageAlt ?? null,
     });
 
     await this.translationsRepository.save(translation);
@@ -173,16 +170,8 @@ export class TeamMembersService {
     const member = await this.findEntityOrThrow(id);
     const translation = this.findTranslationOrThrow(member, languageCode);
 
-    if ('name' in dto && dto.name !== undefined) {
-      translation.name = dto.name;
-    }
-
     if ('role' in dto && dto.role !== undefined) {
       translation.role = dto.role;
-    }
-
-    if ('imageAlt' in dto) {
-      translation.imageAlt = dto.imageAlt ?? null;
     }
 
     await this.translationsRepository.save(translation);
@@ -283,18 +272,18 @@ export class TeamMembersService {
       member.translations.map((t) => [
         t.languageCode,
         {
-          name: t.name,
           role: t.role,
-          imageAlt: t.imageAlt,
         },
       ]),
     );
 
     return {
       id: member.id,
+      name: member.name,
       orderIndex: member.orderIndex,
       photoMediaId: member.photoMediaId,
       photoMedia: this.toMediaResponse(member.photoMedia),
+      imageAlt: member.imageAlt,
       linkedinUrl: member.linkedinUrl,
       isPublished: member.isPublished,
       translations,

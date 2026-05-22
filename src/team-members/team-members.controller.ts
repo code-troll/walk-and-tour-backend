@@ -179,28 +179,6 @@ export class TeamMembersController {
     return this.teamMembersService.setPhoto(id, dto, admin);
   }
 
-  @ApiTags('Admin Team Members')
-  @ApiBearerAuth('admin-auth')
-  @ApiOperation({
-    summary: 'Clear team member photo',
-    description: 'Detaches the current photo from the team member.',
-  })
-  @ApiParam({ name: 'id', description: 'Team member UUID.', format: 'uuid' })
-  @ApiNoContentResponse({ description: 'Photo cleared successfully.' })
-  @ApiNotFoundResponse({ type: ErrorResponseDto })
-  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
-  @ApiForbiddenResponse({ type: ErrorResponseDto })
-  @Delete('admin/team-members/:id/photo')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
-  @AdminRoles('super_admin', 'editor')
-  async clearPhoto(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @CurrentAdmin() admin: AuthenticatedAdmin,
-  ) {
-    await this.teamMembersService.clearPhoto(id, admin);
-  }
-
   // ── Translations ─────────────────────────────────────────────────
 
   @ApiTags('Admin Team Members')
