@@ -63,7 +63,7 @@ describe('PublicTeamMembersService', () => {
     ]);
   });
 
-  it('excludes members without a translation for the requested locale', async () => {
+  it('includes members without a translation for the requested locale with null role', async () => {
     languagesRepository.findOne.mockResolvedValue({
       code: 'en',
       isEnabled: true,
@@ -78,7 +78,13 @@ describe('PublicTeamMembersService', () => {
 
     const result = await service.findAll('en');
 
-    expect(result).toEqual([]);
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: 'member-1',
+        name: 'Ayelen Salazar',
+        role: null,
+      }),
+    ]);
   });
 
   it('includes linkedinUrl in the public response when present', async () => {

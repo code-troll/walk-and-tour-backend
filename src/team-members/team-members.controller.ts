@@ -259,7 +259,7 @@ export class TeamMembersController {
   @ApiTags('Public Team Members')
   @ApiOperation({
     summary: 'List published team members by locale',
-    description: 'Returns published team members that have a translation for the requested locale, ordered by display index.',
+    description: 'Returns all published team members ordered by display index. The role is resolved from the translation for the requested locale, or null when no translation exists.',
   })
   @ApiQuery({ name: 'locale', description: 'Requested locale code.', example: 'en' })
   @ApiOkResponse({ description: 'Published localized team members.' })
