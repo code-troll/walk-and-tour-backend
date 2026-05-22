@@ -1166,7 +1166,7 @@ paths:
         - name: slug
           required: true
           in: path
-          description: Public blog post slug.
+          description: Public blog post translation slug.
           schema:
             example: barcelona-historic-center-guide
             type: string
@@ -1209,7 +1209,7 @@ paths:
         - name: slug
           required: true
           in: path
-          description: Public blog post slug.
+          description: Public blog post translation slug.
           schema:
             example: barcelona-historic-center-guide
             type: string
@@ -2003,7 +2003,7 @@ paths:
         - name: slug
           required: true
           in: path
-          description: Public tour slug.
+          description: Public tour translation slug.
           schema:
             example: historic-center
             type: string
@@ -2045,7 +2045,7 @@ paths:
         - name: slug
           required: true
           in: path
-          description: Public tour slug.
+          description: Public tour translation slug.
           schema:
             example: historic-center
             type: string
@@ -3366,10 +3366,6 @@ components:
           type: string
           description: Non-localized admin-facing name for the blog post.
           example: Barcelona Historic Center SEO Article
-        slug:
-          type: string
-          description: Stable public slug.
-          example: barcelona-historic-center-guide
         heroMediaId:
           type: object
           description: Optional hero media asset UUID.
@@ -3380,6 +3376,11 @@ components:
           nullable: true
           allOf:
             - $ref: "#/components/schemas/MediaAssetResponseDto"
+        cardTagKey:
+          type: object
+          description: Tag key shown on the public blog post card. When null, the first tag is used.
+          example: history
+          nullable: true
         tagKeys:
           description: Ordered tag keys assigned to the post.
           type: array
@@ -3407,7 +3408,6 @@ components:
       required:
         - id
         - name
-        - slug
         - tagKeys
         - tags
         - translations
@@ -3422,12 +3422,6 @@ components:
           example: Barcelona Historic Center SEO Article
           minLength: 1
           maxLength: 255
-        slug:
-          type: string
-          description: Stable public slug for the blog post.
-          example: barcelona-historic-center-guide
-          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
-          maxLength: 150
         tagKeys:
           description: Assigned tag keys.
           example:
@@ -3439,7 +3433,6 @@ components:
             type: string
       required:
         - name
-        - slug
     UpdateBlogPostDto:
       type: object
       properties:
@@ -3449,12 +3442,6 @@ components:
           example: Barcelona Historic Center SEO Article
           minLength: 1
           maxLength: 255
-        slug:
-          type: string
-          description: Updated public slug.
-          example: barcelona-historic-center-guide
-          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
-          maxLength: 150
         tagKeys:
           description: Replacement tag key list.
           example:
@@ -3464,6 +3451,11 @@ components:
           type: array
           items:
             type: string
+        cardTagKey:
+          type: object
+          description: Tag key to display on the public blog post card. Set `null` to clear (first tag is used).
+          example: history
+          nullable: true
     CreateBlogPostTranslationDto:
       type: object
       properties:
@@ -3472,6 +3464,12 @@ components:
           description: Locale code for this blog translation.
           example: en
           pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+        slug:
+          type: string
+          description: Public slug for this translation.
+          example: barcelona-historic-center-guide
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 150
         title:
           type: string
           description: Localized title.
@@ -3503,9 +3501,16 @@ components:
             type: string
       required:
         - languageCode
+        - slug
     UpdateBlogPostTranslationDto:
       type: object
       properties:
+        slug:
+          type: string
+          description: Updated public slug.
+          example: barcelona-historic-center-guide
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 150
         title:
           type: string
           description: Updated localized title.
@@ -3631,6 +3636,11 @@ components:
           nullable: true
           allOf:
             - $ref: "#/components/schemas/MediaAssetResponseDto"
+        cardTagKey:
+          type: object
+          description: Tag key selected for the public blog post card. When null, the first tag is used.
+          example: history
+          nullable: true
         tags:
           description: Localized tag labels for the requested locale.
           type: array
@@ -4359,11 +4369,31 @@ components:
           description: End point data split into shared and localized portions.
           allOf:
             - $ref: "#/components/schemas/PublicPointResponseDto"
+        cardTagKey:
+          type: object
+          description: Tag key selected for the public tour card. When null, the first tag is used.
+          example: history
+          nullable: true
         tags:
           description: Localized tag labels for the requested locale.
           type: array
           items:
             $ref: "#/components/schemas/PublicTagResponseDto"
+        availableTranslations:
+          type: array
+          description: All published translations available for this tour, with their locale and slug.
+          items:
+            type: object
+            properties:
+              locale:
+                type: string
+                example: en
+              slug:
+                type: string
+                example: en-historic-center
+            required:
+              - locale
+              - slug
         translation:
           description: Published localized translation payload selected for the requested locale.
           allOf:
@@ -4383,6 +4413,7 @@ components:
         - startPoint
         - endPoint
         - tags
+        - availableTranslations
         - translation
         - itinerary
     RecordAuditMetadataDto:
@@ -4424,10 +4455,6 @@ components:
           type: number
           description: Manual display position used by the default admin and public tour list ordering. Lower values appear first.
           example: 0
-        slug:
-          type: string
-          description: Stable public slug.
-          example: historic-center
         tourType:
           type: string
           description: Tour commercial model.
@@ -4449,7 +4476,6 @@ components:
         - id
         - name
         - sortOrder
-        - slug
         - tourType
         - translations
         - audit
@@ -4553,10 +4579,6 @@ components:
           type: number
           description: Manual display position used by the default admin and public tour list ordering. Lower values appear first.
           example: 0
-        slug:
-          type: string
-          description: Stable public slug.
-          example: historic-center
         coverMediaId:
           type: object
           description: Attached image asset UUID used as the tour cover.
@@ -4615,6 +4637,11 @@ components:
           nullable: true
           allOf:
             - $ref: "#/components/schemas/TourAdminItineraryResponseDto"
+        cardTagKey:
+          type: object
+          description: Tag key shown on the public tour card. When null, the first tag is used.
+          example: history
+          nullable: true
         tagKeys:
           description: Ordered tag keys assigned to the tour.
           example:
@@ -4645,7 +4672,6 @@ components:
         - id
         - name
         - sortOrder
-        - slug
         - mediaItems
         - tourType
         - tagKeys
@@ -4662,12 +4688,6 @@ components:
           example: Barcelona Historic Center Main Tour
           minLength: 1
           maxLength: 255
-        slug:
-          type: string
-          description: Stable public slug for the tour.
-          example: historic-center
-          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
-          maxLength: 150
         tourType:
           type: string
           description: Commercial model of the tour. Required during minimal creation.
@@ -4686,7 +4706,6 @@ components:
           minimum: 0
       required:
         - name
-        - slug
         - tourType
     PriceDto:
       type: object
@@ -4800,12 +4819,6 @@ components:
           example: Barcelona Historic Center Main Tour
           minLength: 1
           maxLength: 255
-        slug:
-          type: string
-          description: Updated public slug.
-          example: historic-center
-          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
-          maxLength: 150
         contentSchema:
           type: object
           description: Updated shared JSON Schema for localized payload validation.
@@ -4858,6 +4871,11 @@ components:
           type: array
           items:
             type: string
+        cardTagKey:
+          type: object
+          description: Tag key to display on the public tour card. Set `null` to clear (first tag is used).
+          example: history
+          nullable: true
         sortOrder:
           type: number
           description: >-
@@ -4932,6 +4950,12 @@ components:
           description: Locale code for this tour translation.
           example: en
           pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+        slug:
+          type: string
+          description: Public slug for this translation.
+          example: historic-center
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 150
         bookingReferenceId:
           type: object
           description: Optional external booking reference for this locale. Set `null` to clear it on update.
@@ -4960,10 +4984,17 @@ components:
             itineraryDescription: Walk through the center.
       required:
         - languageCode
+        - slug
         - payload
     UpdateTourTranslationDto:
       type: object
       properties:
+        slug:
+          type: string
+          description: Updated public slug.
+          example: historic-center
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          maxLength: 150
         bookingReferenceId:
           type: object
           description: Updated external booking reference for this locale. Set `null` to clear it.
@@ -5018,6 +5049,10 @@ components:
     TourAdminTranslationResponseDto:
       type: object
       properties:
+        slug:
+          type: string
+          description: Public slug for this translation.
+          example: historic-center
         isReady:
           type: boolean
           description: Whether the translation currently satisfies all required completeness rules.
@@ -5068,12 +5103,17 @@ components:
           description: Localized payload validated against the shared content schema.
           additionalProperties: true
       required:
+        - slug
         - isReady
         - isPublished
         - payload
     TourAdminListTranslationResponseDto:
       type: object
       properties:
+        slug:
+          type: string
+          description: Public slug for this translation.
+          example: historic-center
         isReady:
           type: boolean
           description: Whether the translation currently satisfies all required completeness rules.
@@ -5083,11 +5123,16 @@ components:
           description: Whether the translation is configured to be publicly exposed.
           example: true
       required:
+        - slug
         - isReady
         - isPublished
     BlogAdminTranslationResponseDto:
       type: object
       properties:
+        slug:
+          type: string
+          description: Public slug for this translation.
+          example: barcelona-historic-center-guide
         isPublished:
           type: boolean
           description: Whether the translation is published.
@@ -5123,6 +5168,7 @@ components:
           items:
             type: string
       required:
+        - slug
         - isPublished
         - viewCount
         - title

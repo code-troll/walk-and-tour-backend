@@ -12,6 +12,8 @@ import { ProposalMediaEntity } from '../proposals/entities/proposal-media.entity
 import { ProposalVersionEntity } from '../proposals/entities/proposal-version.entity';
 import { ProposalEntity } from '../proposals/entities/proposal.entity';
 import { TagEntity } from '../tags/tag.entity';
+import { TeamMemberTranslationEntity } from '../team-members/entities/team-member-translation.entity';
+import { TeamMemberEntity } from '../team-members/entities/team-member.entity';
 import { TourMediaEntity } from '../tours/entities/tour-media.entity';
 import { TourItineraryStopEntity } from '../tours/entities/tour-itinerary-stop.entity';
 import { TourTranslationEntity } from '../tours/entities/tour-translation.entity';
@@ -40,6 +42,8 @@ export function getTypeOrmOptions(): TypeOrmModuleOptions {
       ProposalEntity,
       ProposalVersionEntity,
       ProposalMediaEntity,
+      TeamMemberEntity,
+      TeamMemberTranslationEntity,
       TourEntity,
       TourMediaEntity,
       TourItineraryStopEntity,
