@@ -31,12 +31,10 @@ export class PublicTeamMembersService {
       },
     });
 
-    return members
-      .map((member) => {
-        const translation = this.findTranslationForLocale(member, locale);
-        return translation ? this.toPublicResponse(member, translation) : null;
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null);
+    return members.map((member) => {
+      const translation = this.findTranslationForLocale(member, locale);
+      return this.toPublicResponse(member, translation);
+    });
   }
 
   private async assertPublicLocale(locale: string): Promise<void> {
@@ -63,14 +61,14 @@ export class PublicTeamMembersService {
 
   private toPublicResponse(
     member: TeamMemberEntity,
-    translation: TeamMemberTranslationEntity,
+    translation: TeamMemberTranslationEntity | null,
   ): unknown {
     return {
       id: member.id,
       name: member.name,
       orderIndex: member.orderIndex,
       linkedinUrl: member.linkedinUrl,
-      role: translation.role,
+      role: translation?.role ?? null,
       imageAlt: member.imageAlt,
       photoMedia: this.toMediaResponse(member.photoMedia),
     };
