@@ -20,16 +20,6 @@ export class CreateTeamMemberTranslationDto {
   languageCode!: string;
 
   @ApiProperty({
-    description: 'Localized team member name.',
-    example: 'Ayelen Salazar',
-    maxLength: 255,
-  })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
-  name!: string;
-
-  @ApiProperty({
     description: 'Localized team member role or title.',
     example: 'Founder & Director',
     maxLength: 255,
@@ -38,29 +28,9 @@ export class CreateTeamMemberTranslationDto {
   @IsNotEmpty()
   @MaxLength(255)
   role!: string;
-
-  @ApiPropertyOptional({
-    description: 'Localized alt text for the team member photo.',
-    example: 'Photo of Ayelen Salazar',
-    maxLength: 255,
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  imageAlt?: string;
 }
 
 export class UpdateTeamMemberTranslationDto {
-  @ApiPropertyOptional({
-    description: 'Updated localized team member name.',
-    example: 'Ayelen Salazar',
-    maxLength: 255,
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  name?: string;
-
   @ApiPropertyOptional({
     description: 'Updated localized team member role or title.',
     example: 'Founder & Director',
@@ -70,15 +40,4 @@ export class UpdateTeamMemberTranslationDto {
   @IsString()
   @MaxLength(255)
   role?: string;
-
-  @ApiPropertyOptional({
-    description: 'Updated localized alt text for the team member photo. Set `null` to clear it.',
-    example: 'Photo of Ayelen Salazar',
-    maxLength: 255,
-    nullable: true,
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  imageAlt?: string | null;
 }

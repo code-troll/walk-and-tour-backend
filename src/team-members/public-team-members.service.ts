@@ -67,11 +67,11 @@ export class PublicTeamMembersService {
   ): unknown {
     return {
       id: member.id,
+      name: member.name,
       orderIndex: member.orderIndex,
       linkedinUrl: member.linkedinUrl,
-      name: translation.name,
       role: translation.role,
-      imageAlt: translation.imageAlt,
+      imageAlt: member.imageAlt,
       photoMedia: this.toMediaResponse(member.photoMedia),
     };
   }

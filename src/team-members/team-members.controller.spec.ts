@@ -17,7 +17,6 @@ describe('TeamMembersController', () => {
       update: jest.fn(),
       remove: jest.fn(),
       setPhoto: jest.fn(),
-      clearPhoto: jest.fn(),
       createTranslation: jest.fn(),
       updateTranslation: jest.fn(),
       deleteTranslation: jest.fn(),
@@ -42,7 +41,7 @@ describe('TeamMembersController', () => {
   });
 
   it('delegates admin create with the authenticated admin', async () => {
-    const dto = { linkedinUrl: 'https://linkedin.com/in/test' };
+    const dto = { name: 'Ayelen Salazar', mediaId: 'media-1' };
     const admin = { id: 'admin-1' };
 
     await controller.createAdmin(dto as never, admin as never);
@@ -74,16 +73,8 @@ describe('TeamMembersController', () => {
     expect(teamMembersService.setPhoto).toHaveBeenCalledWith('member-1', dto, admin);
   });
 
-  it('delegates photo clearing with the authenticated admin', async () => {
-    const admin = { id: 'admin-1' };
-
-    await controller.clearPhoto('member-1', admin as never);
-
-    expect(teamMembersService.clearPhoto).toHaveBeenCalledWith('member-1', admin);
-  });
-
   it('delegates translation creation with the authenticated admin', async () => {
-    const dto = { languageCode: 'en', name: 'Ayelen Salazar', role: 'Founder' };
+    const dto = { languageCode: 'en', role: 'Founder' };
     const admin = { id: 'admin-1' };
 
     await controller.createTranslation('member-1', dto as never, admin as never);
@@ -96,7 +87,7 @@ describe('TeamMembersController', () => {
   });
 
   it('delegates translation updates with the authenticated admin', async () => {
-    const dto = { name: 'Updated Name' };
+    const dto = { role: 'Updated Role' };
     const admin = { id: 'admin-1' };
 
     await controller.updateTranslation('member-1', 'en', dto as never, admin as never);
@@ -132,15 +123,6 @@ describe('TeamMembersController', () => {
       Reflect.getMetadata(
         HTTP_CODE_METADATA,
         TeamMembersController.prototype.removeAdmin,
-      ),
-    ).toBe(204);
-  });
-
-  it('marks photo clear requests as 204 no content', () => {
-    expect(
-      Reflect.getMetadata(
-        HTTP_CODE_METADATA,
-        TeamMembersController.prototype.clearPhoto,
       ),
     ).toBe(204);
   });

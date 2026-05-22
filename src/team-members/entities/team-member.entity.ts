@@ -17,15 +17,21 @@ export class TeamMemberEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Column({ type: 'varchar', length: 255 })
+  name!: string;
+
   @Column({ name: 'order_index', type: 'integer' })
   orderIndex!: number;
 
-  @Column({ name: 'photo_media_id', type: 'uuid', nullable: true })
-  photoMediaId!: string | null;
+  @Column({ name: 'photo_media_id', type: 'uuid' })
+  photoMediaId!: string;
 
-  @ManyToOne(() => MediaAssetEntity, { nullable: true })
+  @ManyToOne(() => MediaAssetEntity)
   @JoinColumn({ name: 'photo_media_id' })
-  photoMedia!: MediaAssetEntity | null;
+  photoMedia!: MediaAssetEntity;
+
+  @Column({ name: 'image_alt', type: 'varchar', length: 255, nullable: true })
+  imageAlt!: string | null;
 
   @Column({ name: 'linkedin_url', type: 'varchar', length: 500, nullable: true })
   linkedinUrl!: string | null;
