@@ -151,7 +151,9 @@ export class ProposalsService {
     }
 
     const sortedVersions = [...versions].sort((a, b) => a.orderIndex - b.orderIndex);
-    const proposalUrl = `${proposalPublicBaseUrl.replace(/\/$/, '')}/private-tours/proposal/${proposal.hash}`;
+    const baseUrl = proposalPublicBaseUrl.replace(/\/$/, '');
+    const localePath = proposal.language === 'en' ? '' : `/${proposal.language}`;
+    const proposalUrl = `${baseUrl}${localePath}/private-tours/proposal/${proposal.hash}`;
 
     await this.emailProvider.sendProposalLink({
       recipientEmail: proposal.recipientEmail,
