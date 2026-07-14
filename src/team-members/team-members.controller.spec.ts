@@ -20,6 +20,7 @@ describe('TeamMembersController', () => {
       createTranslation: jest.fn(),
       updateTranslation: jest.fn(),
       deleteTranslation: jest.fn(),
+      listAvailableMembers: jest.fn(),
     } as unknown as jest.Mocked<TeamMembersService>;
     publicTeamMembersService = {
       findAll: jest.fn(),
@@ -109,6 +110,18 @@ describe('TeamMembersController', () => {
       'member-1',
       'en',
       admin,
+    );
+  });
+
+  it('delegates available-member listing with a parsed date and duration', async () => {
+    await controller.listAvailableMembers({
+      date: '2026-07-01T10:00:00.000Z',
+      durationMinutes: 90,
+    });
+
+    expect(teamMembersService.listAvailableMembers).toHaveBeenCalledWith(
+      new Date('2026-07-01T10:00:00.000Z'),
+      90,
     );
   });
 

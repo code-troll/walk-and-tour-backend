@@ -14,6 +14,7 @@ export interface ProviderConfig {
   railwayStorageRegion: string;
   railwayStorageBucket?: string;
   railwayStorageUrlStyle: 'virtual-hosted' | 'path';
+  defaultEventTimezone: string;
 }
 
 const DEFAULT_APP_BASE_URL = 'http://api.dev.walkandtour.dk:3000';
@@ -26,6 +27,10 @@ const DEFAULT_LOCAL_STORAGE_ROOT = 'storage';
 const DEFAULT_LOCAL_STORAGE_PUBLIC_BASE_URL = 'http://api.dev.walkandtour.dk:3000/media';
 const DEFAULT_RAILWAY_STORAGE_REGION = 'auto';
 const DEFAULT_RAILWAY_STORAGE_URL_STYLE = 'virtual-hosted';
+// IANA timezone applied to new events when the admin does not specify one. All
+// event datetimes are still stored in UTC; this only records the "home" zone a
+// calendar UI should present the event in. See EVENTS/timezone handling.
+const DEFAULT_EVENT_TIMEZONE = 'Europe/Copenhagen';
 
 export function getProviderConfig(): ProviderConfig {
   return {
@@ -51,6 +56,8 @@ export function getProviderConfig(): ProviderConfig {
     railwayStorageUrlStyle: parseRailwayStorageUrlStyle(
       process.env.RAILWAY_STORAGE_URL_STYLE,
     ),
+    defaultEventTimezone:
+      process.env.DEFAULT_EVENT_TIMEZONE ?? DEFAULT_EVENT_TIMEZONE,
   };
 }
 

@@ -17,6 +17,7 @@ describe('LocalFilesystemStorageService', () => {
       localStoragePublicBaseUrl: 'https://backend.example.com/media',
       railwayStorageRegion: 'auto',
       railwayStorageUrlStyle: 'virtual-hosted',
+      defaultEventTimezone: 'Europe/Copenhagen',
     });
 
     const result = await service.putObject({

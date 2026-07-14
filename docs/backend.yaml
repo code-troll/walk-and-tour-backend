@@ -2869,6 +2869,1391 @@ paths:
       summary: Unpublish a tour translation
       tags:
         - Admin Tours
+  /api/admin/team-members:
+    get:
+      description: Returns all team members with translations and audit metadata, ordered by display index.
+      operationId: TeamMembersController_findAllAdmin
+      parameters: []
+      responses:
+        "200":
+          description: Admin team member records.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List team members for admin management
+      tags:
+        - TeamMembers
+        - Admin Team Members
+    post:
+      description: Creates a new team member. Translations and photo are added through nested routes.
+      operationId: TeamMembersController_createAdmin
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamMemberDto"
+      responses:
+        "201":
+          description: Created admin team member record.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create a team member
+      tags:
+        - TeamMembers
+        - Admin Team Members
+  /api/admin/team-members/available:
+    get:
+      description: >-
+        Returns team members who are available for the window [date, date + durationMinutes]. Intended to populate the
+        guide picker so unavailable members are excluded.
+      operationId: TeamMembersController_listAvailableMembers
+      parameters:
+        - name: date
+          required: true
+          in: query
+          description: Occurrence start datetime (UTC).
+          schema:
+            format: date-time
+            example: "2026-07-01T10:00:00.000Z"
+            type: string
+        - name: durationMinutes
+          required: true
+          in: query
+          description: Occurrence duration in minutes.
+          schema:
+            minimum: 1
+            example: 90
+            type: number
+      responses:
+        "200":
+          description: Available team members.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List team members available for an occurrence
+      tags:
+        - TeamMembers
+        - Admin Team Members
+  /api/admin/team-members/{id}:
+    get:
+      description: Returns the full admin representation of a single team member.
+      operationId: TeamMembersController_findOneAdmin
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Admin team member record.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Get a team member by UUID
+      tags:
+        - TeamMembers
+        - Admin Team Members
+    patch:
+      description: Updates shared team member fields (order, LinkedIn, publication status).
+      operationId: TeamMembersController_updateAdmin
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTeamMemberDto"
+      responses:
+        "200":
+          description: Updated admin team member record.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update a team member
+      tags:
+        - TeamMembers
+        - Admin Team Members
+    delete:
+      description: Deletes a team member and all its translations.
+      operationId: TeamMembersController_removeAdmin
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Team member deleted successfully.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Delete a team member
+      tags:
+        - TeamMembers
+        - Admin Team Members
+  /api/admin/team-members/{id}/photo:
+    post:
+      description: Attaches or replaces the photo media on the team member.
+      operationId: TeamMembersController_setPhoto
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetTeamMemberPhotoDto"
+      responses:
+        "200":
+          description: Updated admin team member record.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Set team member photo
+      tags:
+        - TeamMembers
+        - Admin Team Members
+  /api/admin/team-members/{id}/translations:
+    post:
+      description: Creates one localized translation for a team member.
+      operationId: TeamMembersController_createTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamMemberTranslationDto"
+      responses:
+        "201":
+          description: Admin team member record after translation creation.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create a team member translation
+      tags:
+        - TeamMembers
+        - Admin Team Members
+  /api/admin/team-members/{id}/translations/{languageCode}:
+    patch:
+      description: Updates one localized translation for a team member.
+      operationId: TeamMembersController_updateTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: languageCode
+          required: true
+          in: path
+          description: Locale code for the translation.
+          schema:
+            example: en
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTeamMemberTranslationDto"
+      responses:
+        "200":
+          description: Admin team member record after translation update.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update a team member translation
+      tags:
+        - TeamMembers
+        - Admin Team Members
+    delete:
+      description: Deletes one localized translation by locale code.
+      operationId: TeamMembersController_deleteTranslation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: languageCode
+          required: true
+          in: path
+          description: Locale code for the translation.
+          schema:
+            example: en
+            type: string
+      responses:
+        "204":
+          description: Translation deleted successfully.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Delete a team member translation
+      tags:
+        - TeamMembers
+        - Admin Team Members
+  /api/admin/team-members/{id}/availability:
+    get:
+      description: Returns the team member unavailable date ranges and recurring weekly rules.
+      operationId: TeamMembersController_listAvailability
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Unavailability records for the team member.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List team member availability
+      tags:
+        - TeamMembers
+        - Admin Team Members
+  /api/admin/team-members/{id}/availability/dates:
+    post:
+      description: Marks a specific calendar date range (inclusive) as unavailable.
+      operationId: TeamMembersController_addUnavailableDate
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUnavailableDateDto"
+      responses:
+        "201":
+          description: Updated availability for the team member.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Add an unavailable date range
+      tags:
+        - TeamMembers
+        - Admin Team Members
+  /api/admin/team-members/{id}/availability/dates/{dateId}:
+    delete:
+      operationId: TeamMembersController_removeUnavailableDate
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: dateId
+          required: true
+          in: path
+          description: Unavailable date entry UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Unavailable date range removed.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Remove an unavailable date range
+      tags:
+        - TeamMembers
+        - Admin Team Members
+  /api/admin/team-members/{id}/availability/recurring:
+    post:
+      description: Marks a recurring weekly window (or whole weekday) as unavailable.
+      operationId: TeamMembersController_addRecurringUnavailability
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRecurringUnavailabilityDto"
+      responses:
+        "201":
+          description: Updated availability for the team member.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Add a recurring weekly unavailability
+      tags:
+        - TeamMembers
+        - Admin Team Members
+  /api/admin/team-members/{id}/availability/recurring/{ruleId}:
+    delete:
+      operationId: TeamMembersController_removeRecurringUnavailability
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Team member UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: ruleId
+          required: true
+          in: path
+          description: Recurring unavailability UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Recurring unavailability removed.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Remove a recurring weekly unavailability
+      tags:
+        - TeamMembers
+        - Admin Team Members
+  /api/public/team-members:
+    get:
+      description: >-
+        Returns all published team members ordered by display index. The role is resolved from the translation for the
+        requested locale, or null when no translation exists.
+      operationId: TeamMembersController_findAllPublic
+      parameters:
+        - name: locale
+          required: true
+          in: query
+          description: Requested locale code.
+          schema:
+            pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+            example: en
+            type: string
+      responses:
+        "200":
+          description: Published localized team members.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      summary: List published team members by locale
+      tags:
+        - TeamMembers
+        - Public Team Members
+  /api/admin/events:
+    get:
+      description: Returns all events with their confirmed occurrences.
+      operationId: EventsController_findAllAdmin
+      parameters: []
+      responses:
+        "200":
+          description: Admin event records.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List events
+      tags:
+        - Admin Events
+    post:
+      description: Creates a single or recurring event template.
+      operationId: EventsController_createAdmin
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventDto"
+      responses:
+        "201":
+          description: Created admin event record.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create an event
+      tags:
+        - Admin Events
+  /api/admin/events/calendar:
+    get:
+      description: >-
+        Expands and merges occurrences for every event within [from, to], each item carrying its parent event context.
+        Unconfirmed candidate dates are only emitted for active events.
+      operationId: EventsController_listCalendar
+      parameters:
+        - name: from
+          required: true
+          in: query
+          description: Start of the window (inclusive) to expand candidate dates from.
+          schema:
+            format: date-time
+            type: string
+        - name: to
+          required: true
+          in: query
+          description: End of the window (inclusive) to expand candidate dates to.
+          schema:
+            format: date-time
+            type: string
+      responses:
+        "200":
+          description: Occurrences across all events in the window.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Calendar feed across all events
+      tags:
+        - Admin Events
+  /api/admin/events/day-notes:
+    get:
+      description: Returns free-text day notes whose date falls within [from, to].
+      operationId: EventsController_listDayNotes
+      parameters:
+        - name: from
+          required: true
+          in: query
+          description: Start of the window (inclusive) to expand candidate dates from.
+          schema:
+            format: date-time
+            type: string
+        - name: to
+          required: true
+          in: query
+          description: End of the window (inclusive) to expand candidate dates to.
+          schema:
+            format: date-time
+            type: string
+      responses:
+        "200":
+          description: Day notes in the window.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List day notes in a window
+      tags:
+        - Admin Events
+  /api/admin/events/day-notes/{date}:
+    put:
+      description: Upserts the note for a single calendar date (YYYY-MM-DD).
+      operationId: EventsController_upsertDayNote
+      parameters:
+        - name: date
+          required: true
+          in: path
+          description: Calendar date (YYYY-MM-DD).
+          schema:
+            example: "2026-07-01"
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertDayNoteDto"
+      responses:
+        "200":
+          description: The stored day note.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create or replace a day note
+      tags:
+        - Admin Events
+    delete:
+      description: Removes the note for a single calendar date (YYYY-MM-DD).
+      operationId: EventsController_removeDayNote
+      parameters:
+        - name: date
+          required: true
+          in: path
+          description: Calendar date (YYYY-MM-DD).
+          schema:
+            example: "2026-07-01"
+            type: string
+      responses:
+        "204":
+          description: Day note deleted successfully.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Delete a day note
+      tags:
+        - Admin Events
+  /api/admin/events/{id}:
+    get:
+      operationId: EventsController_findOneAdmin
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Event UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Admin event record.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Get an event by UUID
+      tags:
+        - Admin Events
+    patch:
+      operationId: EventsController_updateAdmin
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Event UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEventDto"
+      responses:
+        "200":
+          description: Updated admin event record.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update an event
+      tags:
+        - Admin Events
+    delete:
+      description: Deletes an event and all its confirmed occurrences.
+      operationId: EventsController_removeAdmin
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Event UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Event deleted successfully.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Delete an event
+      tags:
+        - Admin Events
+  /api/admin/events/{id}/cancel:
+    post:
+      description: Sets the event status to `cancelled`.
+      operationId: EventsController_cancelAdmin
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Event UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Cancelled admin event record.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Cancel an event
+      tags:
+        - Admin Events
+  /api/admin/events/{id}/occurrences:
+    get:
+      description: >-
+        Expands candidate dates from the event schedule within [from, to] and merges them with confirmed occurrences.
+        Each item is flagged unconfirmed, confirmed, or cancelled.
+      operationId: EventsController_listOccurrences
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Event UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: from
+          required: true
+          in: query
+          description: Start of the window (inclusive) to expand candidate dates from.
+          schema:
+            format: date-time
+            type: string
+        - name: to
+          required: true
+          in: query
+          description: End of the window (inclusive) to expand candidate dates to.
+          schema:
+            format: date-time
+            type: string
+      responses:
+        "200":
+          description: Candidate and confirmed occurrences in the window.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List occurrences in a window
+      tags:
+        - Admin Events
+    post:
+      description: >-
+        Confirms a scheduled date, assigning guide(s) and an optional note. Rejected if an assigned guide is unavailable
+        on that date.
+      operationId: EventsController_confirmOccurrence
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Event UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmOccurrenceDto"
+      responses:
+        "201":
+          description: Confirmed occurrence record.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Confirm an occurrence
+      tags:
+        - Admin Events
+  /api/admin/events/{id}/occurrences/{occurrenceId}:
+    patch:
+      description: Changes the assigned guide(s) and/or note. Re-validates availability.
+      operationId: EventsController_updateOccurrence
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Event UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: occurrenceId
+          required: true
+          in: path
+          description: Occurrence UUID.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOccurrenceDto"
+      responses:
+        "200":
+          description: Updated occurrence record.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update a confirmed occurrence
+      tags:
+        - Admin Events
+    delete:
+      description: Deletes the occurrence, reverting the date to an unconfirmed candidate.
+      operationId: EventsController_removeOccurrence
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Event UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: occurrenceId
+          required: true
+          in: path
+          description: Occurrence UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Occurrence deleted successfully.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Delete a confirmed occurrence
+      tags:
+        - Admin Events
+  /api/admin/events/{id}/occurrences/{occurrenceId}/cancel:
+    post:
+      description: Sets the occurrence status to `cancelled`.
+      operationId: EventsController_cancelOccurrence
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Event UUID.
+          schema:
+            format: uuid
+            type: string
+        - name: occurrenceId
+          required: true
+          in: path
+          description: Occurrence UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Cancelled occurrence record.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Cancel a confirmed occurrence
+      tags:
+        - Admin Events
 info:
   title: Walk and Tour Backend API
   description: Administrative and public API surface for languages, tags, tours, blog posts, and admin authentication.
@@ -5011,6 +6396,333 @@ components:
           type: object
           description: Optional external booking reference override applied before publishing. Set `null` to clear it.
           example: booking-ref-123
+          nullable: true
+    CreateTeamMemberDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Team member name.
+          example: Ayelen Salazar
+          maxLength: 255
+        mediaId:
+          type: string
+          description: Media asset UUID to attach as the team member photo.
+          format: uuid
+        imageAlt:
+          type: string
+          description: Alt text for the team member photo.
+          example: Photo of Ayelen Salazar
+          maxLength: 255
+        orderIndex:
+          type: number
+          description: Display order index. Auto-calculated as next available if omitted.
+          example: 0
+        linkedinUrl:
+          type: string
+          description: LinkedIn profile URL.
+          example: https://linkedin.com/in/example
+          maxLength: 500
+        isPublished:
+          type: boolean
+          description: Whether the team member is publicly visible. Defaults to false.
+          example: false
+      required:
+        - name
+        - mediaId
+    UpdateTeamMemberDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated team member name.
+          example: Ayelen Salazar
+          maxLength: 255
+        imageAlt:
+          type: object
+          description: Updated alt text for the team member photo. Set `null` to clear it.
+          example: Photo of Ayelen Salazar
+          maxLength: 255
+          nullable: true
+        orderIndex:
+          type: number
+          description: Updated display order index.
+          example: 1
+        linkedinUrl:
+          type: object
+          description: LinkedIn profile URL. Set `null` to clear it.
+          example: https://linkedin.com/in/example
+          maxLength: 500
+          nullable: true
+        isPublished:
+          type: boolean
+          description: Whether the team member is publicly visible.
+          example: true
+    SetTeamMemberPhotoDto:
+      type: object
+      properties:
+        mediaId:
+          type: string
+          description: Media asset UUID to attach as the team member photo.
+          format: uuid
+      required:
+        - mediaId
+    CreateTeamMemberTranslationDto:
+      type: object
+      properties:
+        languageCode:
+          type: string
+          description: Locale code for this translation.
+          example: en
+          pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+        role:
+          type: string
+          description: Localized team member role or title.
+          example: Founder & Director
+          maxLength: 255
+      required:
+        - languageCode
+        - role
+    UpdateTeamMemberTranslationDto:
+      type: object
+      properties:
+        role:
+          type: string
+          description: Updated localized team member role or title.
+          example: Founder & Director
+          maxLength: 255
+    CreateUnavailableDateDto:
+      type: object
+      properties:
+        startDate:
+          type: string
+          description: First unavailable day (inclusive), as a calendar date.
+          format: date
+          example: "2026-07-01"
+        endDate:
+          type: string
+          description: Last unavailable day (inclusive). Equal to `startDate` for a single day off.
+          format: date
+          example: "2026-07-10"
+        reason:
+          type: string
+          description: Optional human-readable reason.
+          maxLength: 255
+          example: Vacation
+      required:
+        - startDate
+        - endDate
+    CreateRecurringUnavailabilityDto:
+      type: object
+      properties:
+        dayOfWeek:
+          type: number
+          description: Weekday the team member is unavailable (0 = Sunday … 6 = Saturday).
+          minimum: 0
+          maximum: 6
+          example: 0
+        startTime:
+          type: string
+          description: Start of the unavailable window (HH:mm, UTC). Omit with `endTime` for whole-day.
+          example: "00:00"
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+        endTime:
+          type: string
+          description: End of the unavailable window (HH:mm, UTC). Omit with `startTime` for whole-day.
+          example: "09:00"
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+      required:
+        - dayOfWeek
+    UpsertDayNoteDto:
+      type: object
+      properties:
+        note:
+          type: string
+          description: Free-text note for the day.
+          maxLength: 2000
+      required:
+        - note
+    RecurrenceDto:
+      type: object
+      properties:
+        freq:
+          type: string
+          description: Recurrence unit.
+          enum:
+            - daily
+            - weekly
+            - monthly
+        interval:
+          type: number
+          description: Repeat every N units of `freq` (e.g. interval 2 + weekly = every other week).
+          example: 1
+          minimum: 1
+        byDay:
+          description: >-
+            Weekdays the event runs on for weekly rules (0 = Sunday … 6 = Saturday). Defaults to the start date weekday
+            when omitted.
+          example:
+            - 1
+            - 3
+            - 5
+          type: array
+          items:
+            type: number
+        until:
+          type: string
+          description: >-
+            Inclusive end of the series. Bounds how far candidate dates are generated. Omit for an open-ended series
+            (candidate dates are still bounded by the requested window and a safety cap).
+          format: date-time
+          nullable: true
+      required:
+        - freq
+        - interval
+    CreateEventDto:
+      type: object
+      properties:
+        language:
+          type: string
+          description: Language the event is conducted in.
+          example: en
+          pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+        type:
+          type: string
+          description: Commercial model of the event.
+          enum:
+            - free
+            - paid
+        tourId:
+          type: string
+          description: UUID of the website tour this event links to.
+          format: uuid
+        description:
+          type: string
+          description: Optional event description.
+          maxLength: 2000
+        durationMinutes:
+          type: number
+          description: Duration of each occurrence in minutes.
+          example: 90
+          minimum: 1
+        frequency:
+          type: string
+          description: Whether the event happens once or recurs.
+          enum:
+            - single
+            - recurring
+        startDate:
+          type: string
+          description: Anchor start datetime. For single events this is the event date.
+          format: date-time
+        timezone:
+          type: string
+          description: >-
+            IANA timezone the event is presented in (e.g. `Europe/Copenhagen`). Datetimes are stored in UTC regardless;
+            this only controls presentation. Defaults to the configured system timezone when omitted.
+          example: Europe/Copenhagen
+          maxLength: 64
+        recurrence:
+          description: Recurrence rule. Required when `frequency` is `recurring`, ignored otherwise.
+          allOf:
+            - $ref: "#/components/schemas/RecurrenceDto"
+      required:
+        - language
+        - type
+        - durationMinutes
+        - frequency
+        - startDate
+    UpdateEventDto:
+      type: object
+      properties:
+        language:
+          type: string
+          description: Language the event is conducted in.
+          example: en
+          pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+        type:
+          type: string
+          description: Commercial model of the event.
+          enum:
+            - free
+            - paid
+        tourId:
+          type: object
+          description: UUID of the website tour this event links to. Set `null` to clear it.
+          format: uuid
+          nullable: true
+        description:
+          type: object
+          description: Optional event description. Set `null` to clear it.
+          maxLength: 2000
+          nullable: true
+        durationMinutes:
+          type: number
+          description: Duration of each occurrence in minutes.
+          example: 90
+          minimum: 1
+        frequency:
+          type: string
+          description: Whether the event happens once or recurs.
+          enum:
+            - single
+            - recurring
+        startDate:
+          type: string
+          description: Anchor start datetime. For single events this is the event date.
+          format: date-time
+        timezone:
+          type: string
+          description: >-
+            IANA timezone the event is presented in (e.g. `Europe/Copenhagen`). Datetimes stay stored in UTC; this only
+            controls presentation.
+          example: Europe/Copenhagen
+          maxLength: 64
+        recurrence:
+          description: Recurrence rule. Provide when the event is (or becomes) recurring.
+          allOf:
+            - $ref: "#/components/schemas/RecurrenceDto"
+    ConfirmOccurrenceDto:
+      type: object
+      properties:
+        date:
+          type: string
+          description: Date being confirmed. Must match a candidate date produced by the event schedule.
+          format: date-time
+        teamMemberIds:
+          description: UUIDs of the team member(s) assigned as guide(s) for this date (0 or more).
+          type: array
+          items:
+            type: string
+            format: uuid
+        note:
+          type: string
+          description: Free-text note specific to this date.
+          maxLength: 2000
+        status:
+          type: string
+          description: >-
+            Status to create the occurrence with. Defaults to `confirmed`. Use `cancelled` to mark a scheduled date off
+            without assigning a guide.
+          enum:
+            - confirmed
+            - cancelled
+          default: confirmed
+      required:
+        - date
+    UpdateOccurrenceDto:
+      type: object
+      properties:
+        teamMemberIds:
+          description: Replacement set of assigned guide UUIDs. Replaces the existing assignment.
+          type: array
+          items:
+            type: string
+            format: uuid
+        note:
+          type: object
+          description: Free-text note specific to this date. Set `null` to clear it.
+          maxLength: 2000
           nullable: true
     AuditMetadataDto:
       type: object

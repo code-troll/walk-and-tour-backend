@@ -10,7 +10,9 @@ import {
 } from 'typeorm';
 
 import { MediaAssetEntity } from '../../media/media-asset.entity';
+import { TeamMemberRecurringUnavailabilityEntity } from './team-member-recurring-unavailability.entity';
 import { TeamMemberTranslationEntity } from './team-member-translation.entity';
+import { TeamMemberUnavailableDateEntity } from './team-member-unavailable-date.entity';
 
 @Entity({ name: 'team_members' })
 export class TeamMemberEntity {
@@ -43,6 +45,20 @@ export class TeamMemberEntity {
     cascade: false,
   })
   translations!: TeamMemberTranslationEntity[];
+
+  @OneToMany(
+    () => TeamMemberUnavailableDateEntity,
+    (entry) => entry.teamMember,
+    { cascade: false },
+  )
+  unavailableDates!: TeamMemberUnavailableDateEntity[];
+
+  @OneToMany(
+    () => TeamMemberRecurringUnavailabilityEntity,
+    (entry) => entry.teamMember,
+    { cascade: false },
+  )
+  recurringUnavailability!: TeamMemberRecurringUnavailabilityEntity[];
 
   @Column({ name: 'created_by', type: 'uuid', nullable: true })
   createdBy!: string | null;
