@@ -5,6 +5,7 @@ import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { AdminUsersModule } from './admin-users/admin-users.module';
 import { BlogPostsModule } from './blog-posts/blog-posts.module';
 import { DatabaseModule } from './database/database.module';
+import { EventsModule } from './events/events.module';
 import { HealthController } from './health/health.controller';
 import { LanguagesModule } from './languages/languages.module';
 import { NewsletterSubscribersModule } from './newsletter-subscribers/newsletter-subscribers.module';
@@ -21,6 +22,7 @@ import { ToursModule } from './tours/tours.module';
     AdminAuthModule,
     AdminUsersModule,
     BlogPostsModule,
+    EventsModule,
     LanguagesModule,
     NewsletterSubscribersModule,
     ProposalsModule,

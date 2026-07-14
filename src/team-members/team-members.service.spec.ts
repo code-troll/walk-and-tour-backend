@@ -7,7 +7,9 @@ import {
 import { createRepositoryMock, RepositoryMock } from '../../test/utils/repository.mock';
 import { LanguageEntity } from '../languages/language.entity';
 import { MediaAssetEntity } from '../media/media-asset.entity';
+import { TeamMemberRecurringUnavailabilityEntity } from './entities/team-member-recurring-unavailability.entity';
 import { TeamMemberTranslationEntity } from './entities/team-member-translation.entity';
+import { TeamMemberUnavailableDateEntity } from './entities/team-member-unavailable-date.entity';
 import { TeamMemberEntity } from './entities/team-member.entity';
 import { TeamMembersService } from './team-members.service';
 
@@ -17,6 +19,8 @@ describe('TeamMembersService', () => {
   let translationsRepository: RepositoryMock<TeamMemberTranslationEntity>;
   let mediaAssetsRepository: RepositoryMock<MediaAssetEntity>;
   let languagesRepository: RepositoryMock<LanguageEntity>;
+  let unavailableDatesRepository: RepositoryMock<TeamMemberUnavailableDateEntity>;
+  let recurringUnavailabilityRepository: RepositoryMock<TeamMemberRecurringUnavailabilityEntity>;
 
   const actor = {
     id: 'admin-1',
@@ -31,11 +35,17 @@ describe('TeamMembersService', () => {
     translationsRepository = createRepositoryMock<TeamMemberTranslationEntity>();
     mediaAssetsRepository = createRepositoryMock<MediaAssetEntity>();
     languagesRepository = createRepositoryMock<LanguageEntity>();
+    unavailableDatesRepository =
+      createRepositoryMock<TeamMemberUnavailableDateEntity>();
+    recurringUnavailabilityRepository =
+      createRepositoryMock<TeamMemberRecurringUnavailabilityEntity>();
     service = new TeamMembersService(
       teamMembersRepository as never,
       translationsRepository as never,
       mediaAssetsRepository as never,
       languagesRepository as never,
+      unavailableDatesRepository as never,
+      recurringUnavailabilityRepository as never,
     );
   });
 
@@ -409,6 +419,186 @@ describe('TeamMembersService', () => {
         }),
       }),
     );
+  });
+
+  // ── Availability ───────────────────────────────────────────────
+
+  it('lists both kinds of availability for a team member', async () => {
+    teamMembersRepository.findOne.mockResolvedValue(createTeamMemberEntity());
+    unavailableDatesRepository.find.mockResolvedValue([
+      { id: 'date-1', startDate: '2026-07-01', endDate: '2026-07-10', reason: 'Vacation' },
+    ]);
+    recurringUnavailabilityRepository.find.mockResolvedValue([
+      { id: 'rule-1', dayOfWeek: 0, startTime: null, endTime: null },
+    ]);
+
+    const result = (await service.listAvailability('member-1')) as Record<
+      string,
+      unknown
+    >;
+
+    expect(result).toEqual({
+      unavailableDates: [
+        { id: 'date-1', startDate: '2026-07-01', endDate: '2026-07-10', reason: 'Vacation' },
+      ],
+      recurringUnavailability: [
+        { id: 'rule-1', dayOfWeek: 0, startTime: null, endTime: null },
+      ],
+    });
+  });
+
+  it('adds an unavailable date range', async () => {
+    teamMembersRepository.findOne.mockResolvedValue(createTeamMemberEntity());
+    unavailableDatesRepository.create.mockImplementation((value) => value);
+    unavailableDatesRepository.find.mockResolvedValue([]);
+    recurringUnavailabilityRepository.find.mockResolvedValue([]);
+
+    await service.addUnavailableDate(
+      'member-1',
+      { startDate: '2026-07-01', endDate: '2026-07-10', reason: 'Vacation' },
+      actor,
+    );
+
+    expect(unavailableDatesRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        teamMemberId: 'member-1',
+        startDate: '2026-07-01',
+        endDate: '2026-07-10',
+        reason: 'Vacation',
+      }),
+    );
+  });
+
+  it('rejects an unavailable date range with endDate before startDate', async () => {
+    teamMembersRepository.findOne.mockResolvedValue(createTeamMemberEntity());
+
+    await expect(
+      service.addUnavailableDate(
+        'member-1',
+        { startDate: '2026-07-10', endDate: '2026-07-01' },
+        actor,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects a recurring rule with only one of start/end time', async () => {
+    teamMembersRepository.findOne.mockResolvedValue(createTeamMemberEntity());
+
+    await expect(
+      service.addRecurringUnavailability(
+        'member-1',
+        { dayOfWeek: 1, startTime: '09:00' },
+        actor,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  // ── assertMembersAvailable ─────────────────────────────────────
+
+  it('passes when no team members are assigned', async () => {
+    await expect(
+      service.assertMembersAvailable(new Date('2026-07-01T10:00:00Z'), 90, []),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rejects when a team member does not exist', async () => {
+    teamMembersRepository.find.mockResolvedValue([]);
+
+    await expect(
+      service.assertMembersAvailable(new Date('2026-07-01T10:00:00Z'), 90, [
+        'ghost',
+      ]),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects when the date falls inside an unavailable date block', async () => {
+    teamMembersRepository.find.mockResolvedValue([{ id: 'member-1' }]);
+    unavailableDatesRepository.find.mockResolvedValue([
+      { teamMemberId: 'member-1', startDate: '2026-07-01', endDate: '2026-07-10' },
+    ]);
+    recurringUnavailabilityRepository.find.mockResolvedValue([]);
+
+    await expect(
+      service.assertMembersAvailable(new Date('2026-07-05T10:00:00Z'), 90, [
+        'member-1',
+      ]),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects when the time window overlaps a recurring weekly rule', async () => {
+    // 2026-07-01 is a Wednesday (UTC day 3).
+    teamMembersRepository.find.mockResolvedValue([{ id: 'member-1' }]);
+    unavailableDatesRepository.find.mockResolvedValue([]);
+    recurringUnavailabilityRepository.find.mockResolvedValue([
+      { teamMemberId: 'member-1', dayOfWeek: 3, startTime: '09:00', endTime: '12:00' },
+    ]);
+
+    await expect(
+      service.assertMembersAvailable(new Date('2026-07-01T10:00:00Z'), 90, [
+        'member-1',
+      ]),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('passes when the recurring rule is on a different weekday', async () => {
+    teamMembersRepository.find.mockResolvedValue([{ id: 'member-1' }]);
+    unavailableDatesRepository.find.mockResolvedValue([]);
+    recurringUnavailabilityRepository.find.mockResolvedValue([
+      { teamMemberId: 'member-1', dayOfWeek: 0, startTime: '09:00', endTime: '12:00' },
+    ]);
+
+    await expect(
+      service.assertMembersAvailable(new Date('2026-07-01T10:00:00Z'), 90, [
+        'member-1',
+      ]),
+    ).resolves.toBeUndefined();
+  });
+
+  it('passes when the time window does not overlap the recurring rule', async () => {
+    teamMembersRepository.find.mockResolvedValue([{ id: 'member-1' }]);
+    unavailableDatesRepository.find.mockResolvedValue([]);
+    recurringUnavailabilityRepository.find.mockResolvedValue([
+      { teamMemberId: 'member-1', dayOfWeek: 3, startTime: '06:00', endTime: '09:00' },
+    ]);
+
+    await expect(
+      service.assertMembersAvailable(new Date('2026-07-01T10:00:00Z'), 90, [
+        'member-1',
+      ]),
+    ).resolves.toBeUndefined();
+  });
+
+  // ── listAvailableMembers ───────────────────────────────────────
+
+  it('excludes members blocked for the occurrence window', async () => {
+    // 2026-07-01 is a Wednesday (UTC day 3). member-1 has a date block,
+    // member-2 an overlapping weekly rule, member-3 is free.
+    teamMembersRepository.find.mockResolvedValue([
+      createTeamMemberEntity({ id: 'member-1' }),
+      createTeamMemberEntity({ id: 'member-2' }),
+      createTeamMemberEntity({ id: 'member-3' }),
+    ]);
+    unavailableDatesRepository.find.mockResolvedValue([
+      { teamMemberId: 'member-1', startDate: '2026-07-01', endDate: '2026-07-10' },
+    ]);
+    recurringUnavailabilityRepository.find.mockResolvedValue([
+      { teamMemberId: 'member-2', dayOfWeek: 3, startTime: '09:00', endTime: '12:00' },
+    ]);
+
+    const result = (await service.listAvailableMembers(
+      new Date('2026-07-01T10:00:00Z'),
+      90,
+    )) as Array<{ id: string }>;
+
+    expect(result.map((member) => member.id)).toEqual(['member-3']);
+  });
+
+  it('returns an empty list when there are no team members', async () => {
+    teamMembersRepository.find.mockResolvedValue([]);
+
+    await expect(
+      service.listAvailableMembers(new Date('2026-07-01T10:00:00Z'), 90),
+    ).resolves.toEqual([]);
   });
 });
 

@@ -14,6 +14,8 @@ import { RolesService } from '../admin-users/roles.service';
 import { BlogPostsController } from '../blog-posts/blog-posts.controller';
 import { BlogPostsService } from '../blog-posts/blog-posts.service';
 import { PublicBlogPostsService } from '../blog-posts/public-blog-posts.service';
+import { EventsController } from '../events/events.controller';
+import { EventsService } from '../events/events.service';
 import { HealthController } from '../health/health.controller';
 import { LanguagesController } from '../languages/languages.controller';
 import { LanguagesService } from '../languages/languages.service';
@@ -26,6 +28,9 @@ import {
 import { NewsletterSubscribersService } from '../newsletter-subscribers/newsletter-subscribers.service';
 import { TagsController } from '../tags/tags.controller';
 import { TagsService } from '../tags/tags.service';
+import { TeamMembersController } from '../team-members/team-members.controller';
+import { TeamMembersService } from '../team-members/team-members.service';
+import { PublicTeamMembersService } from '../team-members/public-team-members.service';
 import { PublicToursController } from '../tours/public-tours.controller';
 import { ToursController } from '../tours/tours.controller';
 import { PublicToursService } from '../tours/public-tours.service';
@@ -47,6 +52,8 @@ const EMPTY_SERVICE = {};
     TagsController,
     PublicToursController,
     ToursController,
+    TeamMembersController,
+    EventsController,
   ],
   providers: [
     { provide: AdminUsersService, useValue: EMPTY_SERVICE },
@@ -63,6 +70,9 @@ const EMPTY_SERVICE = {};
     { provide: TagsService, useValue: EMPTY_SERVICE },
     { provide: PublicToursService, useValue: EMPTY_SERVICE },
     { provide: ToursService, useValue: EMPTY_SERVICE },
+    { provide: TeamMembersService, useValue: EMPTY_SERVICE },
+    { provide: PublicTeamMembersService, useValue: EMPTY_SERVICE },
+    { provide: EventsService, useValue: EMPTY_SERVICE },
     { provide: AdminJwtAuthGuard, useValue: EMPTY_SERVICE },
     { provide: AdminRolesGuard, useValue: EMPTY_SERVICE },
   ],

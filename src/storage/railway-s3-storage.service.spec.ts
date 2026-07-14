@@ -23,6 +23,7 @@ describe('RailwayS3StorageService', () => {
         railwayStorageRegion: 'auto',
         railwayStorageBucket: 'media',
         railwayStorageUrlStyle: 'virtual-hosted',
+        defaultEventTimezone: 'Europe/Copenhagen',
       },
       fetchImpl,
       () => new Date('2026-03-15T12:34:56.000Z'),
@@ -68,6 +69,7 @@ describe('RailwayS3StorageService', () => {
       railwayStorageRegion: 'eu-west-1',
       railwayStorageBucket: 'media',
       railwayStorageUrlStyle: 'path',
+      defaultEventTimezone: 'Europe/Copenhagen',
     });
 
     expect(service.getPublicUrl('images/cover photo.jpg')).toBe(
@@ -86,6 +88,7 @@ describe('RailwayS3StorageService', () => {
       localStoragePublicBaseUrl: 'https://backend.example.com/media',
       railwayStorageRegion: 'auto',
       railwayStorageUrlStyle: 'virtual-hosted',
+      defaultEventTimezone: 'Europe/Copenhagen',
     });
 
     await expect(

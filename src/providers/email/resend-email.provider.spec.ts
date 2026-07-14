@@ -20,6 +20,7 @@ describe('ResendEmailProvider', () => {
         localStoragePublicBaseUrl: 'https://backend.example.com/media',
         railwayStorageRegion: 'auto',
         railwayStorageUrlStyle: 'virtual-hosted',
+        defaultEventTimezone: 'Europe/Copenhagen',
       },
       fetchImpl,
     );
@@ -61,6 +62,7 @@ describe('ResendEmailProvider', () => {
       localStoragePublicBaseUrl: 'https://backend.example.com/media',
       railwayStorageRegion: 'auto',
       railwayStorageUrlStyle: 'virtual-hosted',
+      defaultEventTimezone: 'Europe/Copenhagen',
     });
 
     await expect(

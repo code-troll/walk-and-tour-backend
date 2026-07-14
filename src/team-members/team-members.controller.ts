@@ -35,6 +35,11 @@ import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
 import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
 import { LocaleQueryDto } from '../shared/dto/locale-query.dto';
 import { ErrorResponseDto } from '../swagger/swagger.models';
+import { AvailableMembersQueryDto } from './dto/available-members-query.dto';
+import {
+  CreateRecurringUnavailabilityDto,
+  CreateUnavailableDateDto,
+} from './dto/team-member-availability.dto';
 import { CreateTeamMemberDto } from './dto/create-team-member.dto';
 import { SetTeamMemberPhotoDto } from './dto/team-member-photo.dto';
 import {
@@ -68,6 +73,29 @@ export class TeamMembersController {
   @AdminRoles('super_admin', 'editor')
   findAllAdmin() {
     return this.teamMembersService.findAll();
+  }
+
+  @ApiTags('Admin Team Members')
+  @ApiBearerAuth('admin-auth')
+  @ApiOperation({
+    summary: 'List team members available for an occurrence',
+    description:
+      'Returns team members who are available for the window [date, date + durationMinutes]. Intended to populate the guide picker so unavailable members are excluded.',
+  })
+  @ApiQuery({ name: 'date', description: 'Occurrence start datetime (UTC).', example: '2026-07-01T10:00:00.000Z' })
+  @ApiQuery({ name: 'durationMinutes', description: 'Occurrence duration in minutes.', example: 90 })
+  @ApiOkResponse({ description: 'Available team members.' })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Get('admin/team-members/available')
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles('super_admin', 'editor')
+  listAvailableMembers(@Query() query: AvailableMembersQueryDto) {
+    return this.teamMembersService.listAvailableMembers(
+      new Date(query.date),
+      query.durationMinutes,
+    );
   }
 
   @ApiTags('Admin Team Members')
@@ -252,6 +280,116 @@ export class TeamMembersController {
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     await this.teamMembersService.deleteTranslation(id, languageCode, admin);
+  }
+
+  // ── Availability ─────────────────────────────────────────────────
+
+  @ApiTags('Admin Team Members')
+  @ApiBearerAuth('admin-auth')
+  @ApiOperation({
+    summary: 'List team member availability',
+    description: 'Returns the team member unavailable date ranges and recurring weekly rules.',
+  })
+  @ApiParam({ name: 'id', description: 'Team member UUID.', format: 'uuid' })
+  @ApiOkResponse({ description: 'Unavailability records for the team member.' })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Get('admin/team-members/:id/availability')
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles('super_admin', 'editor')
+  listAvailability(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.teamMembersService.listAvailability(id);
+  }
+
+  @ApiTags('Admin Team Members')
+  @ApiBearerAuth('admin-auth')
+  @ApiOperation({
+    summary: 'Add an unavailable date range',
+    description: 'Marks a specific calendar date range (inclusive) as unavailable.',
+  })
+  @ApiParam({ name: 'id', description: 'Team member UUID.', format: 'uuid' })
+  @ApiCreatedResponse({ description: 'Updated availability for the team member.' })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post('admin/team-members/:id/availability/dates')
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles('super_admin', 'editor')
+  addUnavailableDate(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: CreateUnavailableDateDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.teamMembersService.addUnavailableDate(id, dto, admin);
+  }
+
+  @ApiTags('Admin Team Members')
+  @ApiBearerAuth('admin-auth')
+  @ApiOperation({
+    summary: 'Remove an unavailable date range',
+  })
+  @ApiParam({ name: 'id', description: 'Team member UUID.', format: 'uuid' })
+  @ApiParam({ name: 'dateId', description: 'Unavailable date entry UUID.', format: 'uuid' })
+  @ApiNoContentResponse({ description: 'Unavailable date range removed.' })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Delete('admin/team-members/:id/availability/dates/:dateId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles('super_admin', 'editor')
+  async removeUnavailableDate(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('dateId', new ParseUUIDPipe()) dateId: string,
+  ) {
+    await this.teamMembersService.removeUnavailableDate(id, dateId);
+  }
+
+  @ApiTags('Admin Team Members')
+  @ApiBearerAuth('admin-auth')
+  @ApiOperation({
+    summary: 'Add a recurring weekly unavailability',
+    description: 'Marks a recurring weekly window (or whole weekday) as unavailable.',
+  })
+  @ApiParam({ name: 'id', description: 'Team member UUID.', format: 'uuid' })
+  @ApiCreatedResponse({ description: 'Updated availability for the team member.' })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post('admin/team-members/:id/availability/recurring')
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles('super_admin', 'editor')
+  addRecurringUnavailability(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: CreateRecurringUnavailabilityDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.teamMembersService.addRecurringUnavailability(id, dto, admin);
+  }
+
+  @ApiTags('Admin Team Members')
+  @ApiBearerAuth('admin-auth')
+  @ApiOperation({
+    summary: 'Remove a recurring weekly unavailability',
+  })
+  @ApiParam({ name: 'id', description: 'Team member UUID.', format: 'uuid' })
+  @ApiParam({ name: 'ruleId', description: 'Recurring unavailability UUID.', format: 'uuid' })
+  @ApiNoContentResponse({ description: 'Recurring unavailability removed.' })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Delete('admin/team-members/:id/availability/recurring/:ruleId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles('super_admin', 'editor')
+  async removeRecurringUnavailability(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('ruleId', new ParseUUIDPipe()) ruleId: string,
+  ) {
+    await this.teamMembersService.removeRecurringUnavailability(id, ruleId);
   }
 
   // ── Public endpoints ─────────────────────────────────────────────
