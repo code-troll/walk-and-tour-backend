@@ -18,6 +18,7 @@ import { EventsController } from '../events/events.controller';
 import { EventsService } from '../events/events.service';
 import { HotelsController } from '../hotels/hotels.controller';
 import { HotelsService } from '../hotels/hotels.service';
+import { HotelUsersService } from '../hotels/hotel-users.service';
 import { HealthController } from '../health/health.controller';
 import { LanguagesController } from '../languages/languages.controller';
 import { LanguagesService } from '../languages/languages.service';
@@ -83,6 +84,7 @@ const EMPTY_SERVICE = {};
     { provide: PublicTeamMembersService, useValue: EMPTY_SERVICE },
     { provide: EventsService, useValue: EMPTY_SERVICE },
     { provide: HotelsService, useValue: EMPTY_SERVICE },
+    { provide: HotelUsersService, useValue: EMPTY_SERVICE },
     { provide: AdminJwtAuthGuard, useValue: EMPTY_SERVICE },
     { provide: AdminRolesGuard, useValue: EMPTY_SERVICE },
   ],

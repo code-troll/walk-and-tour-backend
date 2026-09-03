@@ -22,11 +22,13 @@ import {
   ErrorResponseDto,
   HotelListResponseDto,
   HotelResponseDto,
+  HotelUserResponseDto,
 } from '../swagger/swagger.models';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { ListHotelsDto } from './dto/list-hotels.dto';
 import { SetHotelToursDto } from './dto/set-hotel-tours.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
+import { HotelUsersService } from './hotel-users.service';
 import { HotelsService } from './hotels.service';
 
 @ApiTags('Admin Hotels')
@@ -35,7 +37,10 @@ import { HotelsService } from './hotels.service';
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 @AdminRoles('super_admin')
 export class HotelsController {
-  constructor(private readonly hotelsService: HotelsService) {}
+  constructor(
+    private readonly hotelsService: HotelsService,
+    private readonly hotelUsersService: HotelUsersService,
+  ) {}
 
   @ApiOperation({
     summary: 'List hotels',
@@ -127,5 +132,103 @@ export class HotelsController {
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     return this.hotelsService.setTours(id, dto, admin);
+  }
+
+  @ApiOperation({
+    summary: 'Get the hotel access user',
+    description:
+      'Returns the single access user this hotel signs in with. Responds `404` when the hotel has no access user yet, which is the state every hotel starts in.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ description: 'The access user.', type: HotelUserResponseDto })
+  @ApiNotFoundResponse({
+    description: 'The hotel was not found, or it has no access user yet.',
+    type: ErrorResponseDto,
+  })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Get(':id/user')
+  findUser(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.hotelUsersService.findByHotelIdOrThrow(id);
+  }
+
+  @ApiOperation({
+    summary: 'Create the hotel access user',
+    description:
+      'Derives a unique username from the hotel name, creates the sign-in identity, and emails the hotel a link to choose its own password. A hotel has exactly one access user.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiCreatedResponse({ description: 'The created access user.', type: HotelUserResponseDto })
+  @ApiConflictResponse({
+    description:
+      'The hotel already has an access user, or the identity provider refused the derived username or email.',
+    type: ErrorResponseDto,
+  })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post(':id/user')
+  createUser(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.hotelUsersService.create(id, admin);
+  }
+
+  @ApiOperation({
+    summary: 'Send a new password link',
+    description:
+      'Issues a fresh password setup ticket and emails it to the address the access user signs in with. Used both for a lost invitation and for a password reset.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ description: 'The access user.', type: HotelUserResponseDto })
+  @ApiConflictResponse({
+    description: 'The access user is disabled.',
+    type: ErrorResponseDto,
+  })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post(':id/user/resend-invitation')
+  resendUserInvitation(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.hotelUsersService.resendInvitation(id, admin);
+  }
+
+  @ApiOperation({
+    summary: 'Disable the hotel access user',
+    description: 'Blocks the sign-in identity. Reversible through the enable route.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ description: 'The access user.', type: HotelUserResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post(':id/user/disable')
+  disableUser(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.hotelUsersService.setEnabled(id, false, admin);
+  }
+
+  @ApiOperation({
+    summary: 'Enable the hotel access user',
+    description:
+      'Unblocks the sign-in identity. A user that has never signed in returns to `invited` rather than `active`.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ description: 'The access user.', type: HotelUserResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post(':id/user/enable')
+  enableUser(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.hotelUsersService.setEnabled(id, true, admin);
   }
 }

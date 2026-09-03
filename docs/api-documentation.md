@@ -64,3 +64,5 @@ That guide adds:
 - The admin proposals surface (`/api/admin/proposals*`) and the public proposal routes (`/api/public/proposals/{hash}` and its media route) are now part of the exported contract.
 - `/api/admin/hotels` is restricted to `super_admin`. `GET` is paginated and searchable by name or CVR, `POST` and `PATCH` accept a CVR written with spaces or a `DK` prefix and store the eight digits, and a duplicate CVR returns `409`.
 - `PUT /api/admin/hotels/{id}/tours` replaces the whole set of granted tours. Removed tours are revoked, not deleted, so hotel responses list only live grants and `tourCount` on the list endpoint counts only those.
+- The hotel access user lives under `/api/admin/hotels/{id}/user`: `GET` reads it and returns `404` while the hotel has none, `POST` creates it and emails an invitation, and `POST .../resend-invitation`, `.../disable` and `.../enable` manage its lifecycle. All are `super_admin`.
+- Creating an access user is not idempotent: a hotel has exactly one, and a second attempt returns `409`. A username the identity provider refuses also returns `409`, and no local row is left behind.

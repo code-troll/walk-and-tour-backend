@@ -14,6 +14,17 @@ export interface SendProposalLinkEmailInput {
   publicBaseUrl: string;
 }
 
+export interface SendHotelPasswordSetupEmailInput {
+  recipientEmail: string;
+  hotelName: string;
+  username: string;
+  /** Identity-provider ticket that lets the hotel choose its own password. */
+  setupUrl: string;
+  expiresAt: Date;
+  /** True when this is a repeat send rather than the original invitation. */
+  isResend: boolean;
+}
+
 export interface EmailProvider {
   sendNewsletterConfirmation(
     input: SendNewsletterConfirmationEmailInput,
@@ -21,6 +32,10 @@ export interface EmailProvider {
 
   sendProposalLink(
     input: SendProposalLinkEmailInput,
+  ): Promise<void>;
+
+  sendHotelPasswordSetup(
+    input: SendHotelPasswordSetupEmailInput,
   ): Promise<void>;
 }
 

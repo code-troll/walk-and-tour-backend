@@ -1,4 +1,5 @@
 import { RailwayS3StorageService } from './railway-s3-storage.service';
+import { createProviderConfigMock } from '../../test/utils/provider-config.mock';
 
 describe('RailwayS3StorageService', () => {
   it('uploads objects through the Railway S3 API using virtual-hosted urls', async () => {
@@ -9,22 +10,18 @@ describe('RailwayS3StorageService', () => {
     });
 
     const service = new RailwayS3StorageService(
-      {
-        appBaseUrl: 'https://backend.example.com',
-        publicSiteBaseUrl: 'https://walkandtour.dk',
+      createProviderConfigMock({
         emailProvider: 'console',
-        emailFrom: 'Walk and Tour <no-reply@example.com>',
         storageDriver: 'railway',
         localStorageRoot: 'storage',
-        localStoragePublicBaseUrl: 'https://backend.example.com/media',
         railwayStorageEndpoint: 'https://storage.example.com',
         railwayStorageAccessKeyId: 'access-key-id',
         railwayStorageSecretAccessKey: 'secret-access-key',
-        railwayStorageRegion: 'auto',
         railwayStorageBucket: 'media',
         railwayStorageUrlStyle: 'virtual-hosted',
-        defaultEventTimezone: 'Europe/Copenhagen',
-      },
+        railwayStorageRegion: 'auto',
+        localStoragePublicBaseUrl: 'https://backend.example.com/media',
+      }),
       fetchImpl,
       () => new Date('2026-03-15T12:34:56.000Z'),
     );
@@ -55,22 +52,18 @@ describe('RailwayS3StorageService', () => {
   });
 
   it('builds path-style urls when configured', () => {
-    const service = new RailwayS3StorageService({
-      appBaseUrl: 'https://backend.example.com',
-      publicSiteBaseUrl: 'https://walkandtour.dk',
+    const service = new RailwayS3StorageService(createProviderConfigMock({
       emailProvider: 'console',
-      emailFrom: 'Walk and Tour <no-reply@example.com>',
       storageDriver: 'railway',
       localStorageRoot: 'storage',
-      localStoragePublicBaseUrl: 'https://backend.example.com/media',
       railwayStorageEndpoint: 'https://storage.example.com/root',
       railwayStorageAccessKeyId: 'access-key-id',
       railwayStorageSecretAccessKey: 'secret-access-key',
-      railwayStorageRegion: 'eu-west-1',
       railwayStorageBucket: 'media',
       railwayStorageUrlStyle: 'path',
-      defaultEventTimezone: 'Europe/Copenhagen',
-    });
+      railwayStorageRegion: 'eu-west-1',
+      localStoragePublicBaseUrl: 'https://backend.example.com/media',
+    }));
 
     expect(service.getPublicUrl('images/cover photo.jpg')).toBe(
       'https://storage.example.com/root/media/images/cover%20photo.jpg',
@@ -78,18 +71,14 @@ describe('RailwayS3StorageService', () => {
   });
 
   it('fails when Railway storage configuration is missing', async () => {
-    const service = new RailwayS3StorageService({
-      appBaseUrl: 'https://backend.example.com',
-      publicSiteBaseUrl: 'https://walkandtour.dk',
+    const service = new RailwayS3StorageService(createProviderConfigMock({
       emailProvider: 'console',
-      emailFrom: 'Walk and Tour <no-reply@example.com>',
       storageDriver: 'railway',
       localStorageRoot: 'storage',
-      localStoragePublicBaseUrl: 'https://backend.example.com/media',
-      railwayStorageRegion: 'auto',
       railwayStorageUrlStyle: 'virtual-hosted',
-      defaultEventTimezone: 'Europe/Copenhagen',
-    });
+      railwayStorageRegion: 'auto',
+      localStoragePublicBaseUrl: 'https://backend.example.com/media',
+    }));
 
     await expect(
       service.putObject({

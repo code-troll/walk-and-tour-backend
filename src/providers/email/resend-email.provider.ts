@@ -3,9 +3,11 @@ import { Injectable } from '@nestjs/common';
 import { ProviderConfig } from '../../shared/config/provider.config';
 import {
   EmailProvider,
+  SendHotelPasswordSetupEmailInput,
   SendNewsletterConfirmationEmailInput,
   SendProposalLinkEmailInput,
 } from './email-provider.interface';
+import { escapeHtml, renderBrandedEmail } from './branded-email.template';
 
 interface FetchLike {
   (input: string, init?: RequestInit): Promise<{
@@ -76,38 +78,35 @@ export class ResendEmailProvider implements EmailProvider {
   async sendNewsletterConfirmation(
     input: SendNewsletterConfirmationEmailInput,
   ): Promise<void> {
-    if (!this.config.resendApiKey) {
-      throw new Error('RESEND_API_KEY is required when EMAIL_PROVIDER=resend.');
-    }
-
-    const response = await this.fetchImpl('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.config.resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: this.config.emailFrom,
-        to: [input.recipientEmail],
-        subject: 'Confirm your Walk and Tour newsletter subscription',
-        html: this.renderNewsletterHtml(input),
-      }),
+    await this.send({
+      to: input.recipientEmail,
+      subject: 'Confirm your Walk and Tour newsletter subscription',
+      html: this.renderNewsletterHtml(input),
     });
-
-    if (!response.ok) {
-      throw new Error(
-        `Resend email delivery failed with status ${response.status}: ${await response.text()}`,
-      );
-    }
   }
 
   async sendProposalLink(input: SendProposalLinkEmailInput): Promise<void> {
+    const strings = getProposalStrings(input.language);
+
+    await this.send({
+      to: input.recipientEmail,
+      subject: strings.subject.replace('{title}', input.firstVersionTitle),
+      html: this.renderProposalHtml(input),
+    });
+  }
+
+  private async send({
+    to,
+    subject,
+    html,
+  }: {
+    to: string;
+    subject: string;
+    html: string;
+  }): Promise<void> {
     if (!this.config.resendApiKey) {
       throw new Error('RESEND_API_KEY is required when EMAIL_PROVIDER=resend.');
     }
-
-    const strings = getProposalStrings(input.language);
-    const subject = strings.subject.replace('{title}', input.firstVersionTitle);
 
     const response = await this.fetchImpl('https://api.resend.com/emails', {
       method: 'POST',
@@ -117,9 +116,9 @@ export class ResendEmailProvider implements EmailProvider {
       },
       body: JSON.stringify({
         from: this.config.emailFrom,
-        to: [input.recipientEmail],
+        to: [to],
         subject,
-        html: this.renderProposalHtml(input),
+        html,
       }),
     });
 
@@ -194,6 +193,36 @@ export class ResendEmailProvider implements EmailProvider {
 </html>`;
   }
 
+  async sendHotelPasswordSetup(
+    input: SendHotelPasswordSetupEmailInput,
+  ): Promise<void> {
+    const subject = input.isResend
+      ? 'Set a new password for your Walk and Tour hotel account'
+      : 'Set up your Walk and Tour hotel account';
+
+    const html = renderBrandedEmail({
+      language: 'en',
+      logoUrl: `${this.config.publicSiteBaseUrl}/walkandtour/branding/logo-formal.png`,
+      greeting: `Hi ${input.hotelName},`,
+      paragraphs: [
+        input.isResend
+          ? 'You can set a new password for your Walk and Tour hotel account using the link below.'
+          : 'Your Walk and Tour hotel account is ready. Use the link below to choose your password and sign in for the first time.',
+        `Your username is ${input.username}. You will need it every time you sign in, so keep it somewhere safe.`,
+        `This link stops working on ${input.expiresAt.toUTCString()}. If it expires, ask Walk and Tour to send you a new one.`,
+      ],
+      callToAction: {
+        label: input.isResend ? 'Set a new password' : 'Set your password',
+        url: input.setupUrl,
+        copyLinkPrefix: 'Or copy this link:',
+      },
+      signoff: 'Best regards,',
+      signoffName: 'Walk and Tour Copenhagen',
+    });
+
+    await this.send({ to: input.recipientEmail, subject, html });
+  }
+
   private renderNewsletterHtml(input: SendNewsletterConfirmationEmailInput): string {
     return [
       '<p>Confirm your Walk and Tour newsletter subscription.</p>',
@@ -202,13 +231,4 @@ export class ResendEmailProvider implements EmailProvider {
       `<p><a href="${escapeHtml(input.unsubscribeUrl)}">Unsubscribe</a></p>`,
     ].join('');
   }
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
 }

@@ -4,6 +4,7 @@ import {
   ADMIN_ROLES,
   ADMIN_USER_STATUSES,
   HOTEL_STATUSES,
+  HOTEL_USER_STATUSES,
   NEWSLETTER_SUBSCRIPTION_STATUSES,
   SUPPORTED_LANGUAGE_CODES,
   TOUR_COMMUTE_MODES,
@@ -1866,6 +1867,46 @@ export class HotelListResponseDto {
   total!: number;
 }
 
+export class HotelUserResponseDto {
+  @ApiProperty({ description: 'Access user identifier.', format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ description: 'Hotel this user signs in for.', format: 'uuid' })
+  hotelId!: string;
+
+  @ApiProperty({
+    description: 'Sign-in username, derived from the hotel name and unique across hotels.',
+    example: 'copenhagen-admiral-hotel',
+  })
+  username!: string;
+
+  @ApiProperty({
+    description:
+      'Address this user signs in with and receives password links at. Separate from the hotel contact email.',
+    example: 'reception@example.com',
+  })
+  email!: string;
+
+  @ApiProperty({
+    description:
+      'Lifecycle status. `invited` until the hotel sets a password for the first time.',
+    enum: HOTEL_USER_STATUSES,
+    example: 'invited',
+  })
+  status!: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: 'When this user last signed in.',
+    format: 'date-time',
+    nullable: true,
+  })
+  lastLoginAt!: string | null;
+
+  @ApiProperty({ type: () => HotelAuditResponseDto })
+  audit!: HotelAuditResponseDto;
+}
+
 export const SWAGGER_EXTRA_MODELS = [
   ErrorResponseDto,
   AuditMetadataDto,
@@ -1891,6 +1932,7 @@ export const SWAGGER_EXTRA_MODELS = [
   HotelResponseDto,
   HotelSummaryResponseDto,
   HotelListResponseDto,
+  HotelUserResponseDto,
   TourMediaItemResponseDto,
   UploadedMediaResponseDto,
   PriceResponseDto,
