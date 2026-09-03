@@ -3,6 +3,7 @@ import { ApiProperty, ApiPropertyOptional, getSchemaPath } from '@nestjs/swagger
 import {
   ADMIN_ROLES,
   ADMIN_USER_STATUSES,
+  HOTEL_STATUSES,
   NEWSLETTER_SUBSCRIPTION_STATUSES,
   SUPPORTED_LANGUAGE_CODES,
   TOUR_COMMUTE_MODES,
@@ -1678,6 +1679,193 @@ export class NewsletterUnsubscribedResponseDto {
   unsubscribedAt!: string | null;
 }
 
+export class HotelAuditResponseDto {
+  @ApiPropertyOptional({
+    type: String,
+    description: 'Identifier of the admin user that created the hotel.',
+    format: 'uuid',
+    nullable: true,
+  })
+  createdBy!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: 'Identifier of the admin user that last updated the hotel.',
+    format: 'uuid',
+    nullable: true,
+  })
+  updatedBy!: string | null;
+
+  @ApiProperty({
+    description: 'Creation timestamp.',
+    format: 'date-time',
+  })
+  createdAt!: string;
+
+  @ApiProperty({
+    description: 'Last update timestamp.',
+    format: 'date-time',
+  })
+  updatedAt!: string;
+}
+
+export class HotelTourGrantResponseDto {
+  @ApiProperty({
+    description: 'Identifier of the granted tour.',
+    format: 'uuid',
+  })
+  tourId!: string;
+
+  @ApiProperty({
+    description: 'Non-localized tour name, for admin-side identification.',
+    example: 'Copenhagen Historic Center Free Tour',
+  })
+  tourName!: string;
+
+  @ApiProperty({
+    description: 'When the tour was granted to this hotel.',
+    format: 'date-time',
+  })
+  grantedAt!: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: 'Identifier of the admin user that granted the tour.',
+    format: 'uuid',
+    nullable: true,
+  })
+  grantedBy!: string | null;
+}
+
+export class HotelResponseDto {
+  @ApiProperty({ description: 'Hotel identifier.', format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({
+    description: 'Hotel name.',
+    example: 'Copenhagen Admiral Hotel',
+  })
+  name!: string;
+
+  @ApiProperty({
+    description: 'Street address of the hotel.',
+    example: 'Toldbodgade 24-28, 1253 Kobenhavn K',
+  })
+  address!: string;
+
+  @ApiProperty({
+    description: 'Contact telephone number.',
+    example: '+45 33 74 14 14',
+  })
+  phone!: string;
+
+  @ApiProperty({
+    description:
+      'Contact email address for the hotel, separate from the sign-in address of its access user.',
+    example: 'reception@example.com',
+  })
+  email!: string;
+
+  @ApiProperty({
+    description: 'Danish company registration number, stored as eight digits.',
+    example: '12345678',
+  })
+  cvr!: string;
+
+  @ApiProperty({
+    description: 'Lifecycle status of the hotel account.',
+    enum: HOTEL_STATUSES,
+    example: 'active',
+  })
+  status!: string;
+
+  @ApiProperty({
+    description: 'Tours this hotel may currently sell. Revoked grants are not listed.',
+    type: () => [HotelTourGrantResponseDto],
+  })
+  tours!: HotelTourGrantResponseDto[];
+
+  @ApiProperty({ type: () => HotelAuditResponseDto })
+  audit!: HotelAuditResponseDto;
+}
+
+export class HotelSummaryResponseDto {
+  @ApiProperty({ description: 'Hotel identifier.', format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({
+    description: 'Hotel name.',
+    example: 'Copenhagen Admiral Hotel',
+  })
+  name!: string;
+
+  @ApiProperty({
+    description: 'Street address of the hotel.',
+    example: 'Toldbodgade 24-28, 1253 Kobenhavn K',
+  })
+  address!: string;
+
+  @ApiProperty({
+    description: 'Contact telephone number.',
+    example: '+45 33 74 14 14',
+  })
+  phone!: string;
+
+  @ApiProperty({
+    description: 'Contact email address for the hotel.',
+    example: 'reception@example.com',
+  })
+  email!: string;
+
+  @ApiProperty({
+    description: 'Danish company registration number, stored as eight digits.',
+    example: '12345678',
+  })
+  cvr!: string;
+
+  @ApiProperty({
+    description: 'Lifecycle status of the hotel account.',
+    enum: HOTEL_STATUSES,
+    example: 'active',
+  })
+  status!: string;
+
+  @ApiProperty({
+    description: 'Number of tours this hotel may currently sell.',
+    example: 3,
+  })
+  tourCount!: number;
+
+  @ApiProperty({ type: () => HotelAuditResponseDto })
+  audit!: HotelAuditResponseDto;
+}
+
+export class HotelListResponseDto {
+  @ApiProperty({
+    description: 'Paginated hotel records ordered by name.',
+    type: () => [HotelSummaryResponseDto],
+  })
+  items!: HotelSummaryResponseDto[];
+
+  @ApiProperty({
+    description: '1-based page number.',
+    example: 1,
+  })
+  page!: number;
+
+  @ApiProperty({
+    description: 'Page size used for the response.',
+    example: 25,
+  })
+  limit!: number;
+
+  @ApiProperty({
+    description: 'Total number of matching records before pagination.',
+    example: 12,
+  })
+  total!: number;
+}
+
 export const SWAGGER_EXTRA_MODELS = [
   ErrorResponseDto,
   AuditMetadataDto,
@@ -1698,6 +1886,11 @@ export const SWAGGER_EXTRA_MODELS = [
   MediaAssetResponseDto,
   AdminMediaAssetResponseDto,
   AdminMediaAssetListResponseDto,
+  HotelAuditResponseDto,
+  HotelTourGrantResponseDto,
+  HotelResponseDto,
+  HotelSummaryResponseDto,
+  HotelListResponseDto,
   TourMediaItemResponseDto,
   UploadedMediaResponseDto,
   PriceResponseDto,

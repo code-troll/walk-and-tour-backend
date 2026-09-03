@@ -62,3 +62,5 @@ That guide adds:
 - `docs/backend.yaml` should be regenerated from the Nest Swagger document with `npm run openapi:export` instead of being hand-maintained.
 - `src/swagger/openapi-export.module.ts` lists the controllers included in the exported document by hand. A controller that is missing from that list is silently absent from `docs/backend.yaml`, which is how the proposals routes went undocumented; register every new controller there in the same change that adds it.
 - The admin proposals surface (`/api/admin/proposals*`) and the public proposal routes (`/api/public/proposals/{hash}` and its media route) are now part of the exported contract.
+- `/api/admin/hotels` is restricted to `super_admin`. `GET` is paginated and searchable by name or CVR, `POST` and `PATCH` accept a CVR written with spaces or a `DK` prefix and store the eight digits, and a duplicate CVR returns `409`.
+- `PUT /api/admin/hotels/{id}/tours` replaces the whole set of granted tours. Removed tours are revoked, not deleted, so hotel responses list only live grants and `tourCount` on the list endpoint counts only those.

@@ -16,6 +16,8 @@ import { BlogPostsService } from '../blog-posts/blog-posts.service';
 import { PublicBlogPostsService } from '../blog-posts/public-blog-posts.service';
 import { EventsController } from '../events/events.controller';
 import { EventsService } from '../events/events.service';
+import { HotelsController } from '../hotels/hotels.controller';
+import { HotelsService } from '../hotels/hotels.service';
 import { HealthController } from '../health/health.controller';
 import { LanguagesController } from '../languages/languages.controller';
 import { LanguagesService } from '../languages/languages.service';
@@ -59,6 +61,7 @@ const EMPTY_SERVICE = {};
     ToursController,
     TeamMembersController,
     EventsController,
+    HotelsController,
   ],
   providers: [
     { provide: AdminUsersService, useValue: EMPTY_SERVICE },
@@ -79,6 +82,7 @@ const EMPTY_SERVICE = {};
     { provide: TeamMembersService, useValue: EMPTY_SERVICE },
     { provide: PublicTeamMembersService, useValue: EMPTY_SERVICE },
     { provide: EventsService, useValue: EMPTY_SERVICE },
+    { provide: HotelsService, useValue: EMPTY_SERVICE },
     { provide: AdminJwtAuthGuard, useValue: EMPTY_SERVICE },
     { provide: AdminRolesGuard, useValue: EMPTY_SERVICE },
   ],

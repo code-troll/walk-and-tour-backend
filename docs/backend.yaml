@@ -4609,6 +4609,278 @@ paths:
       summary: Cancel a confirmed occurrence
       tags:
         - Admin Events
+  /api/admin/hotels:
+    get:
+      description: Returns registered hotels ordered by name, with the number of tours each one may currently sell.
+      operationId: HotelsController_findAll
+      parameters:
+        - name: search
+          required: false
+          in: query
+          description: Case-insensitive partial match against the hotel name or CVR number.
+          schema:
+            maxLength: 200
+            example: admiral
+            type: string
+        - name: status
+          required: false
+          in: query
+          description: Restrict the results to one lifecycle status.
+          schema:
+            example: active
+            type: string
+            enum:
+              - active
+              - disabled
+        - name: page
+          required: false
+          in: query
+          description: One-based page number.
+          schema:
+            minimum: 1
+            default: 1
+            example: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          description: Page size.
+          schema:
+            minimum: 1
+            maximum: 100
+            default: 25
+            example: 25
+            type: number
+      responses:
+        "200":
+          description: Paginated hotels.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelListResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List hotels
+      tags:
+        - Admin Hotels
+    post:
+      description: Creates a hotel. Tours are granted separately through `PUT /api/admin/hotels/{id}/tours`.
+      operationId: HotelsController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHotelDto"
+      responses:
+        "201":
+          description: Created hotel.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: Another hotel is already registered with this CVR number.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Register a hotel
+      tags:
+        - Admin Hotels
+  /api/admin/hotels/{id}:
+    get:
+      description: Returns one hotel with the tours it may currently sell.
+      operationId: HotelsController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Hotel record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Get a hotel
+      tags:
+        - Admin Hotels
+    patch:
+      description: Updates hotel details or its lifecycle status.
+      operationId: HotelsController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateHotelDto"
+      responses:
+        "200":
+          description: Updated hotel.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: Another hotel is already registered with this CVR number.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Update a hotel
+      tags:
+        - Admin Hotels
+  /api/admin/hotels/{id}/tours:
+    put:
+      description: >-
+        Sets the complete list of granted tours. Grants that remain keep their original grant date, tours that drop out
+        are revoked rather than deleted, and revoked grants stay on record.
+      operationId: HotelsController_setTours
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetHotelToursDto"
+      responses:
+        "200":
+          description: Hotel with its updated grants.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelResponseDto"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: The hotel or one of the requested tours was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Replace the tours a hotel may sell
+      tags:
+        - Admin Hotels
 info:
   title: Walk and Tour Backend API
   description: Administrative and public API surface for languages, tags, tours, blog posts, and admin authentication.
@@ -7342,6 +7614,274 @@ components:
           description: Free-text note specific to this date. Set `null` to clear it.
           maxLength: 2000
           nullable: true
+    HotelAuditResponseDto:
+      type: object
+      properties:
+        createdBy:
+          type: string
+          description: Identifier of the admin user that created the hotel.
+          format: uuid
+          nullable: true
+        updatedBy:
+          type: string
+          description: Identifier of the admin user that last updated the hotel.
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          description: Creation timestamp.
+          format: date-time
+        updatedAt:
+          type: string
+          description: Last update timestamp.
+          format: date-time
+      required:
+        - createdAt
+        - updatedAt
+    HotelSummaryResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Hotel identifier.
+          format: uuid
+        name:
+          type: string
+          description: Hotel name.
+          example: Copenhagen Admiral Hotel
+        address:
+          type: string
+          description: Street address of the hotel.
+          example: Toldbodgade 24-28, 1253 Kobenhavn K
+        phone:
+          type: string
+          description: Contact telephone number.
+          example: +45 33 74 14 14
+        email:
+          type: string
+          description: Contact email address for the hotel.
+          example: reception@example.com
+        cvr:
+          type: string
+          description: Danish company registration number, stored as eight digits.
+          example: "12345678"
+        status:
+          type: string
+          description: Lifecycle status of the hotel account.
+          enum:
+            - active
+            - disabled
+          example: active
+        tourCount:
+          type: number
+          description: Number of tours this hotel may currently sell.
+          example: 3
+        audit:
+          $ref: "#/components/schemas/HotelAuditResponseDto"
+      required:
+        - id
+        - name
+        - address
+        - phone
+        - email
+        - cvr
+        - status
+        - tourCount
+        - audit
+    HotelListResponseDto:
+      type: object
+      properties:
+        items:
+          description: Paginated hotel records ordered by name.
+          type: array
+          items:
+            $ref: "#/components/schemas/HotelSummaryResponseDto"
+        page:
+          type: number
+          description: 1-based page number.
+          example: 1
+        limit:
+          type: number
+          description: Page size used for the response.
+          example: 25
+        total:
+          type: number
+          description: Total number of matching records before pagination.
+          example: 12
+      required:
+        - items
+        - page
+        - limit
+        - total
+    HotelTourGrantResponseDto:
+      type: object
+      properties:
+        tourId:
+          type: string
+          description: Identifier of the granted tour.
+          format: uuid
+        tourName:
+          type: string
+          description: Non-localized tour name, for admin-side identification.
+          example: Copenhagen Historic Center Free Tour
+        grantedAt:
+          type: string
+          description: When the tour was granted to this hotel.
+          format: date-time
+        grantedBy:
+          type: string
+          description: Identifier of the admin user that granted the tour.
+          format: uuid
+          nullable: true
+      required:
+        - tourId
+        - tourName
+        - grantedAt
+    HotelResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Hotel identifier.
+          format: uuid
+        name:
+          type: string
+          description: Hotel name.
+          example: Copenhagen Admiral Hotel
+        address:
+          type: string
+          description: Street address of the hotel.
+          example: Toldbodgade 24-28, 1253 Kobenhavn K
+        phone:
+          type: string
+          description: Contact telephone number.
+          example: +45 33 74 14 14
+        email:
+          type: string
+          description: Contact email address for the hotel, separate from the sign-in address of its access user.
+          example: reception@example.com
+        cvr:
+          type: string
+          description: Danish company registration number, stored as eight digits.
+          example: "12345678"
+        status:
+          type: string
+          description: Lifecycle status of the hotel account.
+          enum:
+            - active
+            - disabled
+          example: active
+        tours:
+          description: Tours this hotel may currently sell. Revoked grants are not listed.
+          type: array
+          items:
+            $ref: "#/components/schemas/HotelTourGrantResponseDto"
+        audit:
+          $ref: "#/components/schemas/HotelAuditResponseDto"
+      required:
+        - id
+        - name
+        - address
+        - phone
+        - email
+        - cvr
+        - status
+        - tours
+        - audit
+    CreateHotelDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Hotel name, as it should appear in the backoffice.
+          example: Copenhagen Admiral Hotel
+          maxLength: 200
+        address:
+          type: string
+          description: Street address of the hotel.
+          example: Toldbodgade 24-28, 1253 København K
+          maxLength: 500
+        phone:
+          type: string
+          description: Contact telephone number.
+          example: +45 33 74 14 14
+          maxLength: 50
+        email:
+          type: string
+          description: >-
+            Contact email address for the hotel. This is not the sign-in address of the hotel access user, which is
+            registered separately.
+          example: reception@example.com
+          maxLength: 320
+        cvr:
+          type: string
+          description: Danish company registration number. Spaces and a leading `DK` are accepted and removed before storing.
+          example: "12345678"
+          pattern: ^\d{8}$
+        status:
+          type: string
+          description: Initial status. Defaults to `active` when omitted.
+          enum:
+            - active
+            - disabled
+          example: active
+          default: active
+      required:
+        - name
+        - address
+        - phone
+        - email
+        - cvr
+    UpdateHotelDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Hotel name, as it should appear in the backoffice.
+          example: Copenhagen Admiral Hotel
+          maxLength: 200
+        address:
+          type: string
+          description: Street address of the hotel.
+          example: Toldbodgade 24-28, 1253 København K
+          maxLength: 500
+        phone:
+          type: string
+          description: Contact telephone number.
+          example: +45 33 74 14 14
+          maxLength: 50
+        email:
+          type: string
+          description: Contact email address for the hotel.
+          example: reception@example.com
+          maxLength: 320
+        cvr:
+          type: string
+          description: Danish company registration number. Spaces and a leading `DK` are accepted and removed before storing.
+          example: "12345678"
+          pattern: ^\d{8}$
+        status:
+          type: string
+          description: Lifecycle status of the hotel account.
+          enum:
+            - active
+            - disabled
+          example: disabled
+    SetHotelToursDto:
+      type: object
+      properties:
+        tourIds:
+          description: >-
+            The complete set of tours this hotel may sell. Tours missing from the list have their grant revoked, tours
+            already granted are left untouched, and the rest are granted.
+          example:
+            - 0f7b8a2c-5d3e-4a1b-9c8d-2e4f6a8b0c1d
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - tourIds
     AuditMetadataDto:
       type: object
       properties:
