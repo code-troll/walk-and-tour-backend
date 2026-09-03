@@ -8,6 +8,8 @@ import { BlogPostEntity } from '../blog-posts/blog-post.entity';
 import { EventDayNoteEntity } from '../events/entities/event-day-note.entity';
 import { EventOccurrenceEntity } from '../events/entities/event-occurrence.entity';
 import { EventEntity } from '../events/entities/event.entity';
+import { HotelEntity } from '../hotels/entities/hotel.entity';
+import { HotelTourEntity } from '../hotels/entities/hotel-tour.entity';
 import { LanguageEntity } from '../languages/language.entity';
 import { MediaAssetEntity } from '../media/media-asset.entity';
 import { NewsletterSubscriberEntity } from '../newsletter-subscribers/newsletter-subscriber.entity';
@@ -56,6 +58,8 @@ export function getTypeOrmOptions(): TypeOrmModuleOptions {
       TourItineraryStopEntity,
       TourTranslationEntity,
       EventEntity,
+    HotelEntity,
+    HotelTourEntity,
       EventOccurrenceEntity,
       EventDayNoteEntity,
     ],
