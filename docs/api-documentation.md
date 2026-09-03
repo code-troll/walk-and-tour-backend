@@ -60,3 +60,5 @@ That guide adds:
 - Tours and blog posts no longer expose or persist a `category` field.
 - Swagger remains the machine-readable contract; `docs/admin-frontend-api.md` is the curated frontend implementation guide.
 - `docs/backend.yaml` should be regenerated from the Nest Swagger document with `npm run openapi:export` instead of being hand-maintained.
+- `src/swagger/openapi-export.module.ts` lists the controllers included in the exported document by hand. A controller that is missing from that list is silently absent from `docs/backend.yaml`, which is how the proposals routes went undocumented; register every new controller there in the same change that adds it.
+- The admin proposals surface (`/api/admin/proposals*`) and the public proposal routes (`/api/public/proposals/{hash}` and its media route) are now part of the exported contract.

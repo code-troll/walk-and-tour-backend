@@ -125,6 +125,7 @@ export class UpdateProposalVersionDto {
   endPoint?: ProposalPointDto;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'External Stripe Payment Link URL. Pass null to remove.',
     example: 'https://buy.stripe.com/test_abc123',
     maxLength: 500,

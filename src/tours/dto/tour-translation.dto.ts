@@ -26,6 +26,7 @@ export class CreateTourTranslationDto {
   slug!: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Optional external booking reference for this locale. Set `null` to clear it on update.',
     example: 'booking-ref-123',
     nullable: true,
@@ -67,6 +68,7 @@ export class UpdateTourTranslationDto {
   slug?: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Updated external booking reference for this locale. Set `null` to clear it.',
     example: 'booking-ref-123',
     nullable: true,
@@ -87,6 +89,7 @@ export class UpdateTourTranslationDto {
 
 export class PublishTourTranslationDto {
   @ApiPropertyOptional({
+    type: String,
     description: 'Optional external booking reference override applied before publishing. Set `null` to clear it.',
     example: 'booking-ref-123',
     nullable: true,

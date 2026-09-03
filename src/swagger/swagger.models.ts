@@ -38,6 +38,7 @@ export class ErrorResponseDto {
 
 export class AuditMetadataDto {
   @ApiPropertyOptional({
+    type: String,
     description: 'UUID of the admin that originally created the record.',
     format: 'uuid',
     nullable: true,
@@ -45,6 +46,7 @@ export class AuditMetadataDto {
   createdBy!: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'UUID of the admin that most recently updated the record.',
     format: 'uuid',
     nullable: true,
@@ -52,6 +54,7 @@ export class AuditMetadataDto {
   updatedBy!: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'UUID of the admin that published the record, if it is currently published.',
     format: 'uuid',
     nullable: true,
@@ -83,6 +86,7 @@ export class AuditMetadataDto {
 
 export class RecordAuditMetadataDto {
   @ApiPropertyOptional({
+    type: String,
     description: 'UUID of the admin that originally created the record.',
     format: 'uuid',
     nullable: true,
@@ -90,6 +94,7 @@ export class RecordAuditMetadataDto {
   createdBy!: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'UUID of the admin that most recently updated the record.',
     format: 'uuid',
     nullable: true,
@@ -266,6 +271,7 @@ export class PublicTagResponseDto {
   key!: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Localized tag label for the requested locale, or `null` if the label is missing.',
     example: 'History',
     nullable: true,
@@ -317,6 +323,7 @@ export class AdminUserResponseDto {
   id!: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Mapped Auth0 subject, if already linked.',
     example: 'auth0|abc123',
     nullable: true,
@@ -649,6 +656,7 @@ export class PriceResponseDto {
 
 export class TourNextConnectionResponseDto {
   @ApiPropertyOptional({
+    type: Number,
     description: 'Travel time to the next stop in minutes.',
     example: 8,
     nullable: true,
@@ -670,6 +678,7 @@ export class TourAdminItineraryStopResponseDto {
   id!: string;
 
   @ApiPropertyOptional({
+    type: Number,
     description: 'Planned stop duration in minutes.',
     example: 15,
     nullable: true,
@@ -693,6 +702,7 @@ export class TourAdminItineraryStopResponseDto {
 
 export class PublicTourStopResponseDto extends TourAdminItineraryStopResponseDto {
   @ApiPropertyOptional({
+    type: String,
     description: 'Localized stop title from the selected translation.',
     example: 'City Hall',
     nullable: true,
@@ -700,6 +710,7 @@ export class PublicTourStopResponseDto extends TourAdminItineraryStopResponseDto
   title!: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Localized stop description from the selected translation.',
     example: 'Meet at the main square.',
     nullable: true,
@@ -737,6 +748,7 @@ export class PublicTourItineraryResponseDto {
   stops?: PublicTourStopResponseDto[];
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Localized itinerary narrative. Present for `description` itineraries.',
     example: 'Walk through the old city and discover Roman, medieval, and modern landmarks.',
     nullable: true,
@@ -764,6 +776,7 @@ export class TourAdminTranslationResponseDto {
   isPublished!: boolean;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'External booking reference for the locale, if any.',
     nullable: true,
     example: 'booking-ref-123',
@@ -771,6 +784,7 @@ export class TourAdminTranslationResponseDto {
   bookingReferenceId!: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Localized cancellation policy text, or `null` when the translation is incomplete.',
     example: 'Free cancellation up to 24 hours before the start time.',
     nullable: true,
@@ -923,6 +937,7 @@ export class PublicTourTranslationResponseDto {
   locale!: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'External booking reference associated with the published locale.',
     nullable: true,
   })
@@ -984,6 +999,7 @@ export class TourAdminResponseDto {
   sortOrder!: number;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Attached image asset UUID used as the tour cover.',
     format: 'uuid',
     nullable: true,
@@ -1012,6 +1028,7 @@ export class TourAdminResponseDto {
   price!: PriceResponseDto | null;
 
   @ApiPropertyOptional({
+    type: Number,
     description: 'Average rating normalized to a numeric value.',
     example: 4.8,
     nullable: true,
@@ -1019,6 +1036,7 @@ export class TourAdminResponseDto {
   rating!: number | null;
 
   @ApiPropertyOptional({
+    type: Number,
     description: 'Total review count.',
     example: 120,
     nullable: true,
@@ -1032,6 +1050,7 @@ export class TourAdminResponseDto {
   tourType!: (typeof TOUR_TYPES)[number];
 
   @ApiPropertyOptional({
+    type: Number,
     description: 'Total duration in minutes.',
     example: 120,
     nullable: true,
@@ -1060,6 +1079,7 @@ export class TourAdminResponseDto {
   itinerary!: TourAdminItineraryResponseDto | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Tag key shown on the public tour card. When null, the first tag is used.',
     example: 'history',
     nullable: true,
@@ -1169,6 +1189,7 @@ export class PublicTourResponseDto {
   endPoint!: PublicPointResponseDto;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Tag key selected for the public tour card. When null, the first tag is used.',
     example: 'history',
     nullable: true,
@@ -1236,6 +1257,7 @@ export class BlogAdminTranslationResponseDto {
   title!: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Localized summary copy.',
     nullable: true,
   })
@@ -1248,12 +1270,14 @@ export class BlogAdminTranslationResponseDto {
   htmlContent!: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'SEO title override.',
     nullable: true,
   })
   seoTitle!: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'SEO description override.',
     nullable: true,
   })
@@ -1300,6 +1324,7 @@ export class BlogAdminResponseDto {
   name!: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Optional hero media asset UUID.',
     format: 'uuid',
     nullable: true,
@@ -1314,6 +1339,7 @@ export class BlogAdminResponseDto {
   heroMedia!: MediaAssetResponseDto | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Tag key shown on the public blog post card. When null, the first tag is used.',
     example: 'history',
     nullable: true,
@@ -1366,6 +1392,7 @@ export class PublicBlogTranslationResponseDto {
   title!: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Published localized summary.',
     nullable: true,
   })
@@ -1377,12 +1404,14 @@ export class PublicBlogTranslationResponseDto {
   htmlContent!: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'SEO title override.',
     nullable: true,
   })
   seoTitle!: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'SEO description override.',
     nullable: true,
   })
@@ -1424,6 +1453,7 @@ export class PublicBlogResponseDto {
   heroMedia!: MediaAssetResponseDto | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Tag key selected for the public blog post card. When null, the first tag is used.',
     example: 'history',
     nullable: true,
@@ -1470,6 +1500,7 @@ export class NewsletterSubscriberAdminResponseDto {
   subscriptionStatus!: (typeof NEWSLETTER_SUBSCRIPTION_STATUSES)[number];
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Optional preferred locale captured during subscription.',
     example: 'en',
     nullable: true,
@@ -1477,6 +1508,7 @@ export class NewsletterSubscriberAdminResponseDto {
   preferredLocale!: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Optional consent source identifier, such as `footer_form`.',
     example: 'footer_form',
     nullable: true,
@@ -1586,6 +1618,7 @@ export class NewsletterSubscriptionRequestedResponseDto {
   nextAction!: 'confirm_email' | 'none';
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Optional preferred locale retained for the subscriber.',
     example: 'en',
     nullable: true,

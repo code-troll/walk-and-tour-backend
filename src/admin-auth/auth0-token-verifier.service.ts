@@ -6,6 +6,7 @@ import { getAuth0Config } from './auth0.config';
 export interface VerifiedAuth0Claims extends JWTPayload {
   sub: string;
   email?: string;
+  email_verified?: boolean;
 }
 
 @Injectable()

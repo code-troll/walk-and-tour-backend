@@ -1758,6 +1758,361 @@ paths:
       tags:
         - NewsletterSubscribers
         - Admin Newsletter Subscribers
+  /api/admin/proposals:
+    get:
+      operationId: ProposalsController_findAll
+      parameters:
+        - name: search
+          required: false
+          in: query
+          description: Search by recipient name or email (case-insensitive partial match).
+          schema:
+            example: john
+            type: string
+        - name: includeExpired
+          required: false
+          in: query
+          description: >-
+            Include expired proposals in the results. When false (default), proposals with status "expired" or past
+            expires_at are excluded.
+          schema:
+            example: "true"
+            type: boolean
+      responses:
+        "200":
+          description: Filtered proposals.
+      security:
+        - admin-auth: []
+      summary: List proposals with optional filters
+      tags:
+        - Admin Proposals
+    post:
+      operationId: ProposalsController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProposalDto"
+      responses:
+        "201":
+          description: Created proposal.
+      security:
+        - admin-auth: []
+      summary: Create a proposal
+      tags:
+        - Admin Proposals
+  /api/admin/proposals/{id}:
+    get:
+      operationId: ProposalsController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Proposal record.
+        "404":
+          description: ""
+      security:
+        - admin-auth: []
+      summary: Get a proposal by UUID
+      tags:
+        - Admin Proposals
+    patch:
+      operationId: ProposalsController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProposalDto"
+      responses:
+        "200":
+          description: Updated proposal.
+        "404":
+          description: ""
+      security:
+        - admin-auth: []
+      summary: Update a proposal
+      tags:
+        - Admin Proposals
+    delete:
+      operationId: ProposalsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Proposal deleted.
+        "404":
+          description: ""
+      security:
+        - admin-auth: []
+      summary: Delete a proposal
+      tags:
+        - Admin Proposals
+  /api/admin/proposals/{id}/send:
+    post:
+      description: >-
+        Sends an email with the proposal link to the recipient. The proposal must be published (status "sent") and have
+        a recipient email.
+      operationId: ProposalsController_sendToRecipient
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Proposal UUID
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Email sent successfully.
+        "400":
+          description: ""
+        "404":
+          description: ""
+      security:
+        - admin-auth: []
+      summary: Send proposal link to recipient
+      tags:
+        - Admin Proposals
+  /api/admin/proposals/{id}/versions:
+    post:
+      operationId: ProposalsController_createVersion
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Proposal UUID
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProposalVersionDto"
+      responses:
+        "201":
+          description: Proposal with new version.
+        "404":
+          description: ""
+      security:
+        - admin-auth: []
+      summary: Add a version to a proposal
+      tags:
+        - Admin Proposals
+  /api/admin/proposals/{id}/versions/{versionId}:
+    patch:
+      operationId: ProposalsController_updateVersion
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Proposal UUID
+          schema:
+            format: uuid
+            type: string
+        - name: versionId
+          required: true
+          in: path
+          description: Version UUID
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProposalVersionDto"
+      responses:
+        "200":
+          description: Proposal with updated version.
+        "404":
+          description: ""
+      security:
+        - admin-auth: []
+      summary: Update a proposal version
+      tags:
+        - Admin Proposals
+    delete:
+      operationId: ProposalsController_removeVersion
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Proposal UUID
+          schema:
+            format: uuid
+            type: string
+        - name: versionId
+          required: true
+          in: path
+          description: Version UUID
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Version deleted.
+        "404":
+          description: ""
+      security:
+        - admin-auth: []
+      summary: Delete a proposal version
+      tags:
+        - Admin Proposals
+  /api/admin/proposals/{id}/media:
+    post:
+      operationId: ProposalsController_attachMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Proposal UUID
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttachProposalMediaDto"
+      responses:
+        "200":
+          description: Proposal with attached media.
+        "404":
+          description: ""
+      security:
+        - admin-auth: []
+      summary: Attach media to a proposal
+      tags:
+        - Admin Proposals
+  /api/admin/proposals/{id}/media/{rowId}:
+    patch:
+      operationId: ProposalsController_updateMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Proposal UUID
+          schema:
+            format: uuid
+            type: string
+        - name: rowId
+          required: true
+          in: path
+          description: Media attachment row UUID
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProposalMediaDto"
+      responses:
+        "200":
+          description: Proposal with updated media.
+        "404":
+          description: ""
+      security:
+        - admin-auth: []
+      summary: Update proposal media metadata
+      tags:
+        - Admin Proposals
+    delete:
+      operationId: ProposalsController_detachMedia
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Proposal UUID
+          schema:
+            format: uuid
+            type: string
+        - name: rowId
+          required: true
+          in: path
+          description: Media attachment row UUID
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Media detached.
+        "404":
+          description: ""
+      security:
+        - admin-auth: []
+      summary: Detach media from a proposal
+      tags:
+        - Admin Proposals
+  /api/public/proposals/{hash}:
+    get:
+      description: Returns the proposal with all versions and media only when the proposal status is "sent" and it has not expired.
+      operationId: PublicProposalsController_findByHash
+      parameters:
+        - name: hash
+          required: true
+          in: path
+          description: Proposal public hash.
+          schema:
+            example: aBcDeFgHiJkL
+            type: string
+      responses:
+        "200":
+          description: Public proposal data.
+        "404":
+          description: ""
+      summary: Get a public proposal by hash
+      tags:
+        - Public Proposals
+  /api/public/proposals/{hash}/media/{mediaId}:
+    get:
+      description: Streams one media asset attached to a publicly available proposal.
+      operationId: PublicProposalsController_getMediaContent
+      parameters:
+        - name: hash
+          required: true
+          in: path
+          description: Proposal public hash.
+          schema:
+            type: string
+        - name: mediaId
+          required: true
+          in: path
+          description: Attached media asset UUID.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "404":
+          description: ""
+      summary: Fetch public proposal media
+      tags:
+        - Public Proposals
   /api/admin/tags:
     get:
       description: Returns all registered tags ordered by key.
@@ -4512,7 +4867,7 @@ components:
           description: Admin user UUID.
           format: uuid
         auth0UserId:
-          type: object
+          type: string
           description: Mapped Auth0 subject, if already linked.
           example: auth0|abc123
           nullable: true
@@ -4607,7 +4962,7 @@ components:
             - marketing
           example: marketing
         auth0UserId:
-          type: object
+          type: string
           description: Updated Auth0 subject. Set `null` to unlink the current identity.
           example: auth0|abc123
           nullable: true
@@ -4713,12 +5068,12 @@ components:
       type: object
       properties:
         createdBy:
-          type: object
+          type: string
           description: UUID of the admin that originally created the record.
           format: uuid
           nullable: true
         updatedBy:
-          type: object
+          type: string
           description: UUID of the admin that most recently updated the record.
           format: uuid
           nullable: true
@@ -4752,7 +5107,7 @@ components:
           description: Non-localized admin-facing name for the blog post.
           example: Barcelona Historic Center SEO Article
         heroMediaId:
-          type: object
+          type: string
           description: Optional hero media asset UUID.
           format: uuid
           nullable: true
@@ -4762,7 +5117,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/MediaAssetResponseDto"
         cardTagKey:
-          type: object
+          type: string
           description: Tag key shown on the public blog post card. When null, the first tag is used.
           example: history
           nullable: true
@@ -4837,7 +5192,7 @@ components:
           items:
             type: string
         cardTagKey:
-          type: object
+          type: string
           description: Tag key to display on the public blog post card. Set `null` to clear (first tag is used).
           example: history
           nullable: true
@@ -4902,7 +5257,7 @@ components:
           example: Barcelona Historic Center Guide
           maxLength: 255
         summary:
-          type: object
+          type: string
           description: Updated localized summary or excerpt. Set `null` to clear it.
           example: A walking guide to the historic center of Barcelona.
           nullable: true
@@ -4911,13 +5266,13 @@ components:
           description: Updated localized HTML body.
           example: <p>Walk through centuries of history.</p>
         seoTitle:
-          type: object
+          type: string
           description: Updated SEO title override. Set `null` to clear it.
           example: Historic Center Guide | Walk and Tour
           maxLength: 255
           nullable: true
         seoDescription:
-          type: object
+          type: string
           description: Updated SEO meta description override. Set `null` to clear it.
           example: Discover the best historic landmarks in Barcelona.
           nullable: true
@@ -4955,7 +5310,7 @@ components:
           description: Stable internal tag key.
           example: history
         label:
-          type: object
+          type: string
           description: Localized tag label for the requested locale, or `null` if the label is missing.
           example: History
           nullable: true
@@ -4973,18 +5328,18 @@ components:
           description: Published localized title.
           example: Barcelona Historic Center Guide
         summary:
-          type: object
+          type: string
           description: Published localized summary.
           nullable: true
         htmlContent:
           type: string
           description: Published localized HTML body.
         seoTitle:
-          type: object
+          type: string
           description: SEO title override.
           nullable: true
         seoDescription:
-          type: object
+          type: string
           description: SEO description override.
           nullable: true
         imageRefs:
@@ -5022,7 +5377,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/MediaAssetResponseDto"
         cardTagKey:
-          type: object
+          type: string
           description: Tag key selected for the public blog post card. When null, the first tag is used.
           example: history
           nullable: true
@@ -5263,7 +5618,7 @@ components:
             - none
           example: confirm_email
         preferredLocale:
-          type: object
+          type: string
           description: Optional preferred locale retained for the subscriber.
           example: en
           nullable: true
@@ -5352,12 +5707,12 @@ components:
             - subscribed
             - unsubscribed
         preferredLocale:
-          type: object
+          type: string
           description: Optional preferred locale captured during subscription.
           example: en
           nullable: true
         consentSource:
-          type: object
+          type: string
           description: Optional consent source identifier, such as `footer_form`.
           example: footer_form
           nullable: true
@@ -5423,6 +5778,269 @@ components:
         - total
         - page
         - limit
+    CreateProposalDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: General name of the proposal (used as its display name in the frontend).
+          example: Rome Highlights Private Tour
+          maxLength: 255
+        language:
+          type: string
+          description: Language code for the proposal content.
+          example: en
+          maxLength: 10
+        recipientName:
+          type: string
+          description: Name of the proposal recipient.
+          example: John Doe
+          maxLength: 255
+        recipientEmail:
+          type: string
+          description: Email of the proposal recipient.
+          example: john@example.com
+          maxLength: 255
+        expiresAt:
+          type: string
+          description: Expiration date and time for the proposal (ISO 8601).
+          example: "2026-05-01T23:59:59.000Z"
+        notes:
+          type: string
+          description: Internal admin notes about this proposal.
+      required:
+        - language
+    UpdateProposalDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: General name of the proposal (used as its display name in the frontend).
+          example: Rome Highlights Private Tour
+          maxLength: 255
+        language:
+          type: string
+          description: Language code for the proposal content.
+          example: en
+          maxLength: 10
+        recipientName:
+          type: string
+          description: Name of the proposal recipient.
+          example: John Doe
+          maxLength: 255
+        recipientEmail:
+          type: string
+          description: Email of the proposal recipient.
+          example: john@example.com
+          maxLength: 255
+        acceptanceStatus:
+          type: string
+          description: Acceptance status.
+          enum:
+            - pending
+            - accepted
+            - expired
+          example: pending
+        publicationStatus:
+          type: string
+          description: Publication status.
+          enum:
+            - published
+            - unpublished
+          example: published
+        expiresAt:
+          type: string
+          description: Expiration date and time for the proposal (ISO 8601). Pass null to remove.
+          example: "2026-05-01T23:59:59.000Z"
+        notes:
+          type: string
+          description: Internal admin notes about this proposal.
+    ProposalPointDto:
+      type: object
+      properties:
+        lat:
+          type: number
+          description: Latitude in decimal degrees.
+          example: 41.3874
+        lng:
+          type: number
+          description: Longitude in decimal degrees.
+          example: 2.1686
+        label:
+          type: string
+          description: Human-readable label for the point.
+          example: Placa Catalunya
+      required:
+        - lat
+        - lng
+    CreateProposalVersionDto:
+      type: object
+      properties:
+        orderIndex:
+          type: number
+          description: Display order for the version tab.
+          example: 0
+          minimum: 0
+        tourDate:
+          type: string
+          description: Tour date (ISO date string, e.g. 2026-05-15).
+          example: "2026-05-15"
+        durationMinutes:
+          type: number
+          description: Tour duration in minutes.
+          example: 180
+          minimum: 0
+        title:
+          type: string
+          description: Title of this proposal version.
+          example: Classic Walking Tour
+          maxLength: 255
+        description:
+          type: string
+          description: General description of the proposal version.
+        itineraryDescription:
+          type: string
+          description: Itinerary description for this version.
+        priceAmount:
+          type: number
+          description: Price amount for this version.
+          example: 150
+          minimum: 0
+        priceCurrency:
+          type: string
+          description: Currency code for the price.
+          example: EUR
+          maxLength: 10
+        included:
+          description: List of items included in this version.
+          type: array
+          items:
+            type: string
+        notIncluded:
+          description: List of items not included in this version.
+          type: array
+          items:
+            type: string
+        cancellationPolicy:
+          type: string
+          description: Cancellation policy text.
+        startPoint:
+          description: Tour start point.
+          allOf:
+            - $ref: "#/components/schemas/ProposalPointDto"
+        endPoint:
+          description: Tour end point.
+          allOf:
+            - $ref: "#/components/schemas/ProposalPointDto"
+        stripePaymentLink:
+          type: string
+          description: External Stripe Payment Link URL.
+          example: https://buy.stripe.com/test_abc123
+          maxLength: 500
+      required:
+        - title
+        - priceAmount
+        - priceCurrency
+    UpdateProposalVersionDto:
+      type: object
+      properties:
+        orderIndex:
+          type: number
+          description: Display order for the version tab.
+          example: 0
+          minimum: 0
+        tourDate:
+          type: string
+          description: Tour date (ISO date string).
+          example: "2026-05-15"
+        durationMinutes:
+          type: number
+          description: Tour duration in minutes.
+          example: 180
+          minimum: 0
+        title:
+          type: string
+          description: Title of this proposal version.
+          example: Classic Walking Tour
+          maxLength: 255
+        description:
+          type: string
+          description: General description of the proposal version.
+        itineraryDescription:
+          type: string
+          description: Itinerary description for this version.
+        priceAmount:
+          type: number
+          description: Price amount for this version.
+          example: 150
+          minimum: 0
+        priceCurrency:
+          type: string
+          description: Currency code for the price.
+          example: EUR
+          maxLength: 10
+        included:
+          description: List of items included in this version.
+          type: array
+          items:
+            type: string
+        notIncluded:
+          description: List of items not included in this version.
+          type: array
+          items:
+            type: string
+        cancellationPolicy:
+          type: string
+          description: Cancellation policy text.
+        startPoint:
+          description: Tour start point.
+          allOf:
+            - $ref: "#/components/schemas/ProposalPointDto"
+        endPoint:
+          description: Tour end point.
+          allOf:
+            - $ref: "#/components/schemas/ProposalPointDto"
+        stripePaymentLink:
+          type: string
+          description: External Stripe Payment Link URL. Pass null to remove.
+          example: https://buy.stripe.com/test_abc123
+          maxLength: 500
+    AttachProposalMediaDto:
+      type: object
+      properties:
+        mediaId:
+          type: string
+          description: Uploaded media asset UUID to attach to the proposal.
+          format: uuid
+        orderIndex:
+          type: number
+          description: Optional explicit display order. If omitted, the media is appended to the end.
+          example: 0
+          minimum: 0
+        altText:
+          type: object
+          description: Optional localized alt text keyed by locale code.
+          additionalProperties:
+            type: string
+            maxLength: 255
+          example:
+            en: View of the walking route
+      required:
+        - mediaId
+    UpdateProposalMediaDto:
+      type: object
+      properties:
+        orderIndex:
+          type: number
+          description: Optional explicit display order.
+          example: 0
+          minimum: 0
+        altText:
+          type: object
+          description: Optional localized alt text keyed by locale code.
+          additionalProperties:
+            type: string
+            maxLength: 255
     CreateTagDto:
       type: object
       properties:
@@ -5578,7 +6196,7 @@ components:
           description: Requested locale code.
           example: en
         bookingReferenceId:
-          type: object
+          type: string
           description: External booking reference associated with the published locale.
           nullable: true
         cancellationType:
@@ -5624,7 +6242,7 @@ components:
       type: object
       properties:
         durationMinutes:
-          type: object
+          type: number
           description: Travel time to the next stop in minutes.
           example: 8
           nullable: true
@@ -5652,7 +6270,7 @@ components:
           description: Stable stop identifier shared across translations.
           example: stop-1
         durationMinutes:
-          type: object
+          type: number
           description: Planned stop duration in minutes.
           example: 15
           nullable: true
@@ -5667,12 +6285,12 @@ components:
           allOf:
             - $ref: "#/components/schemas/TourNextConnectionResponseDto"
         title:
-          type: object
+          type: string
           description: Localized stop title from the selected translation.
           example: City Hall
           nullable: true
         description:
-          type: object
+          type: string
           description: Localized stop description from the selected translation.
           example: Meet at the main square.
           nullable: true
@@ -5694,7 +6312,7 @@ components:
           items:
             $ref: "#/components/schemas/PublicTourStopResponseDto"
         itineraryDescription:
-          type: object
+          type: string
           description: Localized itinerary narrative. Present for `description` itineraries.
           example: Walk through the old city and discover Roman, medieval, and modern landmarks.
           nullable: true
@@ -5755,7 +6373,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/PublicPointResponseDto"
         cardTagKey:
-          type: object
+          type: string
           description: Tag key selected for the public tour card. When null, the first tag is used.
           example: history
           nullable: true
@@ -5805,12 +6423,12 @@ components:
       type: object
       properties:
         createdBy:
-          type: object
+          type: string
           description: UUID of the admin that originally created the record.
           format: uuid
           nullable: true
         updatedBy:
-          type: object
+          type: string
           description: UUID of the admin that most recently updated the record.
           format: uuid
           nullable: true
@@ -5872,7 +6490,7 @@ components:
           description: Stable stop identifier shared across translations.
           example: stop-1
         durationMinutes:
-          type: object
+          type: number
           description: Planned stop duration in minutes.
           example: 15
           nullable: true
@@ -5965,7 +6583,7 @@ components:
           description: Manual display position used by the default admin and public tour list ordering. Lower values appear first.
           example: 0
         coverMediaId:
-          type: object
+          type: string
           description: Attached image asset UUID used as the tour cover.
           format: uuid
           nullable: true
@@ -5985,12 +6603,12 @@ components:
           allOf:
             - $ref: "#/components/schemas/PriceResponseDto"
         rating:
-          type: object
+          type: number
           description: Average rating normalized to a numeric value.
           example: 4.8
           nullable: true
         reviewCount:
-          type: object
+          type: number
           description: Total review count.
           example: 120
           nullable: true
@@ -6003,7 +6621,7 @@ components:
             - tip_based
             - company
         durationMinutes:
-          type: object
+          type: number
           description: Total duration in minutes.
           example: 120
           nullable: true
@@ -6023,7 +6641,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/TourAdminItineraryResponseDto"
         cardTagKey:
-          type: object
+          type: string
           description: Tag key shown on the public tour card. When null, the first tag is used.
           example: history
           nullable: true
@@ -6257,7 +6875,7 @@ components:
           items:
             type: string
         cardTagKey:
-          type: object
+          type: string
           description: Tag key to display on the public tour card. Set `null` to clear (first tag is used).
           example: history
           nullable: true
@@ -6342,7 +6960,7 @@ components:
           pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
           maxLength: 150
         bookingReferenceId:
-          type: object
+          type: string
           description: Optional external booking reference for this locale. Set `null` to clear it on update.
           example: booking-ref-123
           nullable: true
@@ -6381,7 +6999,7 @@ components:
           pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
           maxLength: 150
         bookingReferenceId:
-          type: object
+          type: string
           description: Updated external booking reference for this locale. Set `null` to clear it.
           example: booking-ref-123
           nullable: true
@@ -6393,7 +7011,7 @@ components:
       type: object
       properties:
         bookingReferenceId:
-          type: object
+          type: string
           description: Optional external booking reference override applied before publishing. Set `null` to clear it.
           example: booking-ref-123
           nullable: true
@@ -6439,7 +7057,7 @@ components:
           example: Ayelen Salazar
           maxLength: 255
         imageAlt:
-          type: object
+          type: string
           description: Updated alt text for the team member photo. Set `null` to clear it.
           example: Photo of Ayelen Salazar
           maxLength: 255
@@ -6449,7 +7067,7 @@ components:
           description: Updated display order index.
           example: 1
         linkedinUrl:
-          type: object
+          type: string
           description: LinkedIn profile URL. Set `null` to clear it.
           example: https://linkedin.com/in/example
           maxLength: 500
@@ -6647,12 +7265,12 @@ components:
             - free
             - paid
         tourId:
-          type: object
+          type: string
           description: UUID of the website tour this event links to. Set `null` to clear it.
           format: uuid
           nullable: true
         description:
-          type: object
+          type: string
           description: Optional event description. Set `null` to clear it.
           maxLength: 2000
           nullable: true
@@ -6720,7 +7338,7 @@ components:
             type: string
             format: uuid
         note:
-          type: object
+          type: string
           description: Free-text note specific to this date. Set `null` to clear it.
           maxLength: 2000
           nullable: true
@@ -6728,17 +7346,17 @@ components:
       type: object
       properties:
         createdBy:
-          type: object
+          type: string
           description: UUID of the admin that originally created the record.
           format: uuid
           nullable: true
         updatedBy:
-          type: object
+          type: string
           description: UUID of the admin that most recently updated the record.
           format: uuid
           nullable: true
         publishedBy:
-          type: object
+          type: string
           description: UUID of the admin that published the record, if it is currently published.
           format: uuid
           nullable: true
@@ -6774,12 +7392,12 @@ components:
           description: Whether the translation is configured to be publicly exposed.
           example: true
         bookingReferenceId:
-          type: object
+          type: string
           description: External booking reference for the locale, if any.
           nullable: true
           example: booking-ref-123
         cancellationType:
-          type: object
+          type: string
           description: Localized cancellation policy text, or `null` when the translation is incomplete.
           example: Free cancellation up to 24 hours before the start time.
           nullable: true
@@ -6859,7 +7477,7 @@ components:
           description: Localized title.
           example: Barcelona Historic Center Guide
         summary:
-          type: object
+          type: string
           description: Localized summary copy.
           nullable: true
         htmlContent:
@@ -6867,11 +7485,11 @@ components:
           description: Localized rendered HTML body.
           example: <p>Walk through centuries of history.</p>
         seoTitle:
-          type: object
+          type: string
           description: SEO title override.
           nullable: true
         seoDescription:
-          type: object
+          type: string
           description: SEO description override.
           nullable: true
         imageRefs:

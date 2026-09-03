@@ -110,6 +110,7 @@ export class UpdateBlogPostTranslationDto {
   title?: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Updated localized summary or excerpt. Set `null` to clear it.',
     example: 'A walking guide to the historic center of Barcelona.',
     nullable: true,
@@ -127,6 +128,7 @@ export class UpdateBlogPostTranslationDto {
   htmlContent?: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Updated SEO title override. Set `null` to clear it.',
     example: 'Historic Center Guide | Walk and Tour',
     maxLength: 255,
@@ -138,6 +140,7 @@ export class UpdateBlogPostTranslationDto {
   seoTitle?: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Updated SEO meta description override. Set `null` to clear it.',
     example: 'Discover the best historic landmarks in Barcelona.',
     nullable: true,

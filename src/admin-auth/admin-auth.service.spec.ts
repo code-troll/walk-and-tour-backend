@@ -66,8 +66,77 @@ describe('AdminAuthService', () => {
       service.resolveAuthenticatedAdmin({
         sub: 'auth0|new',
         email: 'admin@example.com',
+        email_verified: true,
       }),
     ).resolves.toEqual(boundAdmin);
+  });
+
+  it('refuses to bind a pending admin invitation to an unverified email identity', async () => {
+    const pendingAdmin = {
+      id: 'admin-1',
+      email: 'admin@example.com',
+      roleName: 'editor',
+      status: 'active',
+      auth0UserId: null,
+    };
+
+    adminUsersService.findByAuth0UserId.mockResolvedValue(null as never);
+    adminUsersService.findByEmail.mockResolvedValue(pendingAdmin as never);
+
+    await expect(
+      service.resolveAuthenticatedAdmin({
+        sub: 'auth0|from-another-connection',
+        email: 'admin@example.com',
+        email_verified: false,
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(adminUsersService.bindAuth0Identity).not.toHaveBeenCalled();
+  });
+
+  it('refuses to bind a pending admin invitation when no email_verified claim is present', async () => {
+    const pendingAdmin = {
+      id: 'admin-1',
+      email: 'admin@example.com',
+      roleName: 'editor',
+      status: 'active',
+      auth0UserId: null,
+    };
+
+    adminUsersService.findByAuth0UserId.mockResolvedValue(null as never);
+    adminUsersService.findByEmail.mockResolvedValue(pendingAdmin as never);
+
+    await expect(
+      service.resolveAuthenticatedAdmin({
+        sub: 'auth0|from-another-connection',
+        email: 'admin@example.com',
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(adminUsersService.bindAuth0Identity).not.toHaveBeenCalled();
+  });
+
+  it('never rebinds an admin that is already linked to a different Auth0 subject', async () => {
+    const linkedAdmin = {
+      id: 'admin-1',
+      email: 'admin@example.com',
+      roleName: 'super_admin',
+      status: 'active',
+      auth0UserId: 'auth0|original',
+    };
+
+    adminUsersService.findByAuth0UserId.mockResolvedValue(null as never);
+    adminUsersService.findByEmail.mockResolvedValue(linkedAdmin as never);
+
+    await expect(
+      service.resolveAuthenticatedAdmin({
+        sub: 'auth0|impostor',
+        email: 'admin@example.com',
+        email_verified: true,
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(adminUsersService.bindAuth0Identity).not.toHaveBeenCalled();
   });
 
   it('rejects identities without a local admin mapping', async () => {

@@ -25,6 +25,7 @@ export class UpdateAdminUserDto {
   roleName?: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Updated Auth0 subject. Set `null` to unlink the current identity.',
     example: 'auth0|abc123',
     nullable: true,
