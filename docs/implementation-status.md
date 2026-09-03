@@ -88,4 +88,9 @@ The six planned backend layers are now implemented. The next step, if requested,
 - The local row and the identity are separate sources of truth. The username is reserved locally first, and if the identity provider then refuses it the local row is deleted rather than left pointing at nothing.
 - Passwords are never set or seen by the backend or an administrator. The hotel chooses its own through a provider-issued ticket emailed to it, and the same route re-sends that link for a reset.
 - `GET /api/admin/hotels/:id/user` reports `404` when a hotel has no access user yet, which is the state every hotel starts in, rather than returning a null body.
-- The hotel-facing portal API and bookings are not part of this layer.
+- Hotel-facing requests are guarded by `HotelJwtAuthGuard`, which shares Auth0 token verification with the admin side and then resolves the subject against `hotel_users` and nowhere else. Both populations sit in one tenant behind one API audience, so a verified token proves only that the identity is real; which population it belongs to is decided by that lookup. Resolution is by subject only, with no email fallback.
+- The resolved user is written to `request.hotelUser`, never `request.admin`, because `AdminRolesGuard` reads the latter and is injectable everywhere.
+- `invited` means the hotel has never signed in. Presenting a valid token proves the password was set, since the identity provider would not otherwise issue one, so the first successful resolution settles the user as `active`.
+- Admin first-login binding now also refuses any identity that already belongs to a hotel access user, whatever address it presents. Together with the `email_verified` requirement this closes the path by which a hotel identity could have claimed a pending admin invitation.
+- `GET /api/hotel/auth/me` returns the signed-in hotel, its access user and its live tour grants. Every field is derived from the token; no identifier is accepted from the caller.
+- Hotel bookings are not part of this layer.

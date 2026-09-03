@@ -5,14 +5,22 @@ import {
 } from '@nestjs/common';
 
 import { AdminUserEntity } from '../admin-users/admin-user.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
 import { AdminUsersService } from '../admin-users/admin-users.service';
+import { HotelUserEntity } from '../hotels/entities/hotel-user.entity';
 import { ADMIN_USER_STATUSES } from '../shared/domain';
 import { AuthenticatedAdmin } from './authenticated-admin.interface';
 import { VerifiedAuth0Claims } from './auth0-token-verifier.service';
 
 @Injectable()
 export class AdminAuthService {
-  constructor(private readonly adminUsersService: AdminUsersService) {}
+  constructor(
+    private readonly adminUsersService: AdminUsersService,
+    @InjectRepository(HotelUserEntity)
+    private readonly hotelUsersRepository: Repository<HotelUserEntity>,
+  ) {}
 
   async resolveAuthenticatedAdmin(
     claims: VerifiedAuth0Claims,
@@ -72,6 +80,20 @@ export class AdminAuthService {
 
     if (!adminByEmail || adminByEmail.auth0UserId !== null) {
       return null;
+    }
+
+    // An identity that already belongs to a hotel is never a candidate for an
+    // admin account, whatever address it presents. Both populations live in one
+    // tenant behind one API audience, so this is the check that actually keeps
+    // them apart rather than the connection the sign-in page asked for.
+    const hotelUser = await this.hotelUsersRepository.findOne({
+      where: { identityUserId: claims.sub },
+    });
+
+    if (hotelUser) {
+      throw new UnauthorizedException(
+        'This identity belongs to a hotel access user and cannot be linked to an admin account.',
+      );
     }
 
     if (claims.email_verified !== true) {
