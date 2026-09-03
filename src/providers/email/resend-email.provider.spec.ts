@@ -1,4 +1,5 @@
 import { ResendEmailProvider } from './resend-email.provider';
+import { createProviderConfigMock } from '../../../test/utils/provider-config.mock';
 
 describe('ResendEmailProvider', () => {
   it('sends a newsletter confirmation email through the Resend API', async () => {
@@ -9,19 +10,15 @@ describe('ResendEmailProvider', () => {
     });
 
     const provider = new ResendEmailProvider(
-      {
-        appBaseUrl: 'https://backend.example.com',
-        publicSiteBaseUrl: 'https://walkandtour.dk',
+      createProviderConfigMock({
         emailProvider: 'resend',
-        emailFrom: 'Walk and Tour <no-reply@example.com>',
         resendApiKey: 'resend-key',
         storageDriver: 'local',
         localStorageRoot: 'storage',
-        localStoragePublicBaseUrl: 'https://backend.example.com/media',
-        railwayStorageRegion: 'auto',
         railwayStorageUrlStyle: 'virtual-hosted',
-        defaultEventTimezone: 'Europe/Copenhagen',
-      },
+        railwayStorageRegion: 'auto',
+        localStoragePublicBaseUrl: 'https://backend.example.com/media',
+      }),
       fetchImpl,
     );
 
@@ -52,18 +49,14 @@ describe('ResendEmailProvider', () => {
   });
 
   it('fails when the resend api key is missing', async () => {
-    const provider = new ResendEmailProvider({
-      appBaseUrl: 'https://backend.example.com',
-      publicSiteBaseUrl: 'https://walkandtour.dk',
+    const provider = new ResendEmailProvider(createProviderConfigMock({
       emailProvider: 'resend',
-      emailFrom: 'Walk and Tour <no-reply@example.com>',
       storageDriver: 'local',
       localStorageRoot: 'storage',
-      localStoragePublicBaseUrl: 'https://backend.example.com/media',
-      railwayStorageRegion: 'auto',
       railwayStorageUrlStyle: 'virtual-hosted',
-      defaultEventTimezone: 'Europe/Copenhagen',
-    });
+      railwayStorageRegion: 'auto',
+      localStoragePublicBaseUrl: 'https://backend.example.com/media',
+    }));
 
     await expect(
       provider.sendNewsletterConfirmation({

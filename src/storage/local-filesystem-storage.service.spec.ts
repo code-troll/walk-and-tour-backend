@@ -3,22 +3,19 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 import { LocalFilesystemStorageService } from './local-filesystem-storage.service';
+import { createProviderConfigMock } from '../../test/utils/provider-config.mock';
 
 describe('LocalFilesystemStorageService', () => {
   it('writes files to the configured local root and returns a public url', async () => {
     const root = await mkdtemp(join(tmpdir(), 'walk-and-tour-storage-'));
-    const service = new LocalFilesystemStorageService({
-      appBaseUrl: 'https://backend.example.com',
-      publicSiteBaseUrl: 'https://walkandtour.dk',
+    const service = new LocalFilesystemStorageService(createProviderConfigMock({
       emailProvider: 'console',
-      emailFrom: 'Walk and Tour <no-reply@example.com>',
       storageDriver: 'local',
       localStorageRoot: root,
-      localStoragePublicBaseUrl: 'https://backend.example.com/media',
-      railwayStorageRegion: 'auto',
       railwayStorageUrlStyle: 'virtual-hosted',
-      defaultEventTimezone: 'Europe/Copenhagen',
-    });
+      railwayStorageRegion: 'auto',
+      localStoragePublicBaseUrl: 'https://backend.example.com/media',
+    }));
 
     const result = await service.putObject({
       path: 'images/cover.txt',

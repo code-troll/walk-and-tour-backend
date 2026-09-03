@@ -15,6 +15,12 @@ export interface ProviderConfig {
   railwayStorageBucket?: string;
   railwayStorageUrlStyle: 'virtual-hosted' | 'path';
   defaultEventTimezone: string;
+  identityProvider: 'console' | 'auth0';
+  identityIssuerBaseUrl: string;
+  identityManagementClientId?: string;
+  identityManagementClientSecret?: string;
+  hotelIdentityConnection: string;
+  hotelPortalBaseUrl: string;
 }
 
 const DEFAULT_APP_BASE_URL = 'http://api.dev.walkandtour.dk:3000';
@@ -31,6 +37,9 @@ const DEFAULT_RAILWAY_STORAGE_URL_STYLE = 'virtual-hosted';
 // event datetimes are still stored in UTC; this only records the "home" zone a
 // calendar UI should present the event in. See EVENTS/timezone handling.
 const DEFAULT_EVENT_TIMEZONE = 'Europe/Copenhagen';
+const DEFAULT_IDENTITY_PROVIDER = 'console';
+const DEFAULT_HOTEL_IDENTITY_CONNECTION = 'Hotel-Portal-Users';
+const DEFAULT_HOTEL_PORTAL_BASE_URL = 'http://hotels.dev.walkandtour.dk:3001';
 
 export function getProviderConfig(): ProviderConfig {
   return {
@@ -58,7 +67,22 @@ export function getProviderConfig(): ProviderConfig {
     ),
     defaultEventTimezone:
       process.env.DEFAULT_EVENT_TIMEZONE ?? DEFAULT_EVENT_TIMEZONE,
+    identityProvider: parseIdentityProvider(process.env.IDENTITY_PROVIDER),
+    identityIssuerBaseUrl:
+      process.env.IDENTITY_ISSUER_BASE_URL ?? process.env.AUTH0_ISSUER_BASE_URL ?? '',
+    identityManagementClientId: process.env.IDENTITY_MANAGEMENT_CLIENT_ID,
+    identityManagementClientSecret: process.env.IDENTITY_MANAGEMENT_CLIENT_SECRET,
+    hotelIdentityConnection:
+      process.env.HOTEL_IDENTITY_CONNECTION ?? DEFAULT_HOTEL_IDENTITY_CONNECTION,
+    hotelPortalBaseUrl:
+      process.env.HOTEL_PORTAL_BASE_URL ?? DEFAULT_HOTEL_PORTAL_BASE_URL,
   };
+}
+
+function parseIdentityProvider(
+  value: string | undefined,
+): ProviderConfig['identityProvider'] {
+  return value === 'auth0' ? 'auth0' : DEFAULT_IDENTITY_PROVIDER;
 }
 
 function parseEmailProvider(value: string | undefined): ProviderConfig['emailProvider'] {

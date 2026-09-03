@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ProviderConfig } from '../../shared/config/provider.config';
 import {
   EmailProvider,
+  SendHotelPasswordSetupEmailInput,
   SendNewsletterConfirmationEmailInput,
   SendProposalLinkEmailInput,
 } from './email-provider.interface';
@@ -42,6 +43,25 @@ export class ConsoleEmailProvider implements EmailProvider {
         proposalUrl: input.proposalUrl,
         language: input.language,
         publicBaseUrl: input.publicBaseUrl,
+      }),
+    );
+  }
+
+  async sendHotelPasswordSetup(
+    input: SendHotelPasswordSetupEmailInput,
+  ): Promise<void> {
+    this.logger.log(
+      JSON.stringify({
+        provider: 'console',
+        from: this.config.emailFrom,
+        to: input.recipientEmail,
+        subject: input.isResend
+          ? 'Set a new password for your Walk and Tour hotel account'
+          : 'Set up your Walk and Tour hotel account',
+        hotelName: input.hotelName,
+        username: input.username,
+        setupUrl: input.setupUrl,
+        expiresAt: input.expiresAt.toISOString(),
       }),
     );
   }

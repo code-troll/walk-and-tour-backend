@@ -31,6 +31,7 @@ describe('NewsletterSubscribersService', () => {
     emailProvider = {
       sendNewsletterConfirmation: jest.fn(),
       sendProposalLink: jest.fn(),
+      sendHotelPasswordSetup: jest.fn(),
     };
 
     service = new NewsletterSubscribersService(

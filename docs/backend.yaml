@@ -4881,6 +4881,228 @@ paths:
       summary: Replace the tours a hotel may sell
       tags:
         - Admin Hotels
+  /api/admin/hotels/{id}/user:
+    get:
+      description: >-
+        Returns the single access user this hotel signs in with. Responds `404` when the hotel has no access user yet,
+        which is the state every hotel starts in.
+      operationId: HotelsController_findUser
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: The access user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelUserResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: The hotel was not found, or it has no access user yet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Get the hotel access user
+      tags:
+        - Admin Hotels
+    post:
+      description: >-
+        Derives a unique username from the hotel name, creates the sign-in identity, and emails the hotel a link to
+        choose its own password. A hotel has exactly one access user.
+      operationId: HotelsController_createUser
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "201":
+          description: The created access user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelUserResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: The hotel already has an access user, or the identity provider refused the derived username or email.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Create the hotel access user
+      tags:
+        - Admin Hotels
+  /api/admin/hotels/{id}/user/resend-invitation:
+    post:
+      description: >-
+        Issues a fresh password setup ticket and emails it to the address the access user signs in with. Used both for a
+        lost invitation and for a password reset.
+      operationId: HotelsController_resendUserInvitation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: The access user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelUserResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: The access user is disabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Send a new password link
+      tags:
+        - Admin Hotels
+  /api/admin/hotels/{id}/user/disable:
+    post:
+      description: Blocks the sign-in identity. Reversible through the enable route.
+      operationId: HotelsController_disableUser
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: The access user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelUserResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Disable the hotel access user
+      tags:
+        - Admin Hotels
+  /api/admin/hotels/{id}/user/enable:
+    post:
+      description: Unblocks the sign-in identity. A user that has never signed in returns to `invited` rather than `active`.
+      operationId: HotelsController_enableUser
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: The access user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelUserResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Enable the hotel access user
+      tags:
+        - Admin Hotels
 info:
   title: Walk and Tour Backend API
   description: Administrative and public API surface for languages, tags, tours, blog posts, and admin authentication.
@@ -7882,6 +8104,47 @@ components:
             format: uuid
       required:
         - tourIds
+    HotelUserResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Access user identifier.
+          format: uuid
+        hotelId:
+          type: string
+          description: Hotel this user signs in for.
+          format: uuid
+        username:
+          type: string
+          description: Sign-in username, derived from the hotel name and unique across hotels.
+          example: copenhagen-admiral-hotel
+        email:
+          type: string
+          description: Address this user signs in with and receives password links at. Separate from the hotel contact email.
+          example: reception@example.com
+        status:
+          type: string
+          description: Lifecycle status. `invited` until the hotel sets a password for the first time.
+          enum:
+            - invited
+            - active
+            - disabled
+          example: invited
+        lastLoginAt:
+          type: string
+          description: When this user last signed in.
+          format: date-time
+          nullable: true
+        audit:
+          $ref: "#/components/schemas/HotelAuditResponseDto"
+      required:
+        - id
+        - hotelId
+        - username
+        - email
+        - status
+        - audit
     AuditMetadataDto:
       type: object
       properties:
