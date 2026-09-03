@@ -75,6 +75,7 @@ export class UpdateProposalDto {
   publicationStatus?: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Expiration date and time for the proposal (ISO 8601). Pass null to remove.',
     example: '2026-05-01T23:59:59.000Z',
   })

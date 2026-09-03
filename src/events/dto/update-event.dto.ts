@@ -43,6 +43,7 @@ export class UpdateEventDto {
   type?: EventType;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'UUID of the website tour this event links to. Set `null` to clear it.',
     format: 'uuid',
     nullable: true,
@@ -52,6 +53,7 @@ export class UpdateEventDto {
   tourId?: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Optional event description. Set `null` to clear it.',
     maxLength: 2000,
     nullable: true,

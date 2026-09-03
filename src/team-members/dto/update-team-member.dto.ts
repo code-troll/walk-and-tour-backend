@@ -13,6 +13,7 @@ export class UpdateTeamMemberDto {
   name?: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Updated alt text for the team member photo. Set `null` to clear it.',
     example: 'Photo of Ayelen Salazar',
     maxLength: 255,
@@ -33,6 +34,7 @@ export class UpdateTeamMemberDto {
   orderIndex?: number;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'LinkedIn profile URL. Set `null` to clear it.',
     example: 'https://linkedin.com/in/example',
     maxLength: 500,

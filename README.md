@@ -226,12 +226,27 @@ Successfully authenticating with Auth0 is not enough by itself. The backend stil
 Mapping logic:
 
 - first lookup by `auth0UserId` against the Auth0 token `sub`
-- fallback lookup by email when a local admin exists with the same email and `auth0UserId = null`
+- fallback lookup by email when a local admin exists with the same email and `auth0UserId = null`, **and the access token carries `email_verified: true`**
 - admin status must be `active`
+
+The email fallback is the only path that lets an unknown Auth0 subject take over an existing admin
+account, so it requires a verified email claim. The tenant can host more than one population of
+identities and every access token is verified against the same audience, so without that check an
+identity from another connection could claim a pending admin invitation just by presenting a
+matching email address.
 
 If no local admin is mapped, protected routes return:
 
 - `401 No local admin user is mapped to this Auth0 identity.`
+
+If a pending admin invitation matches the email but the token has no verified email claim, the
+response is instead:
+
+- `401 An admin invitation exists for this email address, but the Auth0 identity presenting it does not carry a verified email claim, so it cannot be linked automatically.`
+
+Auth0 does not always include `email`/`email_verified` in access tokens issued for a custom API; add
+an Action that copies both claims onto the access token if first-login binding is needed. Otherwise
+create admin users with an explicit `auth0UserId`.
 
 For local development, you can either:
 
@@ -302,7 +317,7 @@ Important:
 
 - this does **not** bypass Auth0
 - local admin access still requires a valid Auth0 bearer token
-- on first successful login, the Auth0 user must use the same email as the seeded admin so the local record can be bound automatically
+- on first successful login, the Auth0 user must use the same email as the seeded admin, and present a verified email claim, so the local record can be bound automatically
 
 Useful seeded newsletter tokens:
 

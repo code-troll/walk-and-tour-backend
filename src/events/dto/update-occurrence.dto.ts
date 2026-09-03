@@ -19,6 +19,7 @@ export class UpdateOccurrenceDto {
   teamMemberIds?: string[];
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Free-text note specific to this date. Set `null` to clear it.',
     maxLength: 2000,
     nullable: true,

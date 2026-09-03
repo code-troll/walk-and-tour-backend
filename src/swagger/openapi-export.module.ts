@@ -26,6 +26,9 @@ import {
   NewsletterPublicRateLimitStore,
 } from '../newsletter-subscribers/newsletter-public-rate-limit.guard';
 import { NewsletterSubscribersService } from '../newsletter-subscribers/newsletter-subscribers.service';
+import { ProposalsController } from '../proposals/proposals.controller';
+import { PublicProposalsController } from '../proposals/public-proposals.controller';
+import { ProposalsService } from '../proposals/proposals.service';
 import { TagsController } from '../tags/tags.controller';
 import { TagsService } from '../tags/tags.service';
 import { TeamMembersController } from '../team-members/team-members.controller';
@@ -49,6 +52,8 @@ const EMPTY_SERVICE = {};
     HealthController,
     LanguagesController,
     NewsletterSubscribersController,
+    ProposalsController,
+    PublicProposalsController,
     TagsController,
     PublicToursController,
     ToursController,
@@ -67,6 +72,7 @@ const EMPTY_SERVICE = {};
     { provide: NewsletterSubscribersService, useValue: EMPTY_SERVICE },
     { provide: NewsletterPublicRateLimitGuard, useValue: EMPTY_SERVICE },
     { provide: NewsletterPublicRateLimitStore, useValue: EMPTY_SERVICE },
+    { provide: ProposalsService, useValue: EMPTY_SERVICE },
     { provide: TagsService, useValue: EMPTY_SERVICE },
     { provide: PublicToursService, useValue: EMPTY_SERVICE },
     { provide: ToursService, useValue: EMPTY_SERVICE },

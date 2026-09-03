@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
+import { AdminUserEntity } from '../admin-users/admin-user.entity';
 import { AdminUsersService } from '../admin-users/admin-users.service';
 import { ADMIN_USER_STATUSES } from '../shared/domain';
 import { AuthenticatedAdmin } from './authenticated-admin.interface';
@@ -18,15 +19,8 @@ export class AdminAuthService {
   ): Promise<AuthenticatedAdmin> {
     let adminUser = await this.adminUsersService.findByAuth0UserId(claims.sub);
 
-    if (!adminUser && claims.email) {
-      const adminByEmail = await this.adminUsersService.findByEmail(claims.email);
-
-      if (adminByEmail) {
-        adminUser =
-          adminByEmail.auth0UserId === null
-            ? await this.adminUsersService.bindAuth0Identity(adminByEmail, claims.sub)
-            : null;
-      }
+    if (!adminUser) {
+      adminUser = await this.claimPendingAdminInvitation(claims);
     }
 
     if (!adminUser) {
@@ -54,5 +48,38 @@ export class AdminAuthService {
       status: adminUser.status as AuthenticatedAdmin['status'],
       auth0UserId: adminUser.auth0UserId,
     };
+  }
+
+  /**
+   * First-login binding for an admin that was created with an email address but
+   * no Auth0 subject yet.
+   *
+   * This is the only path that lets an unknown Auth0 subject take over an
+   * existing admin account, so it deliberately requires a verified email claim.
+   * The tenant hosts more than one population of identities, and every access
+   * token is verified against the same audience, so an unverified email claim
+   * would be enough for an identity from another connection to claim a pending
+   * admin invitation.
+   */
+  private async claimPendingAdminInvitation(
+    claims: VerifiedAuth0Claims,
+  ): Promise<AdminUserEntity | null> {
+    if (!claims.email) {
+      return null;
+    }
+
+    const adminByEmail = await this.adminUsersService.findByEmail(claims.email);
+
+    if (!adminByEmail || adminByEmail.auth0UserId !== null) {
+      return null;
+    }
+
+    if (claims.email_verified !== true) {
+      throw new UnauthorizedException(
+        'An admin invitation exists for this email address, but the Auth0 identity presenting it does not carry a verified email claim, so it cannot be linked automatically.',
+      );
+    }
+
+    return this.adminUsersService.bindAuth0Identity(adminByEmail, claims.sub);
   }
 }
