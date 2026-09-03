@@ -19,6 +19,16 @@ export function createSwaggerDocument(app: INestApplication): OpenAPIObject {
       },
       'admin-auth',
     )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description:
+          'Auth0-issued bearer token belonging to a hotel access user, required by the hotel portal endpoints.',
+      },
+      'hotel-auth',
+    )
     .build();
 
   return SwaggerModule.createDocument(app, swaggerConfig, {

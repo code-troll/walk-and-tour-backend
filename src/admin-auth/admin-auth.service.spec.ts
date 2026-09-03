@@ -3,12 +3,15 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
+import { createRepositoryMock, RepositoryMock } from '../../test/utils/repository.mock';
 import { AdminUsersService } from '../admin-users/admin-users.service';
+import { HotelUserEntity } from '../hotels/entities/hotel-user.entity';
 import { AdminAuthService } from './admin-auth.service';
 
 describe('AdminAuthService', () => {
   let service: AdminAuthService;
   let adminUsersService: jest.Mocked<AdminUsersService>;
+  let hotelUsersRepository: RepositoryMock<HotelUserEntity>;
 
   beforeEach(() => {
     adminUsersService = {
@@ -18,7 +21,10 @@ describe('AdminAuthService', () => {
       updateLastLogin: jest.fn(),
     } as unknown as jest.Mocked<AdminUsersService>;
 
-    service = new AdminAuthService(adminUsersService);
+    hotelUsersRepository = createRepositoryMock<HotelUserEntity>();
+    hotelUsersRepository.findOne.mockResolvedValue(null);
+
+    service = new AdminAuthService(adminUsersService, hotelUsersRepository as never);
   });
 
   it('resolves an already linked admin user', async () => {
@@ -132,6 +138,30 @@ describe('AdminAuthService', () => {
       service.resolveAuthenticatedAdmin({
         sub: 'auth0|impostor',
         email: 'admin@example.com',
+        email_verified: true,
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(adminUsersService.bindAuth0Identity).not.toHaveBeenCalled();
+  });
+
+  it('refuses to link an identity that already belongs to a hotel access user', async () => {
+    const pendingAdmin = {
+      id: 'admin-1',
+      email: 'shared@example.com',
+      roleName: 'super_admin',
+      status: 'active',
+      auth0UserId: null,
+    };
+
+    adminUsersService.findByAuth0UserId.mockResolvedValue(null as never);
+    adminUsersService.findByEmail.mockResolvedValue(pendingAdmin as never);
+    hotelUsersRepository.findOne.mockResolvedValue({ id: 'hotel-user-1' } as never);
+
+    await expect(
+      service.resolveAuthenticatedAdmin({
+        sub: 'auth0|hotel-identity',
+        email: 'shared@example.com',
         email_verified: true,
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);

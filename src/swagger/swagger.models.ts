@@ -1907,6 +1907,57 @@ export class HotelUserResponseDto {
   audit!: HotelAuditResponseDto;
 }
 
+export class HotelViewerHotelDto {
+  @ApiProperty({ description: 'Hotel identifier.', format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ description: 'Hotel name.', example: 'Copenhagen Admiral Hotel' })
+  name!: string;
+}
+
+export class HotelViewerUserDto {
+  @ApiProperty({ description: 'Sign-in username.', example: 'copenhagen-admiral-hotel' })
+  username!: string;
+
+  @ApiProperty({
+    description: 'Address this user signs in with and receives password links at.',
+    example: 'reception@example.com',
+  })
+  email!: string;
+
+  @ApiProperty({
+    description: 'Lifecycle status.',
+    enum: HOTEL_USER_STATUSES,
+    example: 'active',
+  })
+  status!: string;
+}
+
+export class HotelViewerTourDto {
+  @ApiProperty({ description: 'Tour identifier.', format: 'uuid' })
+  tourId!: string;
+
+  @ApiProperty({
+    description: 'Tour name.',
+    example: 'Copenhagen Historic Center Free Tour',
+  })
+  tourName!: string;
+}
+
+export class HotelViewerResponseDto {
+  @ApiProperty({ type: () => HotelViewerHotelDto })
+  hotel!: HotelViewerHotelDto;
+
+  @ApiProperty({ type: () => HotelViewerUserDto })
+  user!: HotelViewerUserDto;
+
+  @ApiProperty({
+    description: 'Tours this hotel may currently sell. Revoked grants are not listed.',
+    type: () => [HotelViewerTourDto],
+  })
+  tours!: HotelViewerTourDto[];
+}
+
 export const SWAGGER_EXTRA_MODELS = [
   ErrorResponseDto,
   AuditMetadataDto,
@@ -1933,6 +1984,10 @@ export const SWAGGER_EXTRA_MODELS = [
   HotelSummaryResponseDto,
   HotelListResponseDto,
   HotelUserResponseDto,
+  HotelViewerHotelDto,
+  HotelViewerUserDto,
+  HotelViewerTourDto,
+  HotelViewerResponseDto,
   TourMediaItemResponseDto,
   UploadedMediaResponseDto,
   PriceResponseDto,

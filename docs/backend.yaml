@@ -5103,6 +5103,37 @@ paths:
       summary: Enable the hotel access user
       tags:
         - Admin Hotels
+  /api/hotel/auth/me:
+    get:
+      description: >-
+        Returns the hotel this token belongs to, its access user, and the tours it may currently sell. Everything is
+        derived from the token; no identifier is accepted from the caller.
+      operationId: HotelAuthController_me
+      parameters: []
+      responses:
+        "200":
+          description: The signed-in hotel.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelViewerResponseDto"
+        "401":
+          description: The token is missing, invalid, or not mapped to a hotel access user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: The access user or the hotel account is disabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - hotel-auth: []
+      summary: Get the signed-in hotel
+      tags:
+        - Hotel Portal
 info:
   title: Walk and Tour Backend API
   description: Administrative and public API surface for languages, tags, tours, blog posts, and admin authentication.
@@ -5117,6 +5148,11 @@ components:
       bearerFormat: JWT
       type: http
       description: Auth0-issued bearer token required by protected admin endpoints.
+    hotel-auth:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      description: Auth0-issued bearer token belonging to a hotel access user, required by the hotel portal endpoints.
   schemas:
     AuthenticatedAdminResponseDto:
       type: object
@@ -8145,6 +8181,73 @@ components:
         - email
         - status
         - audit
+    HotelViewerHotelDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Hotel identifier.
+          format: uuid
+        name:
+          type: string
+          description: Hotel name.
+          example: Copenhagen Admiral Hotel
+      required:
+        - id
+        - name
+    HotelViewerUserDto:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Sign-in username.
+          example: copenhagen-admiral-hotel
+        email:
+          type: string
+          description: Address this user signs in with and receives password links at.
+          example: reception@example.com
+        status:
+          type: string
+          description: Lifecycle status.
+          enum:
+            - invited
+            - active
+            - disabled
+          example: active
+      required:
+        - username
+        - email
+        - status
+    HotelViewerTourDto:
+      type: object
+      properties:
+        tourId:
+          type: string
+          description: Tour identifier.
+          format: uuid
+        tourName:
+          type: string
+          description: Tour name.
+          example: Copenhagen Historic Center Free Tour
+      required:
+        - tourId
+        - tourName
+    HotelViewerResponseDto:
+      type: object
+      properties:
+        hotel:
+          $ref: "#/components/schemas/HotelViewerHotelDto"
+        user:
+          $ref: "#/components/schemas/HotelViewerUserDto"
+        tours:
+          description: Tours this hotel may currently sell. Revoked grants are not listed.
+          type: array
+          items:
+            $ref: "#/components/schemas/HotelViewerTourDto"
+      required:
+        - hotel
+        - user
+        - tours
     AuditMetadataDto:
       type: object
       properties:
