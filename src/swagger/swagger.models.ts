@@ -2034,6 +2034,21 @@ export class HotelTourStopResponseDto {
   durationMinutes!: number | null;
 }
 
+export class HotelTourImageResponseDto {
+  @ApiProperty({ description: 'Media asset identifier.', format: 'uuid' })
+  mediaId!: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'Localized alternative text, when the tour records one.',
+  })
+  alt!: string | null;
+
+  @ApiProperty({ description: "Whether this is the tour's cover image." })
+  isCover!: boolean;
+}
+
 export class HotelTourDetailResponseDto {
   @ApiProperty({ description: 'Tour identifier.', format: 'uuid' })
   tourId!: string;
@@ -2109,6 +2124,15 @@ export class HotelTourDetailResponseDto {
     description: 'Tag labels in the content locale, falling back to the tag key.',
   })
   tags!: string[];
+
+  @ApiProperty({
+    type: () => [HotelTourImageResponseDto],
+    description:
+      "The tour's images, cover first. Ids rather than URLs: the bytes come " +
+      'from `/api/hotel/tours/{tourId}/media/{mediaId}`, which re-checks the ' +
+      'grant, so a private tour\'s photographs are not addressable without one.',
+  })
+  images!: HotelTourImageResponseDto[];
 
   @ApiProperty({ type: () => [HotelTourStopResponseDto], description: 'Stops in order.' })
   stops!: HotelTourStopResponseDto[];

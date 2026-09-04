@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { EmailModule } from '../providers/email/email.module';
+import { StorageModule } from '../storage/storage.module';
 import { IdentityModule } from '../providers/identity/identity.module';
 import { TourEntity } from '../tours/entities/tour.entity';
 import { HotelUserEntity } from './entities/hotel-user.entity';
@@ -28,6 +29,7 @@ import { HotelToursService } from './hotel-tours.service';
       HotelBookingLogEntity,
       TourEntity,
     ]),
+    StorageModule,
     IdentityModule,
     EmailModule,
   ],
