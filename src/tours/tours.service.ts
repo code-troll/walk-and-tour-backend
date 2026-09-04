@@ -1128,6 +1128,10 @@ export class ToursService {
       name: tour.name,
       sortOrder: tour.sortOrder,
       tourType: tour.tourType,
+      // The list carries the price so a screen granting tours to a hotel can
+      // show what the partner would pay by default, without a request per tour.
+      priceAmount: tour.priceAmount,
+      priceCurrency: tour.priceCurrency,
       translations,
       audit: {
         createdBy: tour.createdBy,

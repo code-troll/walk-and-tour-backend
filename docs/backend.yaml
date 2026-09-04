@@ -7554,6 +7554,18 @@ components:
           description: Audit metadata for create and update operations.
           allOf:
             - $ref: "#/components/schemas/RecordAuditMetadataDto"
+        priceAmount:
+          type: string
+          nullable: true
+          description: >-
+            The tour's own price per person. Carried in the list so a screen can show what a partner pays by default
+            before any override is set.
+          example: "249.00"
+        priceCurrency:
+          type: string
+          nullable: true
+          description: The tour's currency as stored, unnormalised.
+          example: DKK
       required:
         - id
         - name

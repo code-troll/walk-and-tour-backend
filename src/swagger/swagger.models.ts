@@ -934,6 +934,25 @@ export class TourAdminListResponseDto {
     type: () => RecordAuditMetadataDto,
   })
   audit!: RecordAuditMetadataDto;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description:
+      "The tour's own price per person. Carried in the list so a screen can " +
+      'show what a partner pays by default before any override is set.',
+    example: '249.00',
+  })
+  priceAmount!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: "The tour's currency as stored, unnormalised.",
+    example: 'DKK',
+  })
+  priceCurrency!: string | null;
+
 }
 
 export class PublicTourTranslationResponseDto {
