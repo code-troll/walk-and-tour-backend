@@ -11,6 +11,7 @@ import { HotelTourEntity } from '../hotels/entities/hotel-tour.entity';
 import { HotelUserEntity } from '../hotels/entities/hotel-user.entity';
 import { HOTEL_USER_STATUSES, HotelUserStatus } from '../shared/domain';
 import { AuthenticatedHotelUser } from './authenticated-hotel-user.interface';
+import { resolveTourCurrency } from '../shared/domain';
 
 @Injectable()
 export class HotelAuthService {
@@ -45,9 +46,14 @@ export class HotelAuthService {
         email: hotelUser.email,
         status: hotelUser.status,
       },
+      // The price travels with the list so the booking form can show it in the
+      // selector without a request per tour. The content does not: that is one
+      // tour's worth of text and it is fetched when a tour is actually chosen.
       tours: grants.map((grant) => ({
         tourId: grant.tourId,
         tourName: grant.tour?.name ?? '',
+        priceAmount: grant.priceAmount ?? grant.tour?.priceAmount ?? null,
+        currency: resolveTourCurrency(grant.tour?.priceCurrency ?? null),
       })),
     };
   }
