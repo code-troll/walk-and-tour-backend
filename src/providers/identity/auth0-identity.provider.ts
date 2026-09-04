@@ -61,6 +61,15 @@ export class Auth0IdentityProvider implements IdentityProvider {
     return { identityUserId };
   }
 
+  /**
+   * Note that `result_url` is sent but, with Auth0's New Universal Login, is
+   * not honoured: the hotel is left on Auth0's own "Password Changed!" page
+   * whatever we ask for. Passing `client_id` instead does not help either, and
+   * passing both makes Auth0 refuse the ticket outright. It is kept because it
+   * is the correct request to make and costs nothing if Auth0 starts honouring
+   * it; the invitation email carries the portal link so the hotel has a way
+   * back regardless.
+   */
   async createPasswordSetupTicket(
     input: CreatePasswordSetupTicketInput,
   ): Promise<CreatePasswordSetupTicketResult> {

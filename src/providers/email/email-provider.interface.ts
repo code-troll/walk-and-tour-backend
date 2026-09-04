@@ -20,6 +20,11 @@ export interface SendHotelPasswordSetupEmailInput {
   username: string;
   /** Identity-provider ticket that lets the hotel choose its own password. */
   setupUrl: string;
+  /**
+   * Where the hotel signs in afterwards. Auth0 does not return it to us once
+   * the password is set, so the way back has to be in the email itself.
+   */
+  portalUrl: string;
   expiresAt: Date;
   /** True when this is a repeat send rather than the original invitation. */
   isResend: boolean;

@@ -61,6 +61,7 @@ export class ConsoleEmailProvider implements EmailProvider {
         hotelName: input.hotelName,
         username: input.username,
         setupUrl: input.setupUrl,
+        portalUrl: input.portalUrl,
         expiresAt: input.expiresAt.toISOString(),
       }),
     );
