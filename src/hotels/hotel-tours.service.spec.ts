@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
+import { STORAGE_SERVICE } from '../storage/storage-service.interface';
 import { TourEntity } from '../tours/entities/tour.entity';
 import { HotelTourEntity } from './entities/hotel-tour.entity';
 import { HotelToursService } from './hotel-tours.service';
@@ -10,6 +11,7 @@ describe('HotelToursService', () => {
   let service: HotelToursService;
   let grants: { findOne: jest.Mock; find: jest.Mock };
   let tours: { findOne: jest.Mock; find: jest.Mock };
+  let storage: { getObject: jest.Mock };
 
   const buildTour = (overrides: Record<string, unknown> = {}) => ({
     id: 'tour-1',
@@ -19,6 +21,8 @@ describe('HotelToursService', () => {
     durationMinutes: 120,
     tourType: 'group',
     stops: [],
+    coverMediaId: null,
+    mediaItems: [],
     translations: [
       {
         languageCode: 'en',
@@ -39,12 +43,14 @@ describe('HotelToursService', () => {
   beforeEach(async () => {
     grants = { findOne: jest.fn(), find: jest.fn() };
     tours = { findOne: jest.fn(), find: jest.fn() };
+    storage = { getObject: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         HotelToursService,
         { provide: getRepositoryToken(HotelTourEntity), useValue: grants },
         { provide: getRepositoryToken(TourEntity), useValue: tours },
+        { provide: STORAGE_SERVICE, useValue: storage },
       ],
     }).compile();
 
@@ -283,6 +289,99 @@ describe('HotelToursService', () => {
 
       expect(view.tags).toEqual(['Storia']);
       expect(view.locale).toBe('it');
+    });
+  });
+
+  describe('images', () => {
+    const image = (mediaId: string, overrides: Record<string, unknown> = {}) => ({
+      mediaId,
+      orderIndex: 0,
+      altText: null,
+      media: { mediaType: 'image', storagePath: `p/${mediaId}`, contentType: 'image/jpeg', originalFilename: `${mediaId}.jpg` },
+      ...overrides,
+    });
+
+    it('puts the cover first, whatever its order index says', async () => {
+      tours.findOne.mockResolvedValue(
+        buildTour({
+          coverMediaId: 'm-cover',
+          mediaItems: [
+            image('m-a', { orderIndex: 1 }),
+            image('m-cover', { orderIndex: 9 }),
+            image('m-b', { orderIndex: 2 }),
+          ],
+        }),
+      );
+
+      const view = await service.findGranted('hotel-1', 'tour-1');
+
+      expect(view.images.map((entry) => entry.mediaId)).toEqual(['m-cover', 'm-a', 'm-b']);
+      expect(view.images[0].isCover).toBe(true);
+    });
+
+    it('leaves a video out rather than rendering it as a still', async () => {
+      tours.findOne.mockResolvedValue(
+        buildTour({
+          mediaItems: [
+            image('m-a'),
+            image('m-film', { media: { mediaType: 'video', storagePath: 'p/f' } }),
+          ],
+        }),
+      );
+
+      const view = await service.findGranted('hotel-1', 'tour-1');
+
+      expect(view.images.map((entry) => entry.mediaId)).toEqual(['m-a']);
+    });
+
+    it('takes the alt text from the content locale', async () => {
+      tours.findOne.mockResolvedValue(
+        buildTour({
+          mediaItems: [image('m-a', { altText: { en: 'A street', it: 'Una strada' } })],
+        }),
+      );
+
+      await expect(service.findGranted('hotel-1', 'tour-1')).resolves.toEqual(
+        expect.objectContaining({
+          images: [{ mediaId: 'm-a', alt: 'A street', isCover: false }],
+        }),
+      );
+    });
+
+    it('refuses an image on a tour this hotel was never granted', async () => {
+      grants.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.getImageContent('hotel-1', 'tour-1', 'm-a'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      // The grant is the gate: nothing is read, and nothing is streamed.
+      expect(tours.findOne).not.toHaveBeenCalled();
+      expect(storage.getObject).not.toHaveBeenCalled();
+    });
+
+    it('refuses an image that is not attached to the tour', async () => {
+      tours.findOne.mockResolvedValue(buildTour({ mediaItems: [image('m-a')] }));
+
+      await expect(
+        service.getImageContent('hotel-1', 'tour-1', 'm-other'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(storage.getObject).not.toHaveBeenCalled();
+    });
+
+    it('streams an attached image', async () => {
+      tours.findOne.mockResolvedValue(buildTour({ mediaItems: [image('m-a')] }));
+      storage.getObject.mockResolvedValue({
+        content: Buffer.from('bytes'),
+        contentType: 'image/webp',
+      });
+
+      await expect(service.getImageContent('hotel-1', 'tour-1', 'm-a')).resolves.toEqual({
+        content: Buffer.from('bytes'),
+        contentType: 'image/webp',
+        originalFilename: 'm-a.jpg',
+      });
+      expect(storage.getObject).toHaveBeenCalledWith('p/m-a');
     });
   });
 });

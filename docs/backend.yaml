@@ -5678,6 +5678,43 @@ paths:
       summary: Read one granted tour
       tags:
         - Hotel Portal
+  /api/hotel/tours/{tourId}/media/{mediaId}:
+    get:
+      description: >-
+        Streams the bytes of an image attached to a tour this hotel may sell. The grant is checked on every request: an
+        image id is guessable in a way a booking id is not.
+      operationId: HotelToursPortalController_findImage
+      parameters:
+        - name: tourId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: mediaId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The image bytes.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: No live grant, or no such image on that tour.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - hotel-auth: []
+      summary: Fetch one image of a granted tour
+      tags:
+        - Hotel Portal
   /api/hotel/tours/{tourId}:
     get:
       operationId: HotelToursPortalController_findOne
@@ -9191,6 +9228,23 @@ components:
         - languageCode
         - participantCount
         - guestName
+    HotelTourImageResponseDto:
+      type: object
+      properties:
+        mediaId:
+          type: string
+          description: Media asset identifier.
+          format: uuid
+        alt:
+          type: string
+          nullable: true
+          description: Localized alternative text, when the tour records one.
+        isCover:
+          type: boolean
+          description: Whether this is the tour's cover image.
+      required:
+        - mediaId
+        - isCover
     HotelTourStopResponseDto:
       type: object
       properties:
@@ -9288,6 +9342,14 @@ components:
           type: array
           items:
             type: string
+        images:
+          description: >-
+            The tour's images, cover first. Ids rather than URLs: the bytes come from
+            `/api/hotel/tours/{tourId}/media/{mediaId}`, which re-checks the grant, so a private tour's photographs are
+            not addressable without one.
+          type: array
+          items:
+            $ref: "#/components/schemas/HotelTourImageResponseDto"
         stops:
           description: Stops in order.
           type: array
@@ -9301,6 +9363,7 @@ components:
         - included
         - notIncluded
         - tags
+        - images
         - stops
     AuditMetadataDto:
       type: object

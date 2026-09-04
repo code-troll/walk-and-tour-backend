@@ -1,4 +1,12 @@
-import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Res,
+  StreamableFile,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -64,6 +72,41 @@ export class HotelToursPortalController {
   @Get()
   findAll(@CurrentHotelUser() hotelUser: AuthenticatedHotelUser) {
     return this.toursService.listGranted(hotelUser.hotelId);
+  }
+
+  @ApiOperation({
+    summary: 'Fetch one image of a granted tour',
+    description:
+      'Streams the bytes of an image attached to a tour this hotel may sell. ' +
+      'The grant is checked on every request: an image id is guessable in a way ' +
+      'a booking id is not.',
+  })
+  @ApiOkResponse({ description: 'The image bytes.' })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({
+    description: 'No live grant, or no such image on that tour.',
+    type: ErrorResponseDto,
+  })
+  @Get(':tourId/media/:mediaId')
+  async findImage(
+    @CurrentHotelUser() hotelUser: AuthenticatedHotelUser,
+    @Param('tourId', ParseUUIDPipe) tourId: string,
+    @Param('mediaId', ParseUUIDPipe) mediaId: string,
+    @Res({ passthrough: true }) response: { setHeader(name: string, value: string): void },
+  ): Promise<StreamableFile> {
+    const image = await this.toursService.getImageContent(
+      hotelUser.hotelId,
+      tourId,
+      mediaId,
+    );
+
+    response.setHeader('Content-Type', image.contentType);
+    response.setHeader(
+      'Content-Disposition',
+      `inline; filename="${image.originalFilename.replace(/"/g, '')}"`,
+    );
+
+    return new StreamableFile(image.content);
   }
 
   @Get(':tourId')

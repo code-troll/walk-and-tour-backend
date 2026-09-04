@@ -1,13 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, Repository } from 'typeorm';
 
 import { resolveTourCurrency } from '../shared/domain';
+import { STORAGE_SERVICE, StorageService } from '../storage/storage-service.interface';
 import { TourEntity } from '../tours/entities/tour.entity';
 import { HotelTourEntity } from './entities/hotel-tour.entity';
 
 /** The portal is English-only, so this is what it asks for first. */
 const PREFERRED_LOCALE = 'en';
+
+export interface HotelTourImageView {
+  mediaId: string;
+  alt: string | null;
+  /** True for the tour's cover, which is first in the list. */
+  isCover: boolean;
+}
 
 export interface HotelTourStopView {
   stopId: string;
@@ -38,6 +46,8 @@ export interface HotelTourDetailView {
   endPoint: string | null;
   /** Tag labels in the content locale, falling back to the key. */
   tags: string[];
+  /** Cover first, then the gallery in its own order. Ids, not URLs — see the controller. */
+  images: HotelTourImageView[];
   stops: HotelTourStopView[];
 }
 
@@ -61,6 +71,8 @@ export class HotelToursService {
     private readonly grantsRepository: Repository<HotelTourEntity>,
     @InjectRepository(TourEntity)
     private readonly toursRepository: Repository<TourEntity>,
+    @Inject(STORAGE_SERVICE)
+    private readonly storageService: StorageService,
   ) {}
 
   /**
@@ -81,7 +93,12 @@ export class HotelToursService {
 
     const tour = await this.toursRepository.findOne({
       where: { id: tourId },
-      relations: { translations: true, stops: true, tags: true },
+      relations: {
+        translations: true,
+        stops: true,
+        tags: true,
+        mediaItems: { media: true },
+      },
     });
 
     if (!tour) {
@@ -112,7 +129,12 @@ export class HotelToursService {
 
     const tours = await this.toursRepository.find({
       where: { id: In(grants.map((grant) => grant.tourId)) },
-      relations: { translations: true, stops: true, tags: true },
+      relations: {
+        translations: true,
+        stops: true,
+        tags: true,
+        mediaItems: { media: true },
+      },
     });
 
     const byId = new Map(tours.map((tour) => [tour.id, tour]));
@@ -161,6 +183,7 @@ export class HotelToursService {
       itineraryDescription: this.readString(payload, 'itineraryDescription'),
       startPoint: this.readPointLabel(payload, 'startPoint'),
       endPoint: this.readPointLabel(payload, 'endPoint'),
+      images: this.toImages(tour, locale),
       tags: (tour.tags ?? []).map(
         (tag) => (locale ? tag.labels?.[locale] : null) ?? tag.labels?.en ?? tag.key,
       ),
@@ -172,6 +195,71 @@ export class HotelToursService {
           description: localizedStops[stop.stopId]?.description ?? null,
           durationMinutes: stop.durationMinutes ?? null,
         })),
+    };
+  }
+
+  /**
+   * The tour's pictures, cover first.
+   *
+   * Only images: a tour may carry a video, and a portal row that silently
+   * rendered one as a still would be worse than showing nothing.
+   */
+  private toImages(tour: TourEntity, locale: string | null): HotelTourImageView[] {
+    const items = [...(tour.mediaItems ?? [])]
+      .filter((item) => item.media?.mediaType === 'image')
+      .sort((left, right) => left.orderIndex - right.orderIndex);
+
+    const cover = items.filter((item) => item.mediaId === tour.coverMediaId);
+    const rest = items.filter((item) => item.mediaId !== tour.coverMediaId);
+
+    return [...cover, ...rest].map((item) => ({
+      mediaId: item.mediaId,
+      alt:
+        (locale ? item.altText?.[locale] : null)
+        ?? item.altText?.en
+        ?? null,
+      isCover: item.mediaId === tour.coverMediaId,
+    }));
+  }
+
+  /**
+   * The bytes of one image attached to a granted tour.
+   *
+   * The grant is re-checked here rather than trusted from whoever assembled the
+   * URL: an image id is guessable in a way a booking id is not, and this is the
+   * only thing standing between a hotel and another hotel's private tour
+   * photographs.
+   */
+  async getImageContent(
+    hotelId: string,
+    tourId: string,
+    mediaId: string,
+  ): Promise<{ content: Buffer; contentType: string; originalFilename: string }> {
+    const grant = await this.grantsRepository.findOne({
+      where: { hotelId, tourId, revokedAt: IsNull() },
+    });
+
+    if (!grant) {
+      throw new NotFoundException('Tour not found.');
+    }
+
+    const tour = await this.toursRepository.findOne({
+      where: { id: tourId },
+      relations: { mediaItems: { media: true } },
+    });
+
+    const media = tour?.mediaItems?.find((item) => item.mediaId === mediaId)?.media;
+
+    if (!media || media.mediaType !== 'image') {
+      throw new NotFoundException('Image not found.');
+    }
+
+    const stored = await this.storageService.getObject(media.storagePath);
+
+    return {
+      content: stored.content,
+      contentType: stored.contentType ?? media.contentType,
+      originalFilename: media.originalFilename,
     };
   }
 
