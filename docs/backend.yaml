@@ -5640,19 +5640,14 @@ paths:
       summary: Cancel a booking
       tags:
         - Hotel Portal
-  /api/hotel/tours/{tourId}:
+  /api/hotel/tours:
     get:
       description: >-
         Returns a tour this hotel has been granted, with the price this partner is charged and the content needed to
         describe it to a guest: what the tour is, its itinerary, and what is and is not included. Publication to the
         public site is not required — the grant is the authorisation.
-      operationId: HotelToursPortalController_findOne
-      parameters:
-        - name: tourId
-          required: true
-          in: path
-          schema:
-            type: string
+      operationId: HotelToursPortalController_findAll
+      parameters: []
       responses:
         "200":
           description: The granted tour.
@@ -5681,6 +5676,22 @@ paths:
       security:
         - hotel-auth: []
       summary: Read one granted tour
+      tags:
+        - Hotel Portal
+  /api/hotel/tours/{tourId}:
+    get:
+      operationId: HotelToursPortalController_findOne
+      parameters:
+        - name: tourId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      security:
+        - hotel-auth: []
       tags:
         - Hotel Portal
 info:
@@ -9264,6 +9275,19 @@ components:
         itineraryDescription:
           type: string
           nullable: true
+        startPoint:
+          type: string
+          nullable: true
+          description: Where the walk starts, localized. A place a hotel searches by.
+        endPoint:
+          type: string
+          nullable: true
+          description: Where it ends.
+        tags:
+          description: Tag labels in the content locale, falling back to the tag key.
+          type: array
+          items:
+            type: string
         stops:
           description: Stops in order.
           type: array
@@ -9276,6 +9300,7 @@ components:
         - highlights
         - included
         - notIncluded
+        - tags
         - stops
     AuditMetadataDto:
       type: object

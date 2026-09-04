@@ -47,6 +47,25 @@ export class HotelToursPortalController {
     description: 'No live grant for this tour and this hotel.',
     type: ErrorResponseDto,
   })
+  @ApiOperation({
+    summary: 'List every tour this hotel may sell',
+    description:
+      'Returns all live grants in full, so the portal can search them by ' +
+      'itinerary stop, highlight, tag or start point without a request per ' +
+      'keystroke. A hotel holds a handful of grants; the whole set is a few ' +
+      'kilobytes.',
+  })
+  @ApiOkResponse({
+    description: 'The granted tours.',
+    type: [HotelTourDetailResponseDto],
+  })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Get()
+  findAll(@CurrentHotelUser() hotelUser: AuthenticatedHotelUser) {
+    return this.toursService.listGranted(hotelUser.hotelId);
+  }
+
   @Get(':tourId')
   findOne(
     @CurrentHotelUser() hotelUser: AuthenticatedHotelUser,

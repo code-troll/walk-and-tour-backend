@@ -8,8 +8,8 @@ import { HotelToursService } from './hotel-tours.service';
 
 describe('HotelToursService', () => {
   let service: HotelToursService;
-  let grants: { findOne: jest.Mock };
-  let tours: { findOne: jest.Mock };
+  let grants: { findOne: jest.Mock; find: jest.Mock };
+  let tours: { findOne: jest.Mock; find: jest.Mock };
 
   const buildTour = (overrides: Record<string, unknown> = {}) => ({
     id: 'tour-1',
@@ -37,8 +37,8 @@ describe('HotelToursService', () => {
   });
 
   beforeEach(async () => {
-    grants = { findOne: jest.fn() };
-    tours = { findOne: jest.fn() };
+    grants = { findOne: jest.fn(), find: jest.fn() };
+    tours = { findOne: jest.fn(), find: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -196,5 +196,93 @@ describe('HotelToursService', () => {
 
     expect(view.included).toEqual([]);
     expect(view.highlights).toEqual(['Nyhavn']);
+  });
+
+  describe('listGranted', () => {
+    it('returns nothing, and asks for no tours, when the hotel has no grants', async () => {
+      grants.find.mockResolvedValue([]);
+
+      await expect(service.listGranted('hotel-1')).resolves.toEqual([]);
+      expect(tours.find).not.toHaveBeenCalled();
+    });
+
+    it('applies each grant\'s own price to its own tour', async () => {
+      grants.find.mockResolvedValue([
+        { tourId: 'tour-1', priceAmount: '99.00' },
+        { tourId: 'tour-2', priceAmount: null },
+      ]);
+      tours.find.mockResolvedValue([
+        buildTour({ id: 'tour-2', priceAmount: '250.00' }),
+        buildTour({ id: 'tour-1', priceAmount: '250.00' }),
+      ]);
+
+      const views = await service.listGranted('hotel-1');
+
+      // Grant order, not the order the database happened to return the tours in.
+      expect(views.map((view) => [view.tourId, view.priceAmount])).toEqual([
+        ['tour-1', '99.00'],
+        ['tour-2', '250.00'],
+      ]);
+    });
+
+    it('drops a grant whose tour has gone missing rather than failing the list', async () => {
+      grants.find.mockResolvedValue([
+        { tourId: 'tour-1', priceAmount: null },
+        { tourId: 'tour-gone', priceAmount: null },
+      ]);
+      tours.find.mockResolvedValue([buildTour()]);
+
+      await expect(service.listGranted('hotel-1')).resolves.toHaveLength(1);
+    });
+
+    it('carries what the portal searches on', async () => {
+      grants.find.mockResolvedValue([{ tourId: 'tour-1', priceAmount: null }]);
+      tours.find.mockResolvedValue([
+        buildTour({
+          tags: [
+            { key: 'history', labels: { en: 'History', it: 'Storia' } },
+            { key: 'family', labels: {} },
+          ],
+          stops: [{ stopId: 'a', orderIndex: 1, durationMinutes: 10 }],
+          translations: [
+            {
+              languageCode: 'en',
+              isPublished: true,
+              payload: {
+                highlights: ['Nyhavn'],
+                startPoint: { label: 'Kongens Nytorv' },
+                endPoint: { label: 'Amalienborg' },
+                itineraryStops: { a: { title: 'The old harbour' } },
+              },
+            },
+          ],
+        }),
+      ]);
+
+      const [view] = await service.listGranted('hotel-1');
+
+      expect(view.tags).toEqual(['History', 'family']); // no label falls back to the key
+      expect(view.startPoint).toBe('Kongens Nytorv');
+      expect(view.endPoint).toBe('Amalienborg');
+      expect(view.stops[0].title).toBe('The old harbour');
+      expect(view.highlights).toEqual(['Nyhavn']);
+    });
+
+    it('labels tags in the content locale when it is not English', async () => {
+      grants.find.mockResolvedValue([{ tourId: 'tour-1', priceAmount: null }]);
+      tours.find.mockResolvedValue([
+        buildTour({
+          tags: [{ key: 'history', labels: { en: 'History', it: 'Storia' } }],
+          translations: [
+            { languageCode: 'it', isPublished: true, payload: {} },
+          ],
+        }),
+      ]);
+
+      const [view] = await service.listGranted('hotel-1');
+
+      expect(view.tags).toEqual(['Storia']);
+      expect(view.locale).toBe('it');
+    });
   });
 });

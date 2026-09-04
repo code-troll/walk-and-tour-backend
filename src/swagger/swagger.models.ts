@@ -2094,6 +2094,22 @@ export class HotelTourDetailResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   itineraryDescription!: string | null;
 
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'Where the walk starts, localized. A place a hotel searches by.',
+  })
+  startPoint!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Where it ends.' })
+  endPoint!: string | null;
+
+  @ApiProperty({
+    type: [String],
+    description: 'Tag labels in the content locale, falling back to the tag key.',
+  })
+  tags!: string[];
+
   @ApiProperty({ type: () => [HotelTourStopResponseDto], description: 'Stops in order.' })
   stops!: HotelTourStopResponseDto[];
 }
