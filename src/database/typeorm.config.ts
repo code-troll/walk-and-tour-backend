@@ -11,6 +11,9 @@ import { EventEntity } from '../events/entities/event.entity';
 import { HotelEntity } from '../hotels/entities/hotel.entity';
 import { HotelTourEntity } from '../hotels/entities/hotel-tour.entity';
 import { HotelUserEntity } from '../hotels/entities/hotel-user.entity';
+import { HotelBookingEntity } from '../hotels/entities/hotel-booking.entity';
+import { HotelBookingLineItemEntity } from '../hotels/entities/hotel-booking-line-item.entity';
+import { HotelBookingLogEntity } from '../hotels/entities/hotel-booking-log.entity';
 import { LanguageEntity } from '../languages/language.entity';
 import { MediaAssetEntity } from '../media/media-asset.entity';
 import { NewsletterSubscriberEntity } from '../newsletter-subscribers/newsletter-subscriber.entity';
@@ -62,6 +65,9 @@ export function getTypeOrmOptions(): TypeOrmModuleOptions {
     HotelEntity,
     HotelTourEntity,
     HotelUserEntity,
+    HotelBookingEntity,
+    HotelBookingLineItemEntity,
+    HotelBookingLogEntity,
       EventOccurrenceEntity,
       EventDayNoteEntity,
     ],

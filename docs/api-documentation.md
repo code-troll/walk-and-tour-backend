@@ -68,3 +68,6 @@ That guide adds:
 - Creating an access user is not idempotent: a hotel has exactly one, and a second attempt returns `409`. A username the identity provider refuses also returns `409`, and no local row is left behind.
 - The hotel portal surface lives under `/api/hotel/*` and uses the `hotel-auth` bearer scheme. It is a separate population from `admin-auth`: the two schemes describe tokens from the same tenant and audience, and the backend tells them apart by resolving the subject against `hotel_users` or `admin_users`. A token for one is rejected by the other.
 - `GET /api/hotel/auth/me` returns `401` for an identity with no hotel access user and `403` when either the access user or the hotel account is disabled.
+- `/api/hotel/bookings` is the hotel-facing booking surface: list, read, create and cancel, all scoped to the signed-in hotel. `/api/admin/hotel-bookings` is the administrator's, adding confirm, complete, invoice and priced line items, and is restricted to `super_admin` and `editor`.
+- Status actions are named routes (`/confirm`, `/complete`, `/cancel`, `/invoice`) rather than a status field. A transition the actor may not make returns `409`.
+- Booking amounts are strings, excluding VAT, in DKK. `totalAmount` is the sum of `lineItems`; `isEstimate` is true until the booking is invoiced, after which line items are refused with `409`.

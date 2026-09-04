@@ -3,13 +3,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { HotelTourEntity } from '../hotels/entities/hotel-tour.entity';
 import { HotelUserEntity } from '../hotels/entities/hotel-user.entity';
+import { HotelsModule } from '../hotels/hotels.module';
 import { HotelAuthController } from './hotel-auth.controller';
+import { HotelBookingsPortalController } from './hotel-bookings.controller';
 import { HotelAuthService } from './hotel-auth.service';
 import { HotelJwtAuthGuard } from './guards/hotel-jwt-auth.guard';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([HotelUserEntity, HotelTourEntity])],
-  controllers: [HotelAuthController],
+  imports: [TypeOrmModule.forFeature([HotelUserEntity, HotelTourEntity]), HotelsModule],
+  controllers: [HotelAuthController, HotelBookingsPortalController],
   providers: [HotelAuthService, HotelJwtAuthGuard],
   exports: [HotelAuthService, HotelJwtAuthGuard],
 })

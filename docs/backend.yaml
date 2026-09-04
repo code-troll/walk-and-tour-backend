@@ -5134,6 +5134,512 @@ paths:
       summary: Get the signed-in hotel
       tags:
         - Hotel Portal
+  /api/admin/hotel-bookings:
+    get:
+      description: Returns bookings across all hotels, filterable by hotel and status.
+      operationId: HotelBookingsController_findAll
+      parameters:
+        - name: status
+          required: false
+          in: query
+          description: Restrict the results to one status.
+          schema:
+            type: string
+            enum:
+              - pending
+              - confirmed
+              - completed
+              - cancelled
+              - invoiced
+        - name: page
+          required: false
+          in: query
+          description: One-based page number.
+          schema:
+            minimum: 1
+            default: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          description: Page size.
+          schema:
+            minimum: 1
+            maximum: 100
+            default: 25
+            type: number
+        - name: hotelId
+          required: false
+          in: query
+          description: Restrict the results to one hotel.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Paginated bookings.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingListResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: List hotel bookings
+      tags:
+        - Admin Hotel Bookings
+  /api/admin/hotel-bookings/{id}:
+    get:
+      description: Returns a booking with its priced lines and full history.
+      operationId: HotelBookingsController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: The booking.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Get one hotel booking
+      tags:
+        - Admin Hotel Bookings
+  /api/admin/hotel-bookings/{id}/confirm:
+    post:
+      description: Accepts a pending booking. Only possible from `pending`.
+      operationId: HotelBookingsController_confirm
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Confirm a booking
+      tags:
+        - Admin Hotel Bookings
+  /api/admin/hotel-bookings/{id}/complete:
+    post:
+      description: Records that the tour ran. Only possible from `confirmed`.
+      operationId: HotelBookingsController_complete
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Mark a booking as completed
+      tags:
+        - Admin Hotel Bookings
+  /api/admin/hotel-bookings/{id}/cancel:
+    post:
+      description: Cancels a booking that has not been invoiced.
+      operationId: HotelBookingsController_cancel
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HotelBookingActionDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Cancel a booking
+      tags:
+        - Admin Hotel Bookings
+  /api/admin/hotel-bookings/{id}/invoice:
+    post:
+      description: >-
+        Records that the hotel has been billed. This freezes the amounts: no line item can be added or removed
+        afterwards, and the total stops being an estimate.
+      operationId: HotelBookingsController_invoice
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Mark a booking as invoiced
+      tags:
+        - Admin Hotel Bookings
+  /api/admin/hotel-bookings/{id}/line-items:
+    post:
+      description: >-
+        Adds a charge for something specific to this hotel or this booking. Amounts exclude VAT, and a negative amount
+        is a discount. Refused once the booking is invoiced or cancelled.
+      operationId: HotelBookingsController_addLineItem
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddHotelBookingLineItemDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Add a priced line to a booking
+      tags:
+        - Admin Hotel Bookings
+  /api/admin/hotel-bookings/{id}/line-items/{lineItemId}:
+    delete:
+      description: Removes an added charge. The tour line itself cannot be removed — cancel the booking instead.
+      operationId: HotelBookingsController_removeLineItem
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+        - name: lineItemId
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Remove a priced line
+      tags:
+        - Admin Hotel Bookings
+  /api/hotel/bookings:
+    get:
+      description: Returns the signed-in hotel’s bookings, most recent first.
+      operationId: HotelBookingsPortalController_findAll
+      parameters:
+        - name: status
+          required: false
+          in: query
+          description: Restrict the results to one status.
+          schema:
+            type: string
+            enum:
+              - pending
+              - confirmed
+              - completed
+              - cancelled
+              - invoiced
+        - name: page
+          required: false
+          in: query
+          description: One-based page number.
+          schema:
+            minimum: 1
+            default: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          description: Page size.
+          schema:
+            minimum: 1
+            maximum: 100
+            default: 25
+            type: number
+      responses:
+        "200":
+          description: Paginated bookings.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingListResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - hotel-auth: []
+      summary: List this hotel’s bookings
+      tags:
+        - Hotel Portal
+    post:
+      description: >-
+        Creates a booking for one of the tours granted to this hotel. It opens as `pending` until Walk and Tour confirms
+        it, and the total is an estimate until it is invoiced.
+      operationId: HotelBookingsPortalController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHotelBookingDto"
+      responses:
+        "201":
+          description: The created booking.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: The tour is not granted to this hotel.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - hotel-auth: []
+      summary: Book a tour
+      tags:
+        - Hotel Portal
+  /api/hotel/bookings/{id}:
+    get:
+      description: >-
+        Returns one of this hotel’s bookings with its priced lines and full history. A booking belonging to another
+        hotel is reported as not found.
+      operationId: HotelBookingsPortalController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: The booking.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - hotel-auth: []
+      summary: Get one booking
+      tags:
+        - Hotel Portal
+  /api/hotel/bookings/{id}/cancel:
+    post:
+      description: >-
+        Cancels one of this hotel’s bookings. Only possible while it is pending or confirmed; a booking that has already
+        run can only be cancelled by Walk and Tour.
+      operationId: HotelBookingsPortalController_cancel
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HotelBookingActionDto"
+      responses:
+        "200":
+          description: The cancelled booking.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelBookingResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: The booking cannot be cancelled from its current status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - hotel-auth: []
+      summary: Cancel a booking
+      tags:
+        - Hotel Portal
 info:
   title: Walk and Tour Backend API
   description: Administrative and public API surface for languages, tags, tours, blog posts, and admin authentication.
@@ -8248,6 +8754,322 @@ components:
         - hotel
         - user
         - tours
+    HotelBookingGuestDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Guest name.
+          example: Anders Jensen
+        email:
+          type: string
+          nullable: true
+          example: guest@example.com
+        phone:
+          type: string
+          nullable: true
+          example: +45 20 11 22 33
+        roomNumber:
+          type: string
+          nullable: true
+          example: "412"
+      required:
+        - name
+    HotelBookingLineItemResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          description: The tour itself is the `base` line; everything else is an `extra`.
+          enum:
+            - base
+            - extra
+        description:
+          type: string
+          example: Historic Center x 2
+        amount:
+          type: string
+          description: Amount in the booking currency, excluding VAT. Negative means a discount.
+          example: "500.00"
+      required:
+        - id
+        - kind
+        - description
+        - amount
+    HotelBookingLogResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            - created
+            - status_changed
+            - updated
+            - line_item_added
+            - line_item_removed
+        fromStatus:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - completed
+            - cancelled
+            - invoiced
+          nullable: true
+        toStatus:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - completed
+            - cancelled
+            - invoiced
+          nullable: true
+        actorType:
+          type: string
+          enum:
+            - hotel
+            - admin
+        actorLabel:
+          type: string
+          description: Who acted, kept as text so the history survives the account being removed.
+          example: admin@example.com
+        reason:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - actorType
+        - actorLabel
+        - createdAt
+    HotelBookingTimestampsDto:
+      type: object
+      properties:
+        confirmedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        cancelledAt:
+          type: string
+          format: date-time
+          nullable: true
+        invoicedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - createdAt
+        - updatedAt
+    HotelBookingResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+          description: Human reference, short enough to read out over the phone.
+          example: WT-2026-0042
+        hotelId:
+          type: string
+          format: uuid
+        tourId:
+          type: string
+          format: uuid
+        tourName:
+          type: string
+          description: The tour name as it read when the booking was made.
+          example: Copenhagen Historic Center Free Tour
+        scheduledFor:
+          type: string
+          format: date-time
+        languageCode:
+          type: string
+          example: en
+        participantCount:
+          type: number
+          example: 2
+        guest:
+          $ref: "#/components/schemas/HotelBookingGuestDto"
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - completed
+            - cancelled
+            - invoiced
+        currency:
+          type: string
+          enum:
+            - DKK
+          example: DKK
+        unitPriceAmount:
+          type: string
+          description: Per-person tour price when the booking was made, excluding VAT. Null for a tour with no price.
+          example: "250.00"
+          nullable: true
+        totalAmount:
+          type: string
+          description: Sum of the priced lines, excluding VAT. Null while the booking has no priced base.
+          example: "650.50"
+          nullable: true
+        isEstimate:
+          type: boolean
+          description: >-
+            True until the booking is invoiced. While true the total can still change, which is what the portal tells
+            the hotel.
+          example: true
+        cancellationReason:
+          type: string
+          nullable: true
+        lineItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/HotelBookingLineItemResponseDto"
+        logs:
+          description: Everything that has happened to this booking, oldest first.
+          type: array
+          items:
+            $ref: "#/components/schemas/HotelBookingLogResponseDto"
+        timestamps:
+          $ref: "#/components/schemas/HotelBookingTimestampsDto"
+      required:
+        - id
+        - reference
+        - hotelId
+        - tourId
+        - tourName
+        - scheduledFor
+        - languageCode
+        - participantCount
+        - guest
+        - status
+        - currency
+        - isEstimate
+        - lineItems
+        - logs
+        - timestamps
+    HotelBookingListResponseDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HotelBookingResponseDto"
+        page:
+          type: number
+          example: 1
+        limit:
+          type: number
+          example: 25
+        total:
+          type: number
+          example: 12
+      required:
+        - items
+        - page
+        - limit
+        - total
+    HotelBookingActionDto:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: Why the booking was cancelled, kept on the audit trail.
+          example: The guest changed their plans.
+          nullable: true
+    AddHotelBookingLineItemDto:
+      type: object
+      properties:
+        description:
+          type: string
+          description: What the hotel is being charged for.
+          example: Private guide surcharge
+          maxLength: 200
+        amount:
+          type: string
+          description: Amount in the booking currency, excluding VAT. Negative values are discounts.
+          example: "150.50"
+          pattern: ^-?\d{1,8}(\.\d{1,2})?$
+      required:
+        - description
+        - amount
+    CreateHotelBookingDto:
+      type: object
+      properties:
+        tourId:
+          type: string
+          description: Tour to book. Must be granted to the signed-in hotel.
+          format: uuid
+        scheduledFor:
+          type: string
+          description: When the tour should run, as an ISO 8601 instant.
+          example: "2026-10-01T09:00:00.000Z"
+        languageCode:
+          type: string
+          description: Language the tour should be given in.
+          example: en
+          pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+        participantCount:
+          type: number
+          description: Number of guests taking part.
+          example: 2
+          minimum: 1
+          maximum: 200
+        guestName:
+          type: string
+          description: Name of the guest the booking is for.
+          example: Anders Jensen
+          maxLength: 200
+        guestEmail:
+          type: string
+          description: Guest email address, if the hotel wants to share it.
+          example: guest@example.com
+          nullable: true
+        guestPhone:
+          type: string
+          description: Guest telephone number.
+          example: +45 20 11 22 33
+          nullable: true
+        roomNumber:
+          type: string
+          description: Room the guest is staying in, to help the guide find them.
+          example: "412"
+          nullable: true
+        notes:
+          type: string
+          description: "Anything the guide should know: mobility, allergies, occasion."
+          nullable: true
+      required:
+        - tourId
+        - scheduledFor
+        - languageCode
+        - participantCount
+        - guestName
     AuditMetadataDto:
       type: object
       properties:
