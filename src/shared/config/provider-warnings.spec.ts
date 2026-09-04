@@ -1,5 +1,9 @@
 import { createProviderConfigMock } from '../../../test/utils/provider-config.mock';
 import { collectProviderWarnings } from './provider-warnings';
+import {
+  DEFAULT_EMAIL_FROM,
+  DEFAULT_HOTEL_PORTAL_BASE_URL,
+} from './provider.config';
 
 const warningsFor = (
   nodeEnv: string,
@@ -95,6 +99,40 @@ describe('collectProviderWarnings', () => {
         identityManagementClientId: 'id',
         identityManagementClientSecret: 'secret',
       }),
+    ).toEqual([]);
+  });
+
+  it('warns when resend still sends from the placeholder address', () => {
+    const warnings = warningsFor('development', {
+      emailProvider: 'resend',
+      resendApiKey: 'key',
+      emailFrom: DEFAULT_EMAIL_FROM,
+    });
+
+    expect(warnings).toEqual([expect.stringContaining('EMAIL_FROM is still the placeholder')]);
+  });
+
+  it('says nothing about the sender while the console provider is in use', () => {
+    // The placeholder is harmless until something actually tries to deliver.
+    expect(warningsFor('development', { emailFrom: DEFAULT_EMAIL_FROM })).toEqual([]);
+  });
+
+  it('warns when production still points hotels at the development portal', () => {
+    const warnings = warningsFor('production', {
+      emailProvider: 'resend',
+      resendApiKey: 'key',
+      identityProvider: 'auth0',
+      identityManagementClientId: 'id',
+      identityManagementClientSecret: 'secret',
+      hotelPortalBaseUrl: DEFAULT_HOTEL_PORTAL_BASE_URL,
+    });
+
+    expect(warnings).toEqual([expect.stringContaining('HOTEL_PORTAL_BASE_URL')]);
+  });
+
+  it('leaves the development portal default alone outside production', () => {
+    expect(
+      warningsFor('development', { hotelPortalBaseUrl: DEFAULT_HOTEL_PORTAL_BASE_URL }),
     ).toEqual([]);
   });
 });
