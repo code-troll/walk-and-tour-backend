@@ -21,7 +21,9 @@ import { HotelAuthService } from '../hotel-auth/hotel-auth.service';
 import { HotelJwtAuthGuard } from '../hotel-auth/guards/hotel-jwt-auth.guard';
 import { HotelBookingsController } from '../hotels/hotel-bookings.controller';
 import { HotelBookingsService } from '../hotels/hotel-bookings.service';
+import { HotelToursService } from '../hotels/hotel-tours.service';
 import { HotelBookingsPortalController } from '../hotel-auth/hotel-bookings.controller';
+import { HotelToursPortalController } from '../hotel-auth/hotel-tours.controller';
 import { HotelsController } from '../hotels/hotels.controller';
 import { HotelsService } from '../hotels/hotels.service';
 import { HotelUsersService } from '../hotels/hotel-users.service';
@@ -72,6 +74,7 @@ const EMPTY_SERVICE = {};
     HotelAuthController,
     HotelBookingsController,
     HotelBookingsPortalController,
+    HotelToursPortalController,
   ],
   providers: [
     { provide: AdminUsersService, useValue: EMPTY_SERVICE },
@@ -96,6 +99,7 @@ const EMPTY_SERVICE = {};
     { provide: HotelUsersService, useValue: EMPTY_SERVICE },
     { provide: HotelAuthService, useValue: EMPTY_SERVICE },
     { provide: HotelBookingsService, useValue: EMPTY_SERVICE },
+    { provide: HotelToursService, useValue: EMPTY_SERVICE },
     { provide: HotelJwtAuthGuard, useValue: EMPTY_SERVICE },
     { provide: AdminJwtAuthGuard, useValue: EMPTY_SERVICE },
     { provide: AdminRolesGuard, useValue: EMPTY_SERVICE },

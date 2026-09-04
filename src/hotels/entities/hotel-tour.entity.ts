@@ -43,6 +43,27 @@ export class HotelTourEntity {
   @CreateDateColumn({ name: 'granted_at' })
   grantedAt!: Date;
 
+  /**
+   * What this tour costs this partner, per person.
+   *
+   * Null is not "free" and not "unknown": it means the grant has no opinion and
+   * the tour's own price applies. That is the difference between a default and
+   * a copy — a copy taken at grant time would silently stop following the tour,
+   * and a partner on the standard price would drift away from it the first time
+   * the tour was repriced without anyone touching the hotel.
+   *
+   * The currency is deliberately not here. It comes from the tour, so a grant
+   * cannot quote a partner in a currency the tour is not sold in.
+   */
+  @Column({
+    name: 'price_amount',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
+  priceAmount!: string | null;
+
   @Column({ name: 'granted_by', type: 'uuid', nullable: true })
   grantedBy!: string | null;
 

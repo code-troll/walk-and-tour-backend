@@ -182,6 +182,8 @@ describe('ToursService', () => {
         name: 'Historic Center Main Tour',
         sortOrder: 0,
         tourType: 'group',
+        priceAmount: '25.00',
+        priceCurrency: 'EUR',
         translations: {
           en: {
             isReady: true,

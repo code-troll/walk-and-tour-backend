@@ -15,6 +15,7 @@ import { HotelBookingsController } from './hotel-bookings.controller';
 import { HotelBookingsService } from './hotel-bookings.service';
 import { HotelUsersService } from './hotel-users.service';
 import { HotelsService } from './hotels.service';
+import { HotelToursService } from './hotel-tours.service';
 
 @Module({
   imports: [
@@ -31,7 +32,13 @@ import { HotelsService } from './hotels.service';
     EmailModule,
   ],
   controllers: [HotelsController, HotelBookingsController],
-  providers: [HotelsService, HotelUsersService, HotelBookingsService],
-  exports: [TypeOrmModule, HotelsService, HotelUsersService, HotelBookingsService],
+  providers: [HotelsService, HotelUsersService, HotelBookingsService, HotelToursService],
+  exports: [
+    TypeOrmModule,
+    HotelsService,
+    HotelUsersService,
+    HotelBookingsService,
+    HotelToursService,
+  ],
 })
 export class HotelsModule {}

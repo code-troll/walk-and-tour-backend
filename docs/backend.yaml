@@ -5640,6 +5640,60 @@ paths:
       summary: Cancel a booking
       tags:
         - Hotel Portal
+  /api/hotel/tours:
+    get:
+      description: >-
+        Returns a tour this hotel has been granted, with the price this partner is charged and the content needed to
+        describe it to a guest: what the tour is, its itinerary, and what is and is not included. Publication to the
+        public site is not required — the grant is the authorisation.
+      operationId: HotelToursPortalController_findAll
+      parameters: []
+      responses:
+        "200":
+          description: The granted tour.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelTourDetailResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: No live grant for this tour and this hotel.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - hotel-auth: []
+      summary: Read one granted tour
+      tags:
+        - Hotel Portal
+  /api/hotel/tours/{tourId}:
+    get:
+      operationId: HotelToursPortalController_findOne
+      parameters:
+        - name: tourId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+      security:
+        - hotel-auth: []
+      tags:
+        - Hotel Portal
 info:
   title: Walk and Tour Backend API
   description: Administrative and public API surface for languages, tags, tours, blog posts, and admin authentication.
@@ -7511,6 +7565,18 @@ components:
           description: Audit metadata for create and update operations.
           allOf:
             - $ref: "#/components/schemas/RecordAuditMetadataDto"
+        priceAmount:
+          type: string
+          nullable: true
+          description: >-
+            The tour's own price per person. Carried in the list so a screen can show what a partner pays by default
+            before any override is set.
+          example: "249.00"
+        priceCurrency:
+          type: string
+          nullable: true
+          description: The tour's currency as stored, unnormalised.
+          example: DKK
       required:
         - id
         - name
@@ -8497,10 +8563,34 @@ components:
           description: Identifier of the admin user that granted the tour.
           format: uuid
           nullable: true
+        priceAmount:
+          type: string
+          description: >-
+            Price per person charged to this partner, in `currency`. Null means the partner pays the tour's own price
+            and keeps following it when the tour is repriced, which is not the same as having that number copied here.
+          example: "199.00"
+          nullable: true
+        tourPriceAmount:
+          type: string
+          description: >-
+            The tour's own price per person, so a screen can show what the default is without fetching the tour. Null
+            when the tour has no price at all.
+          example: "249.00"
+          nullable: true
+        currency:
+          type: string
+          description: >-
+            The currency both prices are in. It comes from the tour, never from the grant, so a partner cannot be quoted
+            in a currency the tour is not sold in.
+          example: DKK
+          enum:
+            - DKK
+            - EUR
       required:
         - tourId
         - tourName
         - grantedAt
+        - currency
     HotelResponseDto:
       type: object
       properties:
@@ -8631,21 +8721,36 @@ components:
             - active
             - disabled
           example: disabled
+    HotelTourGrantInputDto:
+      type: object
+      properties:
+        tourId:
+          type: string
+          description: Identifier of a tour this hotel may sell.
+          format: uuid
+          example: 0f7b8a2c-5d3e-4a1b-9c8d-2e4f6a8b0c1d
+        priceAmount:
+          type: object
+          description: >-
+            Price per person for this partner, in the tour's own currency. Omit it, or send null, to charge the tour's
+            own price — which is not the same as copying that price, because the partner then follows it when the tour
+            is repriced.
+          example: "199.00"
+          nullable: true
+      required:
+        - tourId
     SetHotelToursDto:
       type: object
       properties:
-        tourIds:
+        tours:
           description: >-
-            The complete set of tours this hotel may sell. Tours missing from the list have their grant revoked, tours
-            already granted are left untouched, and the rest are granted.
-          example:
-            - 0f7b8a2c-5d3e-4a1b-9c8d-2e4f6a8b0c1d
+            The complete set of tours this hotel may sell, each with an optional partner price. Tours missing from the
+            list have their grant revoked; tours already granted keep their grant and take the price sent here.
           type: array
           items:
-            type: string
-            format: uuid
+            $ref: "#/components/schemas/HotelTourGrantInputDto"
       required:
-        - tourIds
+        - tours
     HotelUserResponseDto:
       type: object
       properties:
@@ -8735,9 +8840,24 @@ components:
           type: string
           description: Tour name.
           example: Copenhagen Historic Center Free Tour
+        priceAmount:
+          type: string
+          description: >-
+            Price per person this partner is charged, already resolved: the grant price if it has one, the tour's own
+            otherwise. Null when neither has a price, which the portal shows as "price on request".
+          example: "199.00"
+          nullable: true
+        currency:
+          type: string
+          description: Currency of `priceAmount`, taken from the tour.
+          example: DKK
+          enum:
+            - DKK
+            - EUR
       required:
         - tourId
         - tourName
+        - currency
     HotelViewerResponseDto:
       type: object
       properties:
@@ -8926,6 +9046,7 @@ components:
           type: string
           enum:
             - DKK
+            - EUR
           example: DKK
         unitPriceAmount:
           type: string
@@ -9070,6 +9191,117 @@ components:
         - languageCode
         - participantCount
         - guestName
+    HotelTourStopResponseDto:
+      type: object
+      properties:
+        stopId:
+          type: string
+          description: Stable identifier of the stop within the tour.
+        title:
+          type: string
+          nullable: true
+          description: Localized stop title.
+        description:
+          type: string
+          nullable: true
+          description: Localized stop description.
+        durationMinutes:
+          type: number
+          nullable: true
+          description: Minutes spent at this stop, when the tour records it.
+      required:
+        - stopId
+    HotelTourDetailResponseDto:
+      type: object
+      properties:
+        tourId:
+          type: string
+          description: Tour identifier.
+          format: uuid
+        name:
+          type: string
+          description: Non-localized tour name.
+        priceAmount:
+          type: string
+          nullable: true
+          description: Price per person for this partner, the grant's or the tour's.
+          example: "199.00"
+        currency:
+          type: string
+          enum:
+            - DKK
+            - EUR
+          example: DKK
+        durationMinutes:
+          type: number
+          nullable: true
+        tourType:
+          type: string
+          nullable: true
+        locale:
+          type: string
+          nullable: true
+          description: >-
+            The locale the content below is written in. The portal asks for English and falls back to whatever the tour
+            has, so this may not be `en` — a screen can use it to say which language it is showing.
+          example: en
+        title:
+          type: string
+          nullable: true
+          description: Localized tour title.
+        about:
+          type: string
+          nullable: true
+          description: The "about the tour" text, as the public page shows it.
+        cancellationType:
+          type: string
+          nullable: true
+          description: Cancellation policy text.
+        highlights:
+          description: Highlight bullets, in display order.
+          type: array
+          items:
+            type: string
+        included:
+          description: What the price includes.
+          type: array
+          items:
+            type: string
+        notIncluded:
+          description: What the price does not include.
+          type: array
+          items:
+            type: string
+        itineraryDescription:
+          type: string
+          nullable: true
+        startPoint:
+          type: string
+          nullable: true
+          description: Where the walk starts, localized. A place a hotel searches by.
+        endPoint:
+          type: string
+          nullable: true
+          description: Where it ends.
+        tags:
+          description: Tag labels in the content locale, falling back to the tag key.
+          type: array
+          items:
+            type: string
+        stops:
+          description: Stops in order.
+          type: array
+          items:
+            $ref: "#/components/schemas/HotelTourStopResponseDto"
+      required:
+        - tourId
+        - name
+        - currency
+        - highlights
+        - included
+        - notIncluded
+        - tags
+        - stops
     AuditMetadataDto:
       type: object
       properties:

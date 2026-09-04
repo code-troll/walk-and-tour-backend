@@ -112,7 +112,14 @@ describe('HotelAuthService', () => {
         }),
       );
       expect(viewer.hotel).toEqual({ id: 'hotel-1', name: 'Hotel Søborg Strand' });
-      expect(viewer.tours).toEqual([{ tourId: 'tour-1', tourName: 'Historic Center' }]);
+      expect(viewer.tours).toEqual([
+        {
+          tourId: 'tour-1',
+          tourName: 'Historic Center',
+          priceAmount: null,
+          currency: 'DKK',
+        },
+      ]);
     });
   });
 });

@@ -10,10 +10,10 @@ import { DataSource, EntityManager, IsNull, Repository } from 'typeorm';
 import { TourEntity } from '../tours/entities/tour.entity';
 import {
   canTransition,
-  DEFAULT_HOTEL_BOOKING_CURRENCY,
   EDITABLE_HOTEL_BOOKING_STATUSES,
   HotelBookingActorType,
   HotelBookingStatus,
+  resolveTourCurrency,
 } from '../shared/domain';
 import { HotelBookingLineItemEntity } from './entities/hotel-booking-line-item.entity';
 import { HotelBookingLogEntity } from './entities/hotel-booking-log.entity';
@@ -187,7 +187,10 @@ export class HotelBookingsService {
     const bookingId = await this.dataSource.transaction(async (manager) => {
       const bookings = manager.getRepository(HotelBookingEntity);
 
-      const unitPriceAmount = tour.priceAmount;
+      // The grant decides the price, and falls through to the tour when it has
+      // no opinion of its own. Both are read here rather than at grant time, so
+      // a partner on the standard rate follows the tour when it is repriced.
+      const unitPriceAmount = grant.priceAmount ?? tour.priceAmount;
       const booking = await bookings.save(
         bookings.create({
           reference: await this.nextReference(manager),
@@ -203,7 +206,10 @@ export class HotelBookingsService {
           roomNumber: input.roomNumber?.trim() || null,
           notes: input.notes?.trim() || null,
           status: 'pending',
-          currency: DEFAULT_HOTEL_BOOKING_CURRENCY,
+          // The tour's currency, not a fixed one. Every booking used to be
+          // written DKK while the tour form defaults new tours to EUR, so a
+          // tour priced at 199 EUR produced a booking that said 199 DKK.
+          currency: resolveTourCurrency(tour.priceCurrency),
           unitPriceAmount,
           totalAmount: null,
           createdByHotelUserId: actor.hotelUserId ?? null,

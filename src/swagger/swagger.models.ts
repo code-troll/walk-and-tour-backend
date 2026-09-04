@@ -934,6 +934,25 @@ export class TourAdminListResponseDto {
     type: () => RecordAuditMetadataDto,
   })
   audit!: RecordAuditMetadataDto;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description:
+      "The tour's own price per person. Carried in the list so a screen can " +
+      'show what a partner pays by default before any override is set.',
+    example: '249.00',
+  })
+  priceAmount!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: "The tour's currency as stored, unnormalised.",
+    example: 'DKK',
+  })
+  priceCurrency!: string | null;
+
 }
 
 export class PublicTourTranslationResponseDto {
@@ -1741,6 +1760,36 @@ export class HotelTourGrantResponseDto {
     nullable: true,
   })
   grantedBy!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      "Price per person charged to this partner, in `currency`. Null means the " +
+      "partner pays the tour's own price and keeps following it when the tour " +
+      'is repriced, which is not the same as having that number copied here.',
+    example: '199.00',
+    nullable: true,
+  })
+  priceAmount!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      "The tour's own price per person, so a screen can show what the default " +
+      'is without fetching the tour. Null when the tour has no price at all.',
+    example: '249.00',
+    nullable: true,
+  })
+  tourPriceAmount!: string | null;
+
+  @ApiProperty({
+    description:
+      "The currency both prices are in. It comes from the tour, never from the " +
+      'grant, so a partner cannot be quoted in a currency the tour is not sold in.',
+    example: 'DKK',
+    enum: HOTEL_BOOKING_CURRENCIES,
+  })
+  currency!: string;
 }
 
 export class HotelResponseDto {
@@ -1947,6 +1996,122 @@ export class HotelViewerTourDto {
     example: 'Copenhagen Historic Center Free Tour',
   })
   tourName!: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      'Price per person this partner is charged, already resolved: the grant ' +
+      "price if it has one, the tour's own otherwise. Null when neither has a " +
+      'price, which the portal shows as "price on request".',
+    example: '199.00',
+    nullable: true,
+  })
+  priceAmount!: string | null;
+
+  @ApiProperty({
+    description: 'Currency of `priceAmount`, taken from the tour.',
+    example: 'DKK',
+    enum: HOTEL_BOOKING_CURRENCIES,
+  })
+  currency!: string;
+}
+
+export class HotelTourStopResponseDto {
+  @ApiProperty({ description: 'Stable identifier of the stop within the tour.' })
+  stopId!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Localized stop title.' })
+  title!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Localized stop description.' })
+  description!: string | null;
+
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    description: 'Minutes spent at this stop, when the tour records it.',
+  })
+  durationMinutes!: number | null;
+}
+
+export class HotelTourDetailResponseDto {
+  @ApiProperty({ description: 'Tour identifier.', format: 'uuid' })
+  tourId!: string;
+
+  @ApiProperty({ description: 'Non-localized tour name.' })
+  name!: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: "Price per person for this partner, the grant's or the tour's.",
+    example: '199.00',
+  })
+  priceAmount!: string | null;
+
+  @ApiProperty({ enum: HOTEL_BOOKING_CURRENCIES, example: 'DKK' })
+  currency!: string;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  durationMinutes!: number | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  tourType!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description:
+      'The locale the content below is written in. The portal asks for English ' +
+      'and falls back to whatever the tour has, so this may not be `en` — a ' +
+      'screen can use it to say which language it is showing.',
+    example: 'en',
+  })
+  locale!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Localized tour title.' })
+  title!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'The "about the tour" text, as the public page shows it.',
+  })
+  about!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Cancellation policy text.' })
+  cancellationType!: string | null;
+
+  @ApiProperty({ type: [String], description: 'Highlight bullets, in display order.' })
+  highlights!: string[];
+
+  @ApiProperty({ type: [String], description: 'What the price includes.' })
+  included!: string[];
+
+  @ApiProperty({ type: [String], description: 'What the price does not include.' })
+  notIncluded!: string[];
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  itineraryDescription!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'Where the walk starts, localized. A place a hotel searches by.',
+  })
+  startPoint!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Where it ends.' })
+  endPoint!: string | null;
+
+  @ApiProperty({
+    type: [String],
+    description: 'Tag labels in the content locale, falling back to the tag key.',
+  })
+  tags!: string[];
+
+  @ApiProperty({ type: () => [HotelTourStopResponseDto], description: 'Stops in order.' })
+  stops!: HotelTourStopResponseDto[];
 }
 
 export class HotelViewerResponseDto {
