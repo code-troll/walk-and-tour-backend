@@ -5,6 +5,11 @@ import {
   ADMIN_USER_STATUSES,
   HOTEL_STATUSES,
   HOTEL_USER_STATUSES,
+  HOTEL_BOOKING_ACTOR_TYPES,
+  HOTEL_BOOKING_CURRENCIES,
+  HOTEL_BOOKING_LINE_ITEM_KINDS,
+  HOTEL_BOOKING_LOG_TYPES,
+  HOTEL_BOOKING_STATUSES,
   NEWSLETTER_SUBSCRIPTION_STATUSES,
   SUPPORTED_LANGUAGE_CODES,
   TOUR_COMMUTE_MODES,
@@ -1958,6 +1963,186 @@ export class HotelViewerResponseDto {
   tours!: HotelViewerTourDto[];
 }
 
+export class HotelBookingGuestDto {
+  @ApiProperty({ description: 'Guest name.', example: 'Anders Jensen' })
+  name!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true, example: 'guest@example.com' })
+  email!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, example: '+45 20 11 22 33' })
+  phone!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, example: '412' })
+  roomNumber!: string | null;
+}
+
+export class HotelBookingLineItemResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({
+    description: 'The tour itself is the `base` line; everything else is an `extra`.',
+    enum: HOTEL_BOOKING_LINE_ITEM_KINDS,
+  })
+  kind!: string;
+
+  @ApiProperty({ example: 'Historic Center x 2' })
+  description!: string;
+
+  @ApiProperty({
+    description: 'Amount in the booking currency, excluding VAT. Negative means a discount.',
+    example: '500.00',
+  })
+  amount!: string;
+}
+
+export class HotelBookingLogResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ enum: HOTEL_BOOKING_LOG_TYPES })
+  type!: string;
+
+  @ApiPropertyOptional({ type: String, enum: HOTEL_BOOKING_STATUSES, nullable: true })
+  fromStatus!: string | null;
+
+  @ApiPropertyOptional({ type: String, enum: HOTEL_BOOKING_STATUSES, nullable: true })
+  toStatus!: string | null;
+
+  @ApiProperty({ enum: HOTEL_BOOKING_ACTOR_TYPES })
+  actorType!: string;
+
+  @ApiProperty({
+    description: 'Who acted, kept as text so the history survives the account being removed.',
+    example: 'admin@example.com',
+  })
+  actorLabel!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  reason!: string | null;
+
+  @ApiProperty({ format: 'date-time' })
+  createdAt!: string;
+}
+
+export class HotelBookingTimestampsDto {
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  confirmedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  completedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  cancelledAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  invoicedAt!: string | null;
+
+  @ApiProperty({ format: 'date-time' })
+  createdAt!: string;
+
+  @ApiProperty({ format: 'date-time' })
+  updatedAt!: string;
+}
+
+export class HotelBookingResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({
+    description: 'Human reference, short enough to read out over the phone.',
+    example: 'WT-2026-0042',
+  })
+  reference!: string;
+
+  @ApiProperty({ format: 'uuid' })
+  hotelId!: string;
+
+  @ApiProperty({ format: 'uuid' })
+  tourId!: string;
+
+  @ApiProperty({
+    description: 'The tour name as it read when the booking was made.',
+    example: 'Copenhagen Historic Center Free Tour',
+  })
+  tourName!: string;
+
+  @ApiProperty({ format: 'date-time' })
+  scheduledFor!: string;
+
+  @ApiProperty({ example: 'en' })
+  languageCode!: string;
+
+  @ApiProperty({ example: 2 })
+  participantCount!: number;
+
+  @ApiProperty({ type: () => HotelBookingGuestDto })
+  guest!: HotelBookingGuestDto;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  notes!: string | null;
+
+  @ApiProperty({ enum: HOTEL_BOOKING_STATUSES })
+  status!: string;
+
+  @ApiProperty({ enum: HOTEL_BOOKING_CURRENCIES, example: 'DKK' })
+  currency!: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      'Per-person tour price when the booking was made, excluding VAT. Null for a tour with no price.',
+    example: '250.00',
+    nullable: true,
+  })
+  unitPriceAmount!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: 'Sum of the priced lines, excluding VAT. Null while the booking has no priced base.',
+    example: '650.50',
+    nullable: true,
+  })
+  totalAmount!: string | null;
+
+  @ApiProperty({
+    description:
+      'True until the booking is invoiced. While true the total can still change, which is what the portal tells the hotel.',
+    example: true,
+  })
+  isEstimate!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  cancellationReason!: string | null;
+
+  @ApiProperty({ type: () => [HotelBookingLineItemResponseDto] })
+  lineItems!: HotelBookingLineItemResponseDto[];
+
+  @ApiProperty({
+    description: 'Everything that has happened to this booking, oldest first.',
+    type: () => [HotelBookingLogResponseDto],
+  })
+  logs!: HotelBookingLogResponseDto[];
+
+  @ApiProperty({ type: () => HotelBookingTimestampsDto })
+  timestamps!: HotelBookingTimestampsDto;
+}
+
+export class HotelBookingListResponseDto {
+  @ApiProperty({ type: () => [HotelBookingResponseDto] })
+  items!: HotelBookingResponseDto[];
+
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 25 })
+  limit!: number;
+
+  @ApiProperty({ example: 12 })
+  total!: number;
+}
+
 export const SWAGGER_EXTRA_MODELS = [
   ErrorResponseDto,
   AuditMetadataDto,
@@ -1988,6 +2173,12 @@ export const SWAGGER_EXTRA_MODELS = [
   HotelViewerUserDto,
   HotelViewerTourDto,
   HotelViewerResponseDto,
+  HotelBookingGuestDto,
+  HotelBookingLineItemResponseDto,
+  HotelBookingLogResponseDto,
+  HotelBookingTimestampsDto,
+  HotelBookingResponseDto,
+  HotelBookingListResponseDto,
   TourMediaItemResponseDto,
   UploadedMediaResponseDto,
   PriceResponseDto,
