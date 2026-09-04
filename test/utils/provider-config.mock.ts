@@ -13,7 +13,9 @@ export const createProviderConfigMock = (
   appBaseUrl: 'https://backend.example.com',
   publicSiteBaseUrl: 'https://walkandtour.dk',
   emailProvider: 'console',
-  emailFrom: 'Walk and Tour <no-reply@example.com>',
+  // Deliberately not DEFAULT_EMAIL_FROM: this factory represents a configured
+  // system, and one of the warnings fires precisely on that placeholder.
+  emailFrom: 'Walk and Tour <hello@example.com>',
   storageDriver: 'local',
   localStorageRoot: 'storage',
   localStoragePublicBaseUrl: 'https://backend.example.com/media',

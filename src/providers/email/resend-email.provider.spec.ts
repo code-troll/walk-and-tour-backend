@@ -13,6 +13,9 @@ describe('ResendEmailProvider', () => {
       createProviderConfigMock({
         emailProvider: 'resend',
         resendApiKey: 'resend-key',
+        // Pinned here rather than inherited, so the assertion below proves the
+        // header comes from the config instead of matching a shared default.
+        emailFrom: 'Walk and Tour <sender@example.com>',
         storageDriver: 'local',
         localStorageRoot: 'storage',
         railwayStorageUrlStyle: 'virtual-hosted',
@@ -41,7 +44,7 @@ describe('ResendEmailProvider', () => {
     );
     expect(JSON.parse(fetchImpl.mock.calls[0][1].body as string)).toEqual(
       expect.objectContaining({
-        from: 'Walk and Tour <no-reply@example.com>',
+        from: 'Walk and Tour <sender@example.com>',
         to: ['subscriber@example.com'],
         subject: 'Confirm your Walk and Tour newsletter subscription',
       }),

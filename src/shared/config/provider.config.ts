@@ -27,7 +27,8 @@ const DEFAULT_APP_BASE_URL = 'http://api.dev.walkandtour.dk:3000';
 const DEFAULT_PUBLIC_SITE_BASE_URL = 'https://walkandtour.dk';
 const DEFAULT_NEWSLETTER_PUBLIC_APP_BASE_URL = 'http://dev.walkandtour.dk:3001';
 const DEFAULT_EMAIL_PROVIDER = 'console';
-const DEFAULT_EMAIL_FROM = 'Walk and Tour <no-reply@example.com>';
+/** Exported so the startup warnings can tell a configured sender from this placeholder. */
+export const DEFAULT_EMAIL_FROM = 'Walk and Tour <no-reply@example.com>';
 const DEFAULT_STORAGE_DRIVER = 'local';
 const DEFAULT_LOCAL_STORAGE_ROOT = 'storage';
 const DEFAULT_LOCAL_STORAGE_PUBLIC_BASE_URL = 'http://api.dev.walkandtour.dk:3000/media';
@@ -39,7 +40,8 @@ const DEFAULT_RAILWAY_STORAGE_URL_STYLE = 'virtual-hosted';
 const DEFAULT_EVENT_TIMEZONE = 'Europe/Copenhagen';
 const DEFAULT_IDENTITY_PROVIDER = 'console';
 const DEFAULT_HOTEL_IDENTITY_CONNECTION = 'Hotel-Portal-Users';
-const DEFAULT_HOTEL_PORTAL_BASE_URL = 'http://hotels.dev.walkandtour.dk:3001';
+/** Exported so the startup warnings can spot a production deploy still pointing at dev. */
+export const DEFAULT_HOTEL_PORTAL_BASE_URL = 'http://hotels.dev.walkandtour.dk:3001';
 
 export function getProviderConfig(): ProviderConfig {
   return {

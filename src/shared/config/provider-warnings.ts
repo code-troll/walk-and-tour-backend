@@ -1,4 +1,8 @@
-import { ProviderConfig } from './provider.config';
+import {
+  DEFAULT_EMAIL_FROM,
+  DEFAULT_HOTEL_PORTAL_BASE_URL,
+  ProviderConfig,
+} from './provider.config';
 
 /**
  * Configuration problems that do not stop the application from starting.
@@ -34,6 +38,12 @@ export function collectProviderWarnings({
     );
   }
 
+  if (config.emailProvider === 'resend' && config.emailFrom === DEFAULT_EMAIL_FROM) {
+    warnings.push(
+      `EMAIL_PROVIDER is "resend" but EMAIL_FROM is still the placeholder ${DEFAULT_EMAIL_FROM}: the sender is not a verified domain, so every email will be rejected at send time. Set EMAIL_FROM to an address on a domain verified with the email provider.`,
+    );
+  }
+
   if (isProduction && config.identityProvider === 'console') {
     warnings.push(
       'IDENTITY_PROVIDER is "console" in production: hotel access users are created locally but no sign-in identity is created, so those hotels can never sign in. Set IDENTITY_PROVIDER=auth0.',
@@ -52,6 +62,12 @@ export function collectProviderWarnings({
   if (config.identityProvider === 'auth0' && !config.identityIssuerBaseUrl) {
     warnings.push(
       'IDENTITY_PROVIDER is "auth0" but no issuer is configured. Set IDENTITY_ISSUER_BASE_URL or AUTH0_ISSUER_BASE_URL.',
+    );
+  }
+
+  if (isProduction && config.hotelPortalBaseUrl === DEFAULT_HOTEL_PORTAL_BASE_URL) {
+    warnings.push(
+      `HOTEL_PORTAL_BASE_URL is unset in production, so it falls back to the development default ${DEFAULT_HOTEL_PORTAL_BASE_URL}. Hotels would be emailed a sign-in link that does not resolve outside a developer machine, and nothing else would look wrong. Set HOTEL_PORTAL_BASE_URL to the public portal origin.`,
     );
   }
 
