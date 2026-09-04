@@ -210,6 +210,7 @@ export class HotelUsersService {
       hotelName: hotel.name,
       username: user.username,
       setupUrl: ticket.ticketUrl,
+      portalUrl: config.hotelPortalBaseUrl,
       expiresAt: ticket.expiresAt,
       isResend,
     });
