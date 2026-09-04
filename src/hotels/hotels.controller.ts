@@ -26,6 +26,7 @@ import {
 } from '../swagger/swagger.models';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { ListHotelsDto } from './dto/list-hotels.dto';
+import { CreateHotelUserDto } from './dto/create-hotel-user.dto';
 import { SetHotelToursDto } from './dto/set-hotel-tours.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { HotelUsersService } from './hotel-users.service';
@@ -170,9 +171,10 @@ export class HotelsController {
   @Post(':id/user')
   createUser(
     @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: CreateHotelUserDto,
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
-    return this.hotelUsersService.create(id, admin);
+    return this.hotelUsersService.create(id, admin, dto);
   }
 
   @ApiOperation({

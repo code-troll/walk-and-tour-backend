@@ -147,6 +147,81 @@ describe('HotelUsersService', () => {
       expect(hotelUsersRepository.delete).toHaveBeenCalledWith({ id: 'user-1' });
     });
 
+    it('retries with the next username when the provider refuses the first', async () => {
+      identityProvider.createUser
+        .mockRejectedValueOnce(new IdentityUserConflictError('taken'))
+        .mockResolvedValueOnce({ identityUserId: 'auth0|hotel-1' });
+
+      const user = await service.create('hotel-1', admin);
+
+      // The database said the first candidate was free; the provider is the one
+      // that knows, because a username freed by deleting a hotel here is still
+      // taken there.
+      expect(user.username).toBe('hotel-soeborg-strand-2');
+      expect(hotelUsersRepository.delete).not.toHaveBeenCalled();
+      expect(emailProvider.sendHotelPasswordSetup).toHaveBeenCalled();
+    });
+
+    it('blames the address once several usernames have been refused', async () => {
+      identityProvider.createUser.mockRejectedValue(
+        new IdentityUserConflictError('Auth0 already has that user.'),
+      );
+
+      await expect(service.create('hotel-1', admin)).rejects.toThrow(
+        /already in use.*different address/s,
+      );
+
+      // Three tries and no more: past that the username is not the problem.
+      expect(identityProvider.createUser).toHaveBeenCalledTimes(3);
+    });
+
+    it('signs in with the address it is given rather than the hotel\'s', async () => {
+      const user = await service.create('hotel-1', admin, {
+        email: 'reception+walkandtour@hotel.dk',
+      });
+
+      expect(user.email).toBe('reception+walkandtour@hotel.dk');
+      expect(identityProvider.createUser).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'reception+walkandtour@hotel.dk' }),
+      );
+    });
+
+    it('still refuses an address another hotel already signs in with', async () => {
+      hotelUsersRepository.findOne.mockImplementation(async ({ where }: never) =>
+        (where as { email?: string }).email ? { id: 'other-user' } : null,
+      );
+
+      await expect(
+        service.create('hotel-1', admin, { email: 'taken@hotel.dk' }),
+      ).rejects.toBeInstanceOf(ConflictException);
+
+      expect(identityProvider.createUser).not.toHaveBeenCalled();
+    });
+
+    it('lets a hotel recover after a failed attempt, which is the whole bug', async () => {
+      identityProvider.createUser.mockRejectedValueOnce(
+        new IdentityUserConflictError('taken'),
+      );
+      identityProvider.createUser.mockRejectedValueOnce(
+        new IdentityUserConflictError('taken'),
+      );
+      identityProvider.createUser.mockRejectedValueOnce(
+        new IdentityUserConflictError('taken'),
+      );
+
+      await expect(service.create('hotel-1', admin)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+
+      // Second attempt, different address. Before this change every retry
+      // rebuilt the same email and hit the same wall, forever.
+      identityProvider.createUser.mockResolvedValue({ identityUserId: 'auth0|hotel-1' });
+
+      await expect(
+        service.create('hotel-1', admin, { email: 'reception+wt@hotel.dk' }),
+      ).resolves.toEqual(expect.objectContaining({ email: 'reception+wt@hotel.dk' }));
+    });
+
     it('refuses a second access user for the same hotel', async () => {
       hotelUsersRepository.findOne.mockResolvedValue({ id: 'user-1' } as never);
 

@@ -4936,6 +4936,12 @@ paths:
           schema:
             format: uuid
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHotelUserDto"
       responses:
         "201":
           description: The created access user.
@@ -8829,6 +8835,18 @@ components:
         - email
         - status
         - audit
+    CreateHotelUserDto:
+      type: object
+      properties:
+        email:
+          type: string
+          description: >-
+            The address this hotel signs in with. Defaults to the hotel's contact email, which is right most of the time
+            and impossible the rest: the identity provider enforces one account per address, so two hotels sharing a
+            reception mailbox — or one address already used by anything else — left the second hotel with no way to get
+            an access user at all. Giving a different address here is that way.
+          example: reception+walkandtour@hotel.dk
+          format: email
     HotelViewerHotelDto:
       type: object
       properties:

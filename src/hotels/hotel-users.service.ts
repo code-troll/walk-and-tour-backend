@@ -23,6 +23,13 @@ import { resolveHotelUsername } from './hotel-username';
 import { HotelUserEntity } from './entities/hotel-user.entity';
 import { HotelEntity } from './entities/hotel.entity';
 
+/**
+ * How many usernames to offer the identity provider before concluding that the
+ * address is the thing it is refusing. Small on purpose: each one is a network
+ * call, and past two or three the answer is not the username.
+ */
+const IDENTITY_USERNAME_ATTEMPTS = 3;
+
 const PASSWORD_SETUP_TICKET_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 export interface HotelUserView {
@@ -76,9 +83,30 @@ export class HotelUsersService {
    * refuses the name the local row is removed again rather than left behind
    * pointing at nothing.
    */
+  /**
+   * Give a hotel its access user.
+   *
+   * Two things here exist because of one bug. Creating a user whose email the
+   * identity provider already knew failed, and then failed identically forever:
+   * the row was rolled back correctly, but every retry rebuilt the same email
+   * and the same username and hit the same wall, so a hotel could reach a state
+   * with no user and no way to ever get one.
+   *
+   *   1. The address is now an argument, defaulting to the hotel's contact
+   *      email. That default is right most of the time and impossible the rest —
+   *      two hotels sharing a reception mailbox, or an address already used by
+   *      anything else in the tenant. A different address is the way out, and
+   *      there was none.
+   *
+   *   2. A username refused by the provider is retried with the next candidate.
+   *      Our database is not the authority on what the provider holds: a
+   *      username freed by deleting a hotel here is still taken there, and
+   *      checking only `hotel_users` will keep proposing it.
+   */
   async create(
     hotelId: string,
     admin: AuthenticatedAdmin,
+    input?: { email?: string },
   ): Promise<HotelUserView> {
     const hotel = await this.findHotelOrThrow(hotelId);
 
@@ -90,19 +118,19 @@ export class HotelUsersService {
       );
     }
 
-    await this.assertEmailAvailable(hotel.email);
+    const email = input?.email?.trim() || hotel.email;
 
-    const username = await resolveHotelUsername({
-      hotelName: hotel.name,
-      isTaken: async (candidate) =>
-        (await this.hotelUsersRepository.count({ where: { username: candidate } })) > 0,
-    });
+    await this.assertEmailAvailable(email);
 
+    const username = await this.nextFreeUsername(hotel.name);
+
+    // Reserved here before the provider is asked, so two administrators clicking
+    // at once cannot be handed the same username.
     const user = await this.hotelUsersRepository.save(
       this.hotelUsersRepository.create({
         hotelId,
         username,
-        email: hotel.email,
+        email,
         identityUserId: null,
         status: 'invited',
         createdBy: admin.id,
@@ -113,17 +141,15 @@ export class HotelUsersService {
     let identityUserId: string;
 
     try {
-      const created = await this.identityProvider.createUser({
-        username,
-        email: hotel.email,
-        displayName: hotel.name,
-      });
-      identityUserId = created.identityUserId;
+      identityUserId = await this.createIdentityWithRetries(user, hotel.name, email);
     } catch (error) {
       await this.hotelUsersRepository.delete({ id: user.id });
 
       if (error instanceof IdentityUserConflictError) {
-        throw new ConflictException(error.message);
+        throw new ConflictException(
+          `The sign-in address "${email}" is already in use. Create this hotel's ` +
+            'access user with a different address.',
+        );
       }
 
       throw error;
@@ -218,6 +244,61 @@ export class HotelUsersService {
     this.logger.log(
       `Sent a password ${isResend ? 'reset' : 'setup'} link to hotel "${hotel.name}".`,
     );
+  }
+
+  /**
+   * The first username the provider will accept.
+   *
+   * A conflict is not the end: the provider does not say whether the username or
+   * the address clashed, so the cheap possibility is tried first. If a handful of
+   * candidates all fail, the address is what is taken, and the caller says so —
+   * that is the message an administrator can actually act on.
+   */
+  private async createIdentityWithRetries(
+    user: HotelUserEntity,
+    hotelName: string,
+    email: string,
+  ): Promise<string> {
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < IDENTITY_USERNAME_ATTEMPTS; attempt += 1) {
+      try {
+        const created = await this.identityProvider.createUser({
+          username: user.username,
+          email,
+          displayName: hotelName,
+        });
+
+        return created.identityUserId;
+      } catch (error) {
+        if (!(error instanceof IdentityUserConflictError)) {
+          throw error;
+        }
+
+        lastError = error;
+
+        if (attempt < IDENTITY_USERNAME_ATTEMPTS - 1) {
+          // Keep the reservation, move it to the next candidate.
+          user.username = await this.nextFreeUsername(hotelName, user.username);
+          await this.hotelUsersRepository.save(user);
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
+  private async nextFreeUsername(hotelName: string, after?: string): Promise<string> {
+    const rejected = new Set(after ? [after] : []);
+
+    return resolveHotelUsername({
+      hotelName,
+      isTaken: async (candidate) =>
+        rejected.has(candidate)
+        || (await this.hotelUsersRepository.count({
+          where: { username: candidate },
+        })) > 0,
+    });
   }
 
   private async findHotelOrThrow(hotelId: string): Promise<HotelEntity> {
