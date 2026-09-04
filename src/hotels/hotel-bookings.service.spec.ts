@@ -160,6 +160,68 @@ describe('HotelBookingsService', () => {
       );
     });
 
+    it('charges the partner price when the grant sets one', async () => {
+      hotelToursRepository.findOne.mockResolvedValue({
+        id: 'grant-1',
+        priceAmount: '100.00',
+      } as never);
+
+      await service.create('hotel-1', baseInput({ participantCount: 3 }), hotelActor);
+
+      expect(lineItems.insert).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: '300.00' }),
+      );
+      expect(managerBookings.create).toHaveBeenCalledWith(
+        expect.objectContaining({ unitPriceAmount: '100.00' }),
+      );
+    });
+
+    it('falls through to the tour price when the grant sets none', async () => {
+      hotelToursRepository.findOne.mockResolvedValue({
+        id: 'grant-1',
+        priceAmount: null,
+      } as never);
+
+      await service.create('hotel-1', baseInput({ participantCount: 2 }), hotelActor);
+
+      expect(managerBookings.create).toHaveBeenCalledWith(
+        expect.objectContaining({ unitPriceAmount: '250.00' }),
+      );
+    });
+
+    it("writes the booking in the tour's currency", async () => {
+      toursRepository.findOne.mockResolvedValue({
+        id: 'tour-1',
+        name: 'Historic Center',
+        priceAmount: '250.00',
+        priceCurrency: 'EUR',
+      } as never);
+
+      await service.create('hotel-1', baseInput(), hotelActor);
+
+      expect(managerBookings.create).toHaveBeenCalledWith(
+        expect.objectContaining({ currency: 'EUR' }),
+      );
+    });
+
+    it('falls back to DKK when the tour names no currency it recognises', async () => {
+      toursRepository.findOne.mockResolvedValue({
+        id: 'tour-1',
+        name: 'Historic Center',
+        priceAmount: '250.00',
+        // `tours.price_currency` is nullable varchar(10), so it holds whatever
+        // an editor typed. `hotel_bookings.currency` is char(3): a longer value
+        // has to be stopped here rather than at the insert.
+        priceCurrency: 'kroner',
+      } as never);
+
+      await service.create('hotel-1', baseInput(), hotelActor);
+
+      expect(managerBookings.create).toHaveBeenCalledWith(
+        expect.objectContaining({ currency: 'DKK' }),
+      );
+    });
+
     it('starts a tour with no price without a base line', async () => {
       toursRepository.findOne.mockResolvedValue({
         id: 'tour-1',

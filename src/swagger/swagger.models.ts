@@ -1741,6 +1741,36 @@ export class HotelTourGrantResponseDto {
     nullable: true,
   })
   grantedBy!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      "Price per person charged to this partner, in `currency`. Null means the " +
+      "partner pays the tour's own price and keeps following it when the tour " +
+      'is repriced, which is not the same as having that number copied here.',
+    example: '199.00',
+    nullable: true,
+  })
+  priceAmount!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      "The tour's own price per person, so a screen can show what the default " +
+      'is without fetching the tour. Null when the tour has no price at all.',
+    example: '249.00',
+    nullable: true,
+  })
+  tourPriceAmount!: string | null;
+
+  @ApiProperty({
+    description:
+      "The currency both prices are in. It comes from the tour, never from the " +
+      'grant, so a partner cannot be quoted in a currency the tour is not sold in.',
+    example: 'DKK',
+    enum: HOTEL_BOOKING_CURRENCIES,
+  })
+  currency!: string;
 }
 
 export class HotelResponseDto {

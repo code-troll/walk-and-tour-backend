@@ -162,6 +162,9 @@ describe('HotelsService', () => {
           tourName: 'Historic Center',
           grantedAt: new Date('2026-02-01T00:00:00.000Z'),
           grantedBy: 'admin-1',
+          priceAmount: null,
+          tourPriceAmount: null,
+          currency: 'DKK',
         },
       ]);
     });
@@ -178,13 +181,18 @@ describe('HotelsService', () => {
         { id: 'tour-2' },
       ] as never);
       grantsManagerRepository.find.mockResolvedValue([
-        { id: 'grant-1', tourId: 'tour-1' },
+        { id: 'grant-1', tourId: 'tour-1', priceAmount: null },
       ] as never);
 
-      await service.setTours('hotel-1', { tourIds: ['tour-1', 'tour-2'] }, admin);
+      await service.setTours('hotel-1', { tours: [{ tourId: 'tour-1' }, { tourId: 'tour-2' }] }, admin);
 
       expect(grantsManagerRepository.insert).toHaveBeenCalledWith([
-        { hotelId: 'hotel-1', tourId: 'tour-2', grantedBy: 'admin-1' },
+        {
+          hotelId: 'hotel-1',
+          tourId: 'tour-2',
+          grantedBy: 'admin-1',
+          priceAmount: null,
+        },
       ]);
       expect(grantsManagerRepository.update).not.toHaveBeenCalled();
     });
@@ -196,7 +204,7 @@ describe('HotelsService', () => {
         { id: 'grant-2', tourId: 'tour-2' },
       ] as never);
 
-      await service.setTours('hotel-1', { tourIds: ['tour-1'] }, admin);
+      await service.setTours('hotel-1', { tours: [{ tourId: 'tour-1' }] }, admin);
 
       expect(grantsManagerRepository.update).toHaveBeenCalledWith(
         { id: expect.objectContaining({ _value: ['grant-2'] }) },
@@ -210,18 +218,89 @@ describe('HotelsService', () => {
         { id: 'grant-1', tourId: 'tour-1' },
       ] as never);
 
-      await service.setTours('hotel-1', { tourIds: [] }, admin);
+      await service.setTours('hotel-1', { tours: [] }, admin);
 
       expect(grantsManagerRepository.update).toHaveBeenCalledTimes(1);
       expect(grantsManagerRepository.insert).not.toHaveBeenCalled();
       expect(toursRepository.find).not.toHaveBeenCalled();
     });
 
+    it('stores the partner price on a new grant', async () => {
+      toursRepository.find.mockResolvedValue([{ id: 'tour-1' }] as never);
+      grantsManagerRepository.find.mockResolvedValue([] as never);
+
+      await service.setTours(
+        'hotel-1',
+        { tours: [{ tourId: 'tour-1', priceAmount: '199.00' }] },
+        admin,
+      );
+
+      expect(grantsManagerRepository.insert).toHaveBeenCalledWith([
+        {
+          hotelId: 'hotel-1',
+          tourId: 'tour-1',
+          grantedBy: 'admin-1',
+          priceAmount: '199.00',
+        },
+      ]);
+    });
+
+    it('reprices a grant in place rather than re-granting it', async () => {
+      toursRepository.find.mockResolvedValue([{ id: 'tour-1' }] as never);
+      grantsManagerRepository.find.mockResolvedValue([
+        { id: 'grant-1', tourId: 'tour-1', priceAmount: '199.00' },
+      ] as never);
+
+      await service.setTours(
+        'hotel-1',
+        { tours: [{ tourId: 'tour-1', priceAmount: '149.00' }] },
+        admin,
+      );
+
+      // `granted_at` is history: repricing must not rewrite when the partner
+      // was given the tour.
+      expect(grantsManagerRepository.insert).not.toHaveBeenCalled();
+      expect(grantsManagerRepository.update).toHaveBeenCalledWith(
+        { id: 'grant-1' },
+        { priceAmount: '149.00' },
+      );
+    });
+
+    it('clearing the price returns the partner to the tour price', async () => {
+      toursRepository.find.mockResolvedValue([{ id: 'tour-1' }] as never);
+      grantsManagerRepository.find.mockResolvedValue([
+        { id: 'grant-1', tourId: 'tour-1', priceAmount: '149.00' },
+      ] as never);
+
+      await service.setTours('hotel-1', { tours: [{ tourId: 'tour-1' }] }, admin);
+
+      expect(grantsManagerRepository.update).toHaveBeenCalledWith(
+        { id: 'grant-1' },
+        { priceAmount: null },
+      );
+    });
+
+    it('leaves an unchanged price alone', async () => {
+      toursRepository.find.mockResolvedValue([{ id: 'tour-1' }] as never);
+      grantsManagerRepository.find.mockResolvedValue([
+        { id: 'grant-1', tourId: 'tour-1', priceAmount: '199.00' },
+      ] as never);
+
+      await service.setTours(
+        'hotel-1',
+        { tours: [{ tourId: 'tour-1', priceAmount: '199.00' }] },
+        admin,
+      );
+
+      expect(grantsManagerRepository.update).not.toHaveBeenCalled();
+      expect(grantsManagerRepository.insert).not.toHaveBeenCalled();
+    });
+
     it('refuses to grant a tour that does not exist', async () => {
       toursRepository.find.mockResolvedValue([{ id: 'tour-1' }] as never);
 
       await expect(
-        service.setTours('hotel-1', { tourIds: ['tour-1', 'tour-missing'] }, admin),
+        service.setTours('hotel-1', { tours: [{ tourId: 'tour-1' }, { tourId: 'tour-missing' }] }, admin),
       ).rejects.toBeInstanceOf(NotFoundException);
 
       expect(dataSource.transaction).not.toHaveBeenCalled();
@@ -231,7 +310,7 @@ describe('HotelsService', () => {
       hotelsRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.setTours('hotel-404', { tourIds: [] }, admin),
+        service.setTours('hotel-404', { tours: [] }, admin),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });

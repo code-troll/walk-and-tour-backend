@@ -10,6 +10,7 @@ import { SetHotelToursDto } from './dto/set-hotel-tours.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { HotelTourEntity } from './entities/hotel-tour.entity';
 import { HotelEntity } from './entities/hotel.entity';
+import { resolveTourCurrency } from '../shared/domain/hotel-booking.enums';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
@@ -19,6 +20,12 @@ export interface HotelTourGrantView {
   tourName: string;
   grantedAt: Date;
   grantedBy: string | null;
+  /** What this partner is charged, per person. Null means the tour's own price. */
+  priceAmount: string | null;
+  /** The tour's own price, so a screen can show what the default actually is. */
+  tourPriceAmount: string | null;
+  /** The tour's currency. A grant never sets one; see HotelTourEntity.priceAmount. */
+  currency: string;
 }
 
 export interface HotelView {
@@ -184,7 +191,10 @@ export class HotelsService {
       throw new NotFoundException(`Hotel "${id}" was not found.`);
     }
 
-    const requestedTourIds = [...new Set(dto.tourIds)];
+    const requested = new Map(
+      dto.tours.map((grant) => [grant.tourId, grant.priceAmount ?? null]),
+    );
+    const requestedTourIds = [...requested.keys()];
     await this.assertToursExist(requestedTourIds);
 
     await this.dataSource.transaction(async (manager) => {
@@ -194,7 +204,6 @@ export class HotelsService {
       });
 
       const liveTourIds = new Set(liveGrants.map((grant) => grant.tourId));
-      const requested = new Set(requestedTourIds);
 
       const revoked = liveGrants.filter((grant) => !requested.has(grant.tourId));
 
@@ -207,12 +216,26 @@ export class HotelsService {
 
       const added = requestedTourIds.filter((tourId) => !liveTourIds.has(tourId));
 
+      // A grant that survives the call is repriced in place rather than revoked
+      // and re-granted: `granted_at` is history, and re-granting would rewrite it
+      // every time an administrator adjusted a number.
+      const kept = liveGrants.filter((grant) => requested.has(grant.tourId));
+
+      for (const grant of kept) {
+        const price = requested.get(grant.tourId) ?? null;
+
+        if (price !== grant.priceAmount) {
+          await grantsRepository.update({ id: grant.id }, { priceAmount: price });
+        }
+      }
+
       if (added.length > 0) {
         await grantsRepository.insert(
           added.map((tourId) => ({
             hotelId: id,
             tourId,
             grantedBy: admin.id,
+            priceAmount: requested.get(tourId) ?? null,
           })),
         );
       }
@@ -239,6 +262,9 @@ export class HotelsService {
       tourName: grant.tour?.name ?? '',
       grantedAt: grant.grantedAt,
       grantedBy: grant.grantedBy,
+      priceAmount: grant.priceAmount ?? null,
+      tourPriceAmount: grant.tour?.priceAmount ?? null,
+      currency: resolveTourCurrency(grant.tour?.priceCurrency ?? null),
     }));
   }
 

@@ -8497,10 +8497,34 @@ components:
           description: Identifier of the admin user that granted the tour.
           format: uuid
           nullable: true
+        priceAmount:
+          type: string
+          description: >-
+            Price per person charged to this partner, in `currency`. Null means the partner pays the tour's own price
+            and keeps following it when the tour is repriced, which is not the same as having that number copied here.
+          example: "199.00"
+          nullable: true
+        tourPriceAmount:
+          type: string
+          description: >-
+            The tour's own price per person, so a screen can show what the default is without fetching the tour. Null
+            when the tour has no price at all.
+          example: "249.00"
+          nullable: true
+        currency:
+          type: string
+          description: >-
+            The currency both prices are in. It comes from the tour, never from the grant, so a partner cannot be quoted
+            in a currency the tour is not sold in.
+          example: DKK
+          enum:
+            - DKK
+            - EUR
       required:
         - tourId
         - tourName
         - grantedAt
+        - currency
     HotelResponseDto:
       type: object
       properties:
@@ -8631,21 +8655,36 @@ components:
             - active
             - disabled
           example: disabled
+    HotelTourGrantInputDto:
+      type: object
+      properties:
+        tourId:
+          type: string
+          description: Identifier of a tour this hotel may sell.
+          format: uuid
+          example: 0f7b8a2c-5d3e-4a1b-9c8d-2e4f6a8b0c1d
+        priceAmount:
+          type: object
+          description: >-
+            Price per person for this partner, in the tour's own currency. Omit it, or send null, to charge the tour's
+            own price — which is not the same as copying that price, because the partner then follows it when the tour
+            is repriced.
+          example: "199.00"
+          nullable: true
+      required:
+        - tourId
     SetHotelToursDto:
       type: object
       properties:
-        tourIds:
+        tours:
           description: >-
-            The complete set of tours this hotel may sell. Tours missing from the list have their grant revoked, tours
-            already granted are left untouched, and the rest are granted.
-          example:
-            - 0f7b8a2c-5d3e-4a1b-9c8d-2e4f6a8b0c1d
+            The complete set of tours this hotel may sell, each with an optional partner price. Tours missing from the
+            list have their grant revoked; tours already granted keep their grant and take the price sent here.
           type: array
           items:
-            type: string
-            format: uuid
+            $ref: "#/components/schemas/HotelTourGrantInputDto"
       required:
-        - tourIds
+        - tours
     HotelUserResponseDto:
       type: object
       properties:
@@ -8926,6 +8965,7 @@ components:
           type: string
           enum:
             - DKK
+            - EUR
           example: DKK
         unitPriceAmount:
           type: string
