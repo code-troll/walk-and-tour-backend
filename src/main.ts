@@ -6,6 +6,8 @@ import { SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
 import { getAppConfig } from './shared/config/app.config';
+import { collectProviderWarnings } from './shared/config/provider-warnings';
+import { getProviderConfig } from './shared/config/provider.config';
 import { createSwaggerDocument } from './swagger/swagger-document';
 
 async function bootstrap(): Promise<void> {
@@ -38,6 +40,13 @@ async function bootstrap(): Promise<void> {
       operationsSorter: 'alpha',
     },
   });
+
+  for (const warning of collectProviderWarnings({
+    nodeEnv: config.nodeEnv,
+    config: getProviderConfig(),
+  })) {
+    Logger.warn(warning, 'Bootstrap');
+  }
 
   await app.listen(config.port);
 
