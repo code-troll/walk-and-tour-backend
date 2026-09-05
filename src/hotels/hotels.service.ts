@@ -11,6 +11,9 @@ import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { HotelTourEntity } from './entities/hotel-tour.entity';
 import { HotelEntity } from './entities/hotel.entity';
 import { resolveTourCurrency } from '../shared/domain/hotel-booking.enums';
+import { HotelBookingEntity } from './entities/hotel-booking.entity';
+import { HotelUsersService } from './hotel-users.service';
+import { HotelStatus } from '../shared/domain';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
@@ -61,6 +64,9 @@ export class HotelsService {
     private readonly hotelToursRepository: Repository<HotelTourEntity>,
     @InjectRepository(TourEntity)
     private readonly toursRepository: Repository<TourEntity>,
+    @InjectRepository(HotelBookingEntity)
+    private readonly bookingsRepository: Repository<HotelBookingEntity>,
+    private readonly hotelUsersService: HotelUsersService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -69,14 +75,17 @@ export class HotelsService {
     const limit = query.limit ?? DEFAULT_LIMIT;
     const search = query.search?.trim();
 
+    // Archived hotels are finished, not hidden — they answer by id and by an
+    // explicit `status=archived`, but they do not crowd the list somebody scans
+    // to find a partner they work with.
+    const status = query.status ?? Not('archived' as HotelStatus);
+
     const where = search
       ? [
-          { ...(query.status ? { status: query.status } : {}), name: ILike(`%${search}%`) },
-          { ...(query.status ? { status: query.status } : {}), cvr: ILike(`%${search}%`) },
+          { status, name: ILike(`%${search}%`) },
+          { status, cvr: ILike(`%${search}%`) },
         ]
-      : query.status
-        ? { status: query.status }
-        : {};
+      : { status };
 
     const [hotels, total] = await this.hotelsRepository.findAndCount({
       where,
@@ -250,6 +259,86 @@ export class HotelsService {
     return this.findOneOrThrow(id);
   }
 
+  /**
+   * Finish with a hotel without losing what it did.
+   *
+   * Archiving releases the access user and the CVR, and revokes the live tour
+   * grants. The bookings stay exactly where they are: they are the record of
+   * work done and money owed, and a hotel that stops being a partner does not
+   * stop having been one.
+   *
+   * This is the difference from `disabled`, which releases nothing because a
+   * disabled hotel is coming back.
+   */
+  async archive(id: string, admin: AuthenticatedAdmin): Promise<HotelView> {
+    const hotel = await this.hotelsRepository.findOne({ where: { id } });
+
+    if (!hotel) {
+      throw new NotFoundException(`Hotel "${id}" was not found.`);
+    }
+
+    if (hotel.status === 'archived') {
+      return this.findOneOrThrow(id);
+    }
+
+    // Before the status changes, so a failure here leaves an active hotel with
+    // its user rather than an archived one that can still sign in.
+    await this.hotelUsersService.release(id);
+
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(HotelTourEntity).update(
+        { hotelId: id, revokedAt: IsNull() },
+        { revokedAt: new Date(), revokedBy: admin.id },
+      );
+
+      await manager.getRepository(HotelEntity).update(
+        { id },
+        { status: 'archived', updatedBy: admin.id },
+      );
+    });
+
+    return this.findOneOrThrow(id);
+  }
+
+  /**
+   * Remove a hotel that never did anything.
+   *
+   * Only when it holds no bookings at all. `hotel_bookings.hotel_id` is
+   * `ON DELETE RESTRICT`, so the database would refuse anyway — this checks
+   * first so the answer is a sentence about archiving instead of a foreign key
+   * violation.
+   *
+   * The identity is deleted before the row, because `hotel_users` cascades from
+   * `hotels`: letting the cascade run first would drop the only record of which
+   * identity to delete.
+   *
+   * There is no `admin` argument on purpose: the row is gone, so there is
+   * nowhere to record who did it. Deleting is for hotels that never traded;
+   * anything with history is archived, and that keeps its audit trail.
+   */
+  async remove(id: string): Promise<void> {
+    const hotel = await this.hotelsRepository.findOne({ where: { id } });
+
+    if (!hotel) {
+      throw new NotFoundException(`Hotel "${id}" was not found.`);
+    }
+
+    const bookings = await this.bookingsRepository.count({
+      where: { hotelId: id },
+    });
+
+    if (bookings > 0) {
+      throw new ConflictException(
+        `Hotel "${hotel.name}" has ${bookings} booking(s) and cannot be deleted. ` +
+          'Archive it instead: that releases the access user and the CVR and ' +
+          'keeps the bookings.',
+      );
+    }
+
+    await this.hotelUsersService.release(id);
+    await this.hotelsRepository.delete({ id });
+  }
+
   private async findLiveGrants(hotelId: string): Promise<HotelTourGrantView[]> {
     const grants = await this.hotelToursRepository.find({
       where: { hotelId, revokedAt: IsNull() },
@@ -286,8 +375,15 @@ export class HotelsService {
   }
 
   private async assertCvrAvailable(cvr: string, exceptHotelId?: string): Promise<void> {
+    // Archived hotels are excluded here for the same reason the unique index
+    // excludes them. If this check disagreed with the index, re-registering a
+    // company would be refused by a sentence the database would have allowed.
     const existing = await this.hotelsRepository.findOne({
-      where: exceptHotelId ? { cvr, id: Not(exceptHotelId) } : { cvr },
+      where: {
+        cvr,
+        status: Not('archived' as HotelStatus),
+        ...(exceptHotelId ? { id: Not(exceptHotelId) } : {}),
+      },
     });
 
     if (existing) {
