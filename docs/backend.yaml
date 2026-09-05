@@ -4632,6 +4632,7 @@ paths:
             enum:
               - active
               - disabled
+              - archived
         - name: page
           required: false
           in: query
@@ -4826,6 +4827,50 @@ paths:
       summary: Update a hotel
       tags:
         - Admin Hotels
+    delete:
+      description: >-
+        Removes the hotel, its access user and its tour grants. Refused when the hotel holds any booking — archive it
+        instead, which keeps them.
+      operationId: HotelsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: The hotel was deleted.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "409":
+          description: The hotel has bookings and must be archived instead.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Delete a hotel that has never booked
+      tags:
+        - Admin Hotels
   /api/admin/hotels/{id}/tours:
     put:
       description: >-
@@ -4976,6 +5021,88 @@ paths:
       security:
         - admin-auth: []
       summary: Create the hotel access user
+      tags:
+        - Admin Hotels
+    delete:
+      description: >-
+        Deletes the sign-in identity and the local record, freeing the address and the username for another hotel. The
+        hotel and its bookings are untouched, and a new access user can be created straight away. This is irreversible:
+        the identity is gone, not blocked.
+      operationId: HotelsController_releaseUser
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: The access user was released.
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Release the hotel access user
+      tags:
+        - Admin Hotels
+  /api/admin/hotels/{id}/archive:
+    post:
+      description: >-
+        Ends the partnership without losing its history. Releases the access user and the CVR, revokes the live tour
+        grants, and keeps every booking. Use this rather than deleting whenever the hotel has ever booked.
+      operationId: HotelsController_archive
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: The archived hotel.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotelResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseDto"
+      security:
+        - admin-auth: []
+      summary: Archive the hotel
       tags:
         - Admin Hotels
   /api/admin/hotels/{id}/user/resend-invitation:
@@ -8544,6 +8671,7 @@ components:
           enum:
             - active
             - disabled
+            - archived
           example: active
         tourCount:
           type: number
@@ -8667,6 +8795,7 @@ components:
           enum:
             - active
             - disabled
+            - archived
           example: active
         tours:
           description: Tours this hotel may currently sell. Revoked grants are not listed.
@@ -8721,6 +8850,7 @@ components:
           enum:
             - active
             - disabled
+            - archived
           example: active
           default: active
       required:
@@ -8763,6 +8893,7 @@ components:
           enum:
             - active
             - disabled
+            - archived
           example: disabled
     HotelTourGrantInputDto:
       type: object

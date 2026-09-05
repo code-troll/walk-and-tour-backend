@@ -36,6 +36,8 @@ describe('HotelsService', () => {
   let hotelsRepository: RepositoryMock<HotelEntity>;
   let hotelToursRepository: RepositoryMock<HotelTourEntity>;
   let toursRepository: RepositoryMock<TourEntity>;
+  let bookingsRepository: { count: jest.Mock };
+  let hotelUsersService: { release: jest.Mock };
   let dataSource: { transaction: jest.Mock };
   let grantsManagerRepository: {
     find: jest.Mock;
@@ -56,6 +58,10 @@ describe('HotelsService', () => {
     };
     hotelsManagerRepository = { update: jest.fn().mockResolvedValue(undefined) };
 
+    bookingsRepository = { count: jest.fn().mockResolvedValue(0) };
+
+    hotelUsersService = { release: jest.fn().mockResolvedValue(undefined) };
+
     dataSource = {
       transaction: jest.fn(async (callback: (manager: unknown) => unknown) =>
         callback({
@@ -69,6 +75,8 @@ describe('HotelsService', () => {
       hotelsRepository as never,
       hotelToursRepository as never,
       toursRepository as never,
+      bookingsRepository as never,
+      hotelUsersService as never,
       dataSource as never,
     );
 
@@ -167,6 +175,87 @@ describe('HotelsService', () => {
           currency: 'DKK',
         },
       ]);
+    });
+  });
+
+  describe('archive', () => {
+    beforeEach(() => {
+      hotelsRepository.findOne.mockResolvedValue(buildHotel());
+    });
+
+    it('releases the access user before the status changes', async () => {
+      const orden: string[] = [];
+      hotelUsersService.release.mockImplementation(async () => {
+        orden.push('release');
+      });
+      grantsManagerRepository.update.mockImplementation(async () => {
+        orden.push('grants');
+      });
+
+      await service.archive('hotel-1', admin);
+
+      // A failure while releasing has to leave an active hotel that still has
+      // its user, not an archived one that can still sign in.
+      expect(orden[0]).toBe('release');
+      expect(hotelUsersService.release).toHaveBeenCalledWith('hotel-1');
+    });
+
+    it('revokes the live grants rather than deleting them', async () => {
+      await service.archive('hotel-1', admin);
+
+      expect(grantsManagerRepository.update).toHaveBeenCalledWith(
+        expect.objectContaining({ hotelId: 'hotel-1' }),
+        expect.objectContaining({ revokedBy: 'admin-1', revokedAt: expect.any(Date) }),
+      );
+    });
+
+    it('does nothing to a hotel that is already archived', async () => {
+      hotelsRepository.findOne.mockResolvedValue(buildHotel({ status: 'archived' }));
+
+      await service.archive('hotel-1', admin);
+
+      expect(hotelUsersService.release).not.toHaveBeenCalled();
+      expect(grantsManagerRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses a hotel that does not exist', async () => {
+      hotelsRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.archive('missing', admin)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('remove', () => {
+    beforeEach(() => {
+      hotelsRepository.findOne.mockResolvedValue(buildHotel());
+    });
+
+    it('refuses a hotel that has bookings, and says to archive it', async () => {
+      bookingsRepository.count.mockResolvedValue(3);
+
+      await expect(service.remove('hotel-1')).rejects.toThrow(/3 booking\(s\).*Archive/s);
+
+      expect(hotelUsersService.release).not.toHaveBeenCalled();
+      expect(hotelsRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('deletes the identity before the row it is recorded in', async () => {
+      const orden: string[] = [];
+      hotelUsersService.release.mockImplementation(async () => {
+        orden.push('release');
+      });
+      hotelsRepository.delete.mockImplementation(async () => {
+        orden.push('delete');
+        return { affected: 1 } as never;
+      });
+
+      await service.remove('hotel-1');
+
+      // `hotel_users` cascades from `hotels`: deleting the hotel first would
+      // drop the only record of which identity to remove.
+      expect(orden).toEqual(['release', 'delete']);
     });
   });
 

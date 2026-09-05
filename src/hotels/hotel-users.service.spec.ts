@@ -241,6 +241,51 @@ describe('HotelUsersService', () => {
     });
   });
 
+  describe('release', () => {
+    it('deletes the identity before the row that records it', async () => {
+      hotelUsersRepository.findOne.mockResolvedValue({
+        id: 'user-1',
+        identityUserId: 'auth0|hotel-1',
+      });
+
+      const orden: string[] = [];
+      identityProvider.deleteUser.mockImplementation(async () => {
+        orden.push('identity');
+      });
+      hotelUsersRepository.delete.mockImplementation(async () => {
+        orden.push('row');
+        return { affected: 1 } as never;
+      });
+
+      await service.release('hotel-1');
+
+      // The other order loses the identity: the row is gone, nothing points at
+      // the account, and it silently keeps holding the address.
+      expect(orden).toEqual(['identity', 'row']);
+    });
+
+    it('does nothing when the hotel has no access user', async () => {
+      hotelUsersRepository.findOne.mockResolvedValue(null);
+
+      await service.release('hotel-1');
+
+      expect(identityProvider.deleteUser).not.toHaveBeenCalled();
+      expect(hotelUsersRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('still removes the row when the user was never given an identity', async () => {
+      hotelUsersRepository.findOne.mockResolvedValue({
+        id: 'user-1',
+        identityUserId: null,
+      });
+
+      await service.release('hotel-1');
+
+      expect(identityProvider.deleteUser).not.toHaveBeenCalled();
+      expect(hotelUsersRepository.delete).toHaveBeenCalledWith({ id: 'user-1' });
+    });
+  });
+
   describe('resendInvitation', () => {
     it('issues a fresh ticket and marks the email as a resend', async () => {
       hotelUsersRepository.findOne.mockResolvedValue({

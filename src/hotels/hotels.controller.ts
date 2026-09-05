@@ -1,10 +1,24 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -175,6 +189,66 @@ export class HotelsController {
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     return this.hotelUsersService.create(id, admin, dto);
+  }
+
+  @ApiOperation({
+    summary: 'Release the hotel access user',
+    description:
+      'Deletes the sign-in identity and the local record, freeing the address ' +
+      'and the username for another hotel. The hotel and its bookings are ' +
+      'untouched, and a new access user can be created straight away. This is ' +
+      'irreversible: the identity is gone, not blocked.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiNoContentResponse({ description: 'The access user was released.' })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @HttpCode(204)
+  @Delete(':id/user')
+  async releaseUser(@Param('id', new ParseUUIDPipe()) id: string) {
+    await this.hotelUsersService.release(id);
+  }
+
+  @ApiOperation({
+    summary: 'Archive the hotel',
+    description:
+      'Ends the partnership without losing its history. Releases the access ' +
+      'user and the CVR, revokes the live tour grants, and keeps every booking. ' +
+      'Use this rather than deleting whenever the hotel has ever booked.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ description: 'The archived hotel.', type: HotelResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @Post(':id/archive')
+  archive(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.hotelsService.archive(id, admin);
+  }
+
+  @ApiOperation({
+    summary: 'Delete a hotel that has never booked',
+    description:
+      'Removes the hotel, its access user and its tour grants. Refused when the ' +
+      'hotel holds any booking — archive it instead, which keeps them.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiNoContentResponse({ description: 'The hotel was deleted.' })
+  @ApiConflictResponse({
+    description: 'The hotel has bookings and must be archived instead.',
+    type: ErrorResponseDto,
+  })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
+  @ApiForbiddenResponse({ type: ErrorResponseDto })
+  @HttpCode(204)
+  @Delete(':id')
+  async remove(@Param('id', new ParseUUIDPipe()) id: string) {
+    await this.hotelsService.remove(id);
   }
 
   @ApiOperation({

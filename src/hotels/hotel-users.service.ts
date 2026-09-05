@@ -163,6 +163,32 @@ export class HotelUsersService {
     return this.toView(user);
   }
 
+  /**
+   * Give the access user back: the identity, the address and the username.
+   *
+   * The identity goes first. If it were the other way round and the provider
+   * call failed, the row would be gone and the identity would survive with
+   * nobody pointing at it — invisible, and holding an address hostage. That is
+   * exactly the state that made a hotel unrecoverable in the first place.
+   *
+   * A provider that no longer has the user is treated as success. Wanting it
+   * gone and finding it gone is the same outcome, and refusing here would leave
+   * a row that can never be cleaned up.
+   */
+  async release(hotelId: string): Promise<void> {
+    const user = await this.hotelUsersRepository.findOne({ where: { hotelId } });
+
+    if (!user) {
+      return;
+    }
+
+    if (user.identityUserId) {
+      await this.identityProvider.deleteUser(user.identityUserId);
+    }
+
+    await this.hotelUsersRepository.delete({ id: user.id });
+  }
+
   async resendInvitation(
     hotelId: string,
     admin: AuthenticatedAdmin,
