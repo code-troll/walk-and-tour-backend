@@ -1,9 +1,19 @@
+/**
+ * A run of body copy. A bare string is plain text; the object form marks the
+ * same plain text as emphasised. Either way the text is escaped here, so no
+ * caller ever hands this template markup.
+ */
+export type EmailTextRun = string | { text: string; bold: true };
+
+/** A paragraph is one run of copy, or several rendered side by side. */
+export type EmailParagraph = EmailTextRun | EmailTextRun[];
+
 export interface BrandedEmailContent {
   language: string;
   logoUrl: string;
   greeting: string;
   /** Paragraphs of body copy, rendered in order. Plain text, escaped here. */
-  paragraphs: string[];
+  paragraphs: EmailParagraph[];
   callToAction?: {
     label: string;
     url: string;
@@ -23,6 +33,12 @@ export function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
+function renderTextRun(run: EmailTextRun): string {
+  return typeof run === 'string'
+    ? escapeHtml(run)
+    : `<strong style="font-weight:600;color:#2a221a;">${escapeHtml(run.text)}</strong>`;
+}
+
 /**
  * The shared Walk and Tour email shell.
  *
@@ -32,10 +48,13 @@ export function escapeHtml(value: string): string {
  */
 export function renderBrandedEmail(content: BrandedEmailContent): string {
   const paragraphs = content.paragraphs
-    .map(
-      (paragraph) =>
-        `<p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#3d3124;">${escapeHtml(paragraph)}</p>`,
-    )
+    .map((paragraph) => {
+      const body = (Array.isArray(paragraph) ? paragraph : [paragraph])
+        .map(renderTextRun)
+        .join('');
+
+      return `<p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#3d3124;">${body}</p>`;
+    })
     .join('\n            ');
 
   const callToAction = content.callToAction

@@ -208,7 +208,11 @@ export class ResendEmailProvider implements EmailProvider {
         input.isResend
           ? 'You can set a new password for your Walk and Tour hotel account using the link below.'
           : 'Your Walk and Tour hotel account is ready. Use the link below to choose your password and sign in for the first time.',
-        `Your username is ${input.username}. You will need it every time you sign in, so keep it somewhere safe.`,
+        [
+          'Your username is ',
+          { text: input.username, bold: true } as const,
+          '. You will need it every time you sign in, so keep it somewhere safe.',
+        ],
         `This link stops working on ${input.expiresAt.toUTCString()}. If it expires, ask Walk and Tour to send you a new one.`,
         `Once your password is set, sign in at ${input.portalUrl}. Keep this email: it is the easiest way back to the portal.`,
       ],
