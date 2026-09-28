@@ -735,6 +735,58 @@ describe('ToursService', () => {
     );
   });
 
+  it('publishes a private tour that has no fixed price', async () => {
+    const payload = {
+      title: 'Historic Center',
+      cancellationType: 'Free cancellation',
+      highlights: ['Walls'],
+      included: ['Guide'],
+      notIncluded: ['Food'],
+    };
+    const contentSchema = {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        cancellationType: { type: 'string' },
+        highlights: { type: 'array', items: { type: 'string' } },
+        included: { type: 'array', items: { type: 'string' } },
+        notIncluded: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['title', 'cancellationType', 'highlights', 'included', 'notIncluded'],
+    };
+    const existingTour = createTourEntity({
+      tourType: 'private',
+      priceAmount: null,
+      priceCurrency: null,
+      contentSchema,
+      translations: [
+        createTranslationEntity({ languageCode: 'en', isReady: false, isPublished: false, payload }),
+      ],
+    });
+    const responseTour = createTourEntity({
+      tourType: 'private',
+      priceAmount: null,
+      priceCurrency: null,
+      contentSchema,
+      translations: [
+        createTranslationEntity({ languageCode: 'en', isReady: true, isPublished: true, payload }),
+      ],
+    });
+
+    toursRepository.findOne
+      .mockResolvedValueOnce(existingTour)
+      .mockResolvedValueOnce(responseTour);
+    languagesRepository.findOne.mockResolvedValue(
+      createLanguageEntity({ code: 'en' }),
+    );
+
+    await service.publishTranslation('tour-1', 'en', {}, createAdmin());
+
+    expect(translationsRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ languageCode: 'en', isPublished: true }),
+    );
+  });
+
   it('rejects duplicate translation creation for the same locale', async () => {
     const existingTour = createTourEntity({
       translations: [createTranslationEntity({ languageCode: 'en' })],
