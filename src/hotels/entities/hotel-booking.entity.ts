@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+import { TourPriceBasis } from '../../shared/domain/tour.enums';
 import { TourEntity } from '../../tours/entities/tour.entity';
 import { HotelBookingLineItemEntity } from './hotel-booking-line-item.entity';
 import { HotelBookingLogEntity } from './hotel-booking-log.entity';
@@ -87,8 +88,9 @@ export class HotelBookingEntity {
   currency!: string;
 
   /**
-   * The tour's per-person price when the booking was made, or null when the
-   * tour has no price — a tip-based tour, where the amount is agreed later.
+   * The tour's price when the booking was made, read with `priceBasis`, or null
+   * when the tour has no price — a tip-based tour, where the amount is agreed
+   * later.
    */
   @Column({
     name: 'unit_price_amount',
@@ -98,6 +100,14 @@ export class HotelBookingEntity {
     nullable: true,
   })
   unitPriceAmount!: string | null;
+
+  /**
+   * The tour's price basis when the booking was made. Snapshotted with the
+   * price, because a tour switching basis later must not change what an
+   * existing booking's price meant.
+   */
+  @Column({ name: 'price_basis', type: 'varchar', length: 20, default: 'per_person' })
+  priceBasis!: TourPriceBasis;
 
   /** Sum of the line items. Null while the booking has no priced base. */
   @Column({

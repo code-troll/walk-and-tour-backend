@@ -9,6 +9,7 @@ import {
   HOTEL_BOOKING_CURRENCIES,
   HOTEL_BOOKING_LINE_ITEM_KINDS,
   HOTEL_BOOKING_LOG_TYPES,
+  TOUR_PRICE_BASES,
   HOTEL_BOOKING_STATUSES,
   NEWSLETTER_SUBSCRIPTION_STATUSES,
   SUPPORTED_LANGUAGE_CODES,
@@ -659,6 +660,13 @@ export class PriceResponseDto {
     example: 'EUR',
   })
   currency!: string;
+
+  @ApiProperty({
+    description: 'Whether the amount is charged per person or once for the whole group.',
+    enum: TOUR_PRICE_BASES,
+    example: 'per_person',
+  })
+  basis!: string;
 }
 
 export class TourNextConnectionResponseDto {
@@ -939,7 +947,7 @@ export class TourAdminListResponseDto {
     type: String,
     nullable: true,
     description:
-      "The tour's own price per person. Carried in the list so a screen can " +
+      "The tour's own price, on `priceBasis`. Carried in the list so a screen can " +
       'show what a partner pays by default before any override is set.',
     example: '249.00',
   })
@@ -952,6 +960,13 @@ export class TourAdminListResponseDto {
     example: 'DKK',
   })
   priceCurrency!: string | null;
+
+  @ApiProperty({
+    description: 'Whether `priceAmount` is per person or per group. `per_person` for a tour with no price.',
+    enum: TOUR_PRICE_BASES,
+    example: 'per_person',
+  })
+  priceBasis!: string;
 
 }
 
@@ -1764,7 +1779,7 @@ export class HotelTourGrantResponseDto {
   @ApiPropertyOptional({
     type: String,
     description:
-      "Price per person charged to this partner, in `currency`. Null means the " +
+      "Price charged to this partner, in `currency` and on `priceBasis`. Null means the " +
       "partner pays the tour's own price and keeps following it when the tour " +
       'is repriced, which is not the same as having that number copied here.',
     example: '199.00',
@@ -1775,7 +1790,7 @@ export class HotelTourGrantResponseDto {
   @ApiPropertyOptional({
     type: String,
     description:
-      "The tour's own price per person, so a screen can show what the default " +
+      "The tour's own price, so a screen can show what the default " +
       'is without fetching the tour. Null when the tour has no price at all.',
     example: '249.00',
     nullable: true,
@@ -1790,6 +1805,13 @@ export class HotelTourGrantResponseDto {
     enum: HOTEL_BOOKING_CURRENCIES,
   })
   currency!: string;
+
+  @ApiProperty({
+    description: "Whether both prices are per person or per group. It comes from the tour: a grant changes the amount, never the basis.",
+    enum: TOUR_PRICE_BASES,
+    example: 'per_person',
+  })
+  priceBasis!: string;
 }
 
 export class HotelResponseDto {
@@ -2000,7 +2022,7 @@ export class HotelViewerTourDto {
   @ApiPropertyOptional({
     type: String,
     description:
-      'Price per person this partner is charged, already resolved: the grant ' +
+      'Price this partner is charged, on `priceBasis`, already resolved: the grant ' +
       "price if it has one, the tour's own otherwise. Null when neither has a " +
       'price, which the portal shows as "price on request".',
     example: '199.00',
@@ -2014,6 +2036,13 @@ export class HotelViewerTourDto {
     enum: HOTEL_BOOKING_CURRENCIES,
   })
   currency!: string;
+
+  @ApiProperty({
+    description: "Whether `priceAmount` is per person or per group, taken from the tour.",
+    enum: TOUR_PRICE_BASES,
+    example: 'per_person',
+  })
+  priceBasis!: string;
 }
 
 export class HotelTourStopResponseDto {
@@ -2059,13 +2088,20 @@ export class HotelTourDetailResponseDto {
   @ApiPropertyOptional({
     type: String,
     nullable: true,
-    description: "Price per person for this partner, the grant's or the tour's.",
+    description: "Price for this partner, the grant's or the tour's, on `priceBasis`.",
     example: '199.00',
   })
   priceAmount!: string | null;
 
   @ApiProperty({ enum: HOTEL_BOOKING_CURRENCIES, example: 'DKK' })
   currency!: string;
+
+  @ApiProperty({
+    description: "Whether `priceAmount` is per person or per group, taken from the tour.",
+    enum: TOUR_PRICE_BASES,
+    example: 'per_person',
+  })
+  priceBasis!: string;
 
   @ApiPropertyOptional({ type: Number, nullable: true })
   durationMinutes!: number | null;
@@ -2281,11 +2317,18 @@ export class HotelBookingResponseDto {
   @ApiPropertyOptional({
     type: String,
     description:
-      'Per-person tour price when the booking was made, excluding VAT. Null for a tour with no price.',
+      'Tour price when the booking was made, excluding VAT, on `priceBasis`. Null for a tour with no price.',
     example: '250.00',
     nullable: true,
   })
   unitPriceAmount!: string | null;
+
+  @ApiProperty({
+    description: 'Whether `unitPriceAmount` was per person or per group, snapshotted with it. A per-group price is the whole base line; a per-person one is multiplied by `participantCount`.',
+    enum: TOUR_PRICE_BASES,
+    example: 'per_person',
+  })
+  priceBasis!: string;
 
   @ApiPropertyOptional({
     type: String,

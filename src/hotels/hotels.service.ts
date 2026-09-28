@@ -13,7 +13,7 @@ import { HotelEntity } from './entities/hotel.entity';
 import { resolveTourCurrency } from '../shared/domain/hotel-booking.enums';
 import { HotelBookingEntity } from './entities/hotel-booking.entity';
 import { HotelUsersService } from './hotel-users.service';
-import { HotelStatus } from '../shared/domain';
+import { HotelStatus, TourPriceBasis } from '../shared/domain';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
@@ -23,12 +23,14 @@ export interface HotelTourGrantView {
   tourName: string;
   grantedAt: Date;
   grantedBy: string | null;
-  /** What this partner is charged, per person. Null means the tour's own price. */
+  /** What this partner is charged, on `priceBasis`. Null means the tour's own price. */
   priceAmount: string | null;
   /** The tour's own price, so a screen can show what the default actually is. */
   tourPriceAmount: string | null;
   /** The tour's currency. A grant never sets one; see HotelTourEntity.priceAmount. */
   currency: string;
+  /** The tour's price basis. A grant never sets one either: it only changes the amount. */
+  priceBasis: TourPriceBasis;
 }
 
 export interface HotelView {
@@ -354,6 +356,7 @@ export class HotelsService {
       priceAmount: grant.priceAmount ?? null,
       tourPriceAmount: grant.tour?.priceAmount ?? null,
       currency: resolveTourCurrency(grant.tour?.priceCurrency ?? null),
+      priceBasis: grant.tour?.priceBasis ?? 'per_person',
     }));
   }
 

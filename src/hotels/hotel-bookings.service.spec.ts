@@ -123,6 +123,7 @@ describe('HotelBookingsService', () => {
         id: 'tour-1',
         name: 'Historic Center',
         priceAmount: '250.00',
+        priceBasis: 'per_person',
       } as never);
       bookingsRepository.findOne.mockResolvedValue(buildBooking());
     });
@@ -157,6 +158,55 @@ describe('HotelBookingsService', () => {
           amount: '750.00',
           orderIndex: 0,
         }),
+      );
+    });
+
+    it('charges a per-group price once, whatever the size of the group', async () => {
+      toursRepository.findOne.mockResolvedValue({
+        id: 'tour-1',
+        name: 'Private Boat',
+        priceAmount: '8800.00',
+        priceBasis: 'per_group',
+      } as never);
+
+      await service.create('hotel-1', baseInput({ participantCount: 6 }), hotelActor);
+
+      expect(lineItems.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'base',
+          description: 'Private Boat (group of 6)',
+          amount: '8800.00',
+        }),
+      );
+      expect(managerBookings.create).toHaveBeenCalledWith(
+        expect.objectContaining({ unitPriceAmount: '8800.00', priceBasis: 'per_group' }),
+      );
+    });
+
+    it("charges a partner's per-group price once, on the tour's basis", async () => {
+      hotelToursRepository.findOne.mockResolvedValue({
+        id: 'grant-1',
+        priceAmount: '7000.00',
+      } as never);
+      toursRepository.findOne.mockResolvedValue({
+        id: 'tour-1',
+        name: 'Private Boat',
+        priceAmount: '8800.00',
+        priceBasis: 'per_group',
+      } as never);
+
+      await service.create('hotel-1', baseInput({ participantCount: 4 }), hotelActor);
+
+      expect(lineItems.insert).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: '7000.00' }),
+      );
+    });
+
+    it('snapshots a per-person basis with the price', async () => {
+      await service.create('hotel-1', baseInput(), hotelActor);
+
+      expect(managerBookings.create).toHaveBeenCalledWith(
+        expect.objectContaining({ unitPriceAmount: '250.00', priceBasis: 'per_person' }),
       );
     });
 

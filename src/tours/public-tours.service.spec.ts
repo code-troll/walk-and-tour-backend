@@ -90,6 +90,7 @@ describe('PublicToursService', () => {
         price: {
           amount: 25,
           currency: 'EUR',
+          basis: 'per_person',
         },
         startPoint: {
           shared: { coordinates: { lat: 41.1, lng: 2.1 } },
@@ -278,6 +279,30 @@ describe('PublicToursService', () => {
     );
   });
 
+  it('returns the price with its basis', async () => {
+    languagesRepository.findOne.mockResolvedValue(
+      createLanguageEntity({ code: 'en', isEnabled: true }),
+    );
+    const translation = createTranslationEntity({ languageCode: 'en' });
+    const tour = createPublicTour({
+      tourType: 'private',
+      priceAmount: '1500.00',
+      priceCurrency: 'DKK',
+      priceBasis: 'per_group',
+      translations: [translation],
+    }) as TourEntity;
+    translation.tour = tour;
+    translationsRepository.findOne.mockResolvedValue(translation);
+
+    const result = await service.findOneBySlug('historic-center', 'en');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        price: { amount: 1500, currency: 'DKK', basis: 'per_group' },
+      }),
+    );
+  });
+
   it('rejects tours whose translation payload fails validation', async () => {
     languagesRepository.findOne.mockResolvedValue(
       createLanguageEntity({ code: 'en', isEnabled: true }),
@@ -325,6 +350,7 @@ function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
     contentSchema: { type: 'object' },
     priceAmount: '25.00',
     priceCurrency: 'EUR',
+    priceBasis: 'per_person',
     rating: '4.8',
     reviewCount: 120,
     tourType: 'group',

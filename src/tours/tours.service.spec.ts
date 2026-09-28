@@ -184,6 +184,7 @@ describe('ToursService', () => {
         tourType: 'group',
         priceAmount: '25.00',
         priceCurrency: 'EUR',
+        priceBasis: 'per_person',
         translations: {
           en: {
             isReady: true,
@@ -461,6 +462,65 @@ describe('ToursService', () => {
         tourType: 'company',
       }),
     );
+  });
+
+  describe('price basis', () => {
+    const updatePrice = async (
+      existingOverrides: Partial<TourEntity>,
+      price: { amount: number; currency: string; basis?: 'per_person' | 'per_group' } | null,
+    ) => {
+      const existingTour = createTourEntity({ tourType: 'private', ...existingOverrides });
+
+      toursRepository.findOne
+        .mockResolvedValueOnce(existingTour)
+        .mockResolvedValueOnce(existingTour)
+        .mockResolvedValueOnce(existingTour);
+      toursRepository.save.mockImplementation(async (value) => value as TourEntity);
+      stopsRepository.delete.mockResolvedValue({} as never);
+
+      await service.update('tour-1', { price }, createAdmin());
+    };
+
+    it('stores a per-group price', async () => {
+      await updatePrice({}, { amount: 1500, currency: 'DKK', basis: 'per_group' });
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          priceAmount: '1500.00',
+          priceCurrency: 'DKK',
+          priceBasis: 'per_group',
+        }),
+      );
+    });
+
+    it('keeps the basis a tour already has when a price is sent without one', async () => {
+      await updatePrice({ priceBasis: 'per_group' }, { amount: 1800, currency: 'DKK' });
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ priceAmount: '1800.00', priceBasis: 'per_group' }),
+      );
+    });
+
+    it('falls back to per person when the price is removed', async () => {
+      await updatePrice({ priceBasis: 'per_group' }, null);
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ priceAmount: null, priceBasis: 'per_person' }),
+      );
+    });
+
+    it('returns the basis with the price', async () => {
+      const tour = createTourEntity({ priceBasis: 'per_group' });
+      toursRepository.findOne.mockResolvedValue(tour);
+
+      const result = await service.findOne('tour-1');
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          price: { amount: 25, currency: 'EUR', basis: 'per_group' },
+        }),
+      );
+    });
   });
 
   it('moves a tour earlier when sortOrder is updated and shifts the displaced range', async () => {
@@ -862,6 +922,7 @@ function createTourEntity(overrides: Partial<TourEntity> = {}): TourEntity {
     },
     priceAmount: '25.00',
     priceCurrency: 'EUR',
+    priceBasis: 'per_person',
     rating: '4.80',
     reviewCount: 120,
     tourType: 'group',

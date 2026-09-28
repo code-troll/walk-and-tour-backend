@@ -118,6 +118,7 @@ describe('HotelAuthService', () => {
           tourName: 'Historic Center',
           priceAmount: null,
           currency: 'DKK',
+          priceBasis: 'per_person',
         },
       ]);
     });

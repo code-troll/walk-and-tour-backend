@@ -11,6 +11,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+import { TourPriceBasis } from '../../shared/domain/tour.enums';
 import { MediaAssetEntity } from '../../media/media-asset.entity';
 import { TagEntity } from '../../tags/tag.entity';
 import { TourMediaEntity } from './tour-media.entity';
@@ -49,6 +50,10 @@ export class TourEntity {
 
   @Column({ name: 'price_currency', type: 'varchar', length: 10, nullable: true })
   priceCurrency!: string | null;
+
+  /** Whether `priceAmount` is charged per person or once for the whole group. */
+  @Column({ name: 'price_basis', type: 'varchar', length: 20, default: 'per_person' })
+  priceBasis!: TourPriceBasis;
 
   @Column({ type: 'numeric', precision: 3, scale: 2, nullable: true })
   rating!: string | null;
