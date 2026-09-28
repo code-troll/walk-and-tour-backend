@@ -31,7 +31,7 @@ export class AddTourBookingWidget1775737741752 implements MigrationInterface {
 
     await queryRunner.query(`
       COMMENT ON COLUMN "tour_translations"."booking_reference_id" IS
-        'The booking provider''s product id for this locale: a Turitop service code (P7), or optionally an Understory experience id.'
+        'The booking provider''s product id for this locale, such as a Turitop service code (P7). Understory ignores it.'
     `);
 
     // Until now the frontend embedded Turitop for every translation with a

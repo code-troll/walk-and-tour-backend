@@ -104,7 +104,7 @@ export class PriceDto {
 export class TourBookingDto {
   @ApiPropertyOptional({
     description:
-      'Booking widget the public page embeds. Each translation\'s `bookingReferenceId` is this provider\'s product id: required for `turitop`, optional for `understory`, where it names one experience. Set `null` to remove it, which also requires `enabled` to be false. When omitted, the tour keeps its provider.',
+      'Booking widget the public page embeds. Each translation\'s `bookingReferenceId` is this provider\'s product id: required for `turitop`; `understory` ignores it. Set `null` to remove it, which also requires `enabled` to be false. When omitted, the tour keeps its provider.',
     enum: TOUR_BOOKING_PROVIDERS,
     example: 'turitop',
     nullable: true,

@@ -706,7 +706,7 @@ export class PublicTourBookingResponseDto {
   @ApiPropertyOptional({
     type: String,
     description:
-      "The provider's product id for the requested locale. Always set for `turitop`; for `understory` it is an optional experience id, null to show the whole storefront.",
+      "The provider's product id for the requested locale. Always set for `turitop`; always null for `understory`, which shows the partner's whole storefront.",
     nullable: true,
     example: 'P7',
   })
@@ -844,7 +844,7 @@ export class TourAdminTranslationResponseDto {
 
   @ApiPropertyOptional({
     type: String,
-    description: "The booking provider's product id for the locale, if any: a Turitop service code such as `P7`, or an optional Understory experience id.",
+    description: "The booking provider's product id for the locale, if any: a Turitop service code such as `P7`. Understory ignores it.",
     nullable: true,
     example: 'P7',
   })

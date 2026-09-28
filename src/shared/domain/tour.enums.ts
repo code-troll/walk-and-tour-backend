@@ -34,17 +34,18 @@ export type TourBookingProvider = (typeof TOUR_BOOKING_PROVIDERS)[number];
 
 /**
  * What each provider needs besides its name. `settingKeys` are stored on the
- * tour and are all required once the widget is enabled. A provider that
- * requires a product id shows the widget only in locales whose
- * `bookingReferenceId` is set; for Understory it is optional and names one
- * experience within the storefront.
+ * tour and are all required once the widget is enabled. A provider that uses
+ * product ids shows the widget only in locales whose `bookingReferenceId` is
+ * set (a Turitop service is one language). Understory ignores them: it shows
+ * the partner's whole storefront and takes the language separately, so the
+ * codes a tour kept from Turitop never reach it.
  */
 export const TOUR_BOOKING_PROVIDER_RULES: Record<
   TourBookingProvider,
-  { settingKeys: readonly string[]; requiresProductId: boolean }
+  { settingKeys: readonly string[]; usesProductId: boolean }
 > = {
-  turitop: { settingKeys: [], requiresProductId: true },
-  understory: { settingKeys: ['companyId', 'storefrontId'], requiresProductId: false },
+  turitop: { settingKeys: [], usesProductId: true },
+  understory: { settingKeys: ['companyId', 'storefrontId'], usesProductId: false },
 };
 
 export type TourCommuteMode = (typeof TOUR_COMMUTE_MODES)[number];

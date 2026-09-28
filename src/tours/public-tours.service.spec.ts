@@ -345,6 +345,18 @@ describe('PublicToursService', () => {
       );
     });
 
+    it('ignores the Turitop codes an Understory tour kept', async () => {
+      const settings = { companyId: 'company-1', storefrontId: 'storefront-1' };
+      const result = await findWithBooking(
+        { bookingProvider: 'understory', bookingEnabled: true, bookingSettings: settings },
+        'historic-center-en',
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({ booking: { provider: 'understory', productId: null, settings } }),
+      );
+    });
+
     it('returns no booking when the locale has no product id', async () => {
       const result = await findWithBooking({ bookingProvider: 'turitop', bookingEnabled: true }, '  ');
 

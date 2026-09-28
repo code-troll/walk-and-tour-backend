@@ -855,7 +855,7 @@ Public tour response includes:
 - localized `translation`
 - localized `itinerary`
 - localized tag labels for the requested locale
-- `booking`: `{ provider, productId, settings }` for the widget to embed, or `null` when the tour's widget is disabled or the locale lacks a `bookingReferenceId` its provider requires (Turitop does, Understory does not); the site then offers the booking-request form
+- `booking`: `{ provider, productId, settings }` for the widget to embed, or `null` when the tour's widget is disabled or its provider uses product ids and the locale has no `bookingReferenceId` (Turitop does; Understory ignores it and `productId` is null); the site then offers the booking-request form
 
 ### 7.2 Public Blog Posts
 

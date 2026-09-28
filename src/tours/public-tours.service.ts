@@ -278,15 +278,16 @@ export class PublicToursService {
   }
 
   // Null whenever the page should show the booking-request form instead: the
-  // widget is off, or this locale lacks a product id the provider requires.
+  // widget is off, or its provider uses product ids and this locale has none.
   private toPublicBooking(tour: TourEntity, translation: TourTranslationEntity) {
-    const productId = translation.bookingReferenceId?.trim() || null;
+    if (!tour.bookingEnabled || !tour.bookingProvider) {
+      return null;
+    }
 
-    if (
-      !tour.bookingEnabled ||
-      !tour.bookingProvider ||
-      (TOUR_BOOKING_PROVIDER_RULES[tour.bookingProvider].requiresProductId && !productId)
-    ) {
+    const usesProductId = TOUR_BOOKING_PROVIDER_RULES[tour.bookingProvider].usesProductId;
+    const productId = usesProductId ? translation.bookingReferenceId?.trim() || null : null;
+
+    if (usesProductId && !productId) {
       return null;
     }
 
