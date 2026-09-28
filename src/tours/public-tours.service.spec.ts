@@ -258,6 +258,27 @@ describe('PublicToursService', () => {
     );
   });
 
+  it('returns a private tour that has no fixed price, with a null price', async () => {
+    languagesRepository.findOne.mockResolvedValue(
+      createLanguageEntity({ code: 'en', isEnabled: true }),
+    );
+    const translation = createTranslationEntity({ languageCode: 'en' });
+    const tour = createPublicTour({
+      tourType: 'private',
+      priceAmount: null,
+      priceCurrency: null,
+      translations: [translation],
+    }) as TourEntity;
+    translation.tour = tour;
+    translationsRepository.findOne.mockResolvedValue(translation);
+
+    const result = await service.findOneBySlug('historic-center', 'en');
+
+    expect(result).toEqual(
+      expect.objectContaining({ tourType: 'private', price: null }),
+    );
+  });
+
   it('returns the price with its basis', async () => {
     languagesRepository.findOne.mockResolvedValue(
       createLanguageEntity({ code: 'en', isEnabled: true }),

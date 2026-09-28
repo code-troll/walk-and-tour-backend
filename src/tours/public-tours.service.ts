@@ -330,10 +330,6 @@ export class PublicToursService {
       return null;
     }
 
-    if (tour.tourType !== 'tip_based' && (!tour.priceAmount || !tour.priceCurrency)) {
-      return 'non-tip-based tour missing price';
-    }
-
     if (tour.tourType === 'tip_based' && (tour.priceAmount || tour.priceCurrency)) {
       return 'tip-based tour should not have a price';
     }

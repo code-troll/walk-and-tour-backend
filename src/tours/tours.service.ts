@@ -1245,10 +1245,6 @@ export class ToursService {
       blockers.push('Duration is not set.');
     }
 
-    if (tour.tourType !== 'company' && tour.tourType !== 'tip_based' && (!tour.priceAmount || !tour.priceCurrency)) {
-      blockers.push('Price and currency are required for this tour type.');
-    }
-
     if (tour.tourType === 'tip_based' && (tour.priceAmount || tour.priceCurrency)) {
       blockers.push('Tip-based tours must not have a fixed price.');
     }
