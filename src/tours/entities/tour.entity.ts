@@ -11,7 +11,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { TourPriceBasis } from '../../shared/domain/tour.enums';
+import { TourBookingProvider, TourPriceBasis } from '../../shared/domain/tour.enums';
 import { MediaAssetEntity } from '../../media/media-asset.entity';
 import { TagEntity } from '../../tags/tag.entity';
 import { TourMediaEntity } from './tour-media.entity';
@@ -54,6 +54,13 @@ export class TourEntity {
   /** Whether `priceAmount` is charged per person or once for the whole group. */
   @Column({ name: 'price_basis', type: 'varchar', length: 20, default: 'per_person' })
   priceBasis!: TourPriceBasis;
+
+  /** Booking widget shown on the public page. Kept while disabled, so switching it back on needs no reconfiguration. */
+  @Column({ name: 'booking_provider', type: 'varchar', length: 30, nullable: true })
+  bookingProvider!: TourBookingProvider | null;
+
+  @Column({ name: 'booking_enabled', type: 'boolean', default: false })
+  bookingEnabled!: boolean;
 
   @Column({ type: 'numeric', precision: 3, scale: 2, nullable: true })
   rating!: string | null;

@@ -234,6 +234,7 @@ export class PublicToursService {
               basis: tour.priceBasis,
             }
           : null,
+      booking: this.toPublicBooking(tour, translation),
       rating: Number(tour.rating),
       reviewCount: tour.reviewCount,
       tourType: tour.tourType,
@@ -272,6 +273,21 @@ export class PublicToursService {
         payload,
       },
       itinerary,
+    };
+  }
+
+  // Null whenever the page should show the booking-request form instead: the
+  // widget is off, or this locale has no product id for the provider.
+  private toPublicBooking(tour: TourEntity, translation: TourTranslationEntity) {
+    const productId = translation.bookingReferenceId?.trim();
+
+    if (!tour.bookingEnabled || !tour.bookingProvider || !productId) {
+      return null;
+    }
+
+    return {
+      provider: tour.bookingProvider,
+      productId,
     };
   }
 

@@ -27,8 +27,8 @@ export class CreateTourTranslationDto {
 
   @ApiPropertyOptional({
     type: String,
-    description: 'Optional external booking reference for this locale. Set `null` to clear it on update.',
-    example: 'booking-ref-123',
+    description: "Optional booking provider product id for this locale, such as a Turitop service code (`P7`). Set `null` to clear it on update.",
+    example: 'P7',
     nullable: true,
   })
   @IsString()
@@ -69,8 +69,8 @@ export class UpdateTourTranslationDto {
 
   @ApiPropertyOptional({
     type: String,
-    description: 'Updated external booking reference for this locale. Set `null` to clear it.',
-    example: 'booking-ref-123',
+    description: "Updated booking provider product id for this locale. Set `null` to clear it.",
+    example: 'P7',
     nullable: true,
   })
   @IsString()
@@ -90,8 +90,8 @@ export class UpdateTourTranslationDto {
 export class PublishTourTranslationDto {
   @ApiPropertyOptional({
     type: String,
-    description: 'Optional external booking reference override applied before publishing. Set `null` to clear it.',
-    example: 'booking-ref-123',
+    description: "Optional booking provider product id override applied before publishing. Set `null` to clear it.",
+    example: 'P7',
     nullable: true,
   })
   @IsString()

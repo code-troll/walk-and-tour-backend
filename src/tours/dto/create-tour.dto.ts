@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsBoolean,
   IsIn,
   IsInt,
   IsNumber,
@@ -15,7 +16,14 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 
-import { TOUR_COMMUTE_MODES, TOUR_PRICE_BASES, TOUR_TYPES, TourPriceBasis } from '../../shared/domain';
+import {
+  TOUR_BOOKING_PROVIDERS,
+  TOUR_COMMUTE_MODES,
+  TOUR_PRICE_BASES,
+  TOUR_TYPES,
+  TourBookingProvider,
+  TourPriceBasis,
+} from '../../shared/domain';
 const STOP_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export class TourCoordinatesDto {
@@ -91,6 +99,28 @@ export class PriceDto {
   @IsIn(TOUR_PRICE_BASES)
   @IsOptional()
   basis?: TourPriceBasis;
+}
+
+export class TourBookingDto {
+  @ApiPropertyOptional({
+    description:
+      'Booking widget the public page embeds. Each translation\'s `bookingReferenceId` is this provider\'s product id. Set `null` to remove it, which also requires `enabled` to be false. When omitted, the tour keeps its provider.',
+    enum: TOUR_BOOKING_PROVIDERS,
+    example: 'turitop',
+    nullable: true,
+  })
+  @IsIn(TOUR_BOOKING_PROVIDERS)
+  @IsOptional()
+  provider?: TourBookingProvider | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Whether the public page shows the widget. Enabling it requires a provider. Disabling it keeps the provider. When omitted, the tour keeps its current state.',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  enabled?: boolean;
 }
 
 export class TourItineraryConnectionDto {

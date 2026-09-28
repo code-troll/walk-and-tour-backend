@@ -303,6 +303,43 @@ describe('PublicToursService', () => {
     );
   });
 
+  describe('booking widget', () => {
+    const findWithBooking = async (
+      tourOverrides: Partial<TourEntity>,
+      bookingReferenceId: string | null,
+    ) => {
+      languagesRepository.findOne.mockResolvedValue(
+        createLanguageEntity({ code: 'en', isEnabled: true }),
+      );
+      const translation = createTranslationEntity({ languageCode: 'en', bookingReferenceId });
+      const tour = createPublicTour({ ...tourOverrides, translations: [translation] }) as TourEntity;
+      translation.tour = tour;
+      translationsRepository.findOne.mockResolvedValue(translation);
+
+      return service.findOneBySlug('historic-center', 'en');
+    };
+
+    it('returns the provider and the locale product id when the widget is enabled', async () => {
+      const result = await findWithBooking({ bookingProvider: 'turitop', bookingEnabled: true }, ' P7 ');
+
+      expect(result).toEqual(
+        expect.objectContaining({ booking: { provider: 'turitop', productId: 'P7' } }),
+      );
+    });
+
+    it('returns no booking when the widget is disabled', async () => {
+      const result = await findWithBooking({ bookingProvider: 'turitop', bookingEnabled: false }, 'P7');
+
+      expect(result).toEqual(expect.objectContaining({ booking: null }));
+    });
+
+    it('returns no booking when the locale has no product id', async () => {
+      const result = await findWithBooking({ bookingProvider: 'turitop', bookingEnabled: true }, '  ');
+
+      expect(result).toEqual(expect.objectContaining({ booking: null }));
+    });
+  });
+
   it('rejects tours whose translation payload fails validation', async () => {
     languagesRepository.findOne.mockResolvedValue(
       createLanguageEntity({ code: 'en', isEnabled: true }),
@@ -351,6 +388,8 @@ function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
     priceAmount: '25.00',
     priceCurrency: 'EUR',
     priceBasis: 'per_person',
+    bookingProvider: null,
+    bookingEnabled: false,
     rating: '4.8',
     reviewCount: 120,
     tourType: 'group',

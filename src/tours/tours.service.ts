@@ -12,7 +12,7 @@ import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface'
 import { LanguageEntity } from '../languages/language.entity';
 import { MediaAssetEntity } from '../media/media-asset.entity';
 import { getProviderConfig } from '../shared/config/provider.config';
-import { TOUR_TYPES, TourPriceBasis } from '../shared/domain';
+import { TOUR_TYPES, TourBookingProvider, TourPriceBasis } from '../shared/domain';
 import { TagEntity } from '../tags/tag.entity';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { AdminListToursDto } from './dto/list-tours.dto';
@@ -133,6 +133,8 @@ export class ToursService {
       priceAmount: null,
       priceCurrency: null,
       priceBasis: 'per_person',
+      bookingProvider: null,
+      bookingEnabled: false,
       rating: null,
       reviewCount: null,
       tourType: dto.tourType,
@@ -159,6 +161,7 @@ export class ToursService {
 
     const aggregate = await this.buildSharedAggregate(dto, existing);
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);
+    const booking = this.resolveBooking(dto.booking, existing);
 
     existing.name = aggregate.name;
     existing.contentSchema = aggregate.contentSchema;
@@ -167,6 +170,8 @@ export class ToursService {
     // A tour without a price has no basis to speak of, so it falls back to the
     // default rather than keeping one a later price would silently inherit.
     existing.priceBasis = aggregate.price?.basis ?? 'per_person';
+    existing.bookingProvider = booking.provider;
+    existing.bookingEnabled = booking.enabled;
     existing.rating = aggregate.rating !== null ? aggregate.rating.toFixed(2) : null;
     existing.reviewCount = aggregate.reviewCount;
     existing.tourType = aggregate.tourType;
@@ -908,6 +913,25 @@ export class ToursService {
     };
   }
 
+  private resolveBooking(
+    source: UpdateTourDto['booking'],
+    existing: TourEntity,
+  ): { provider: TourBookingProvider | null; enabled: boolean } {
+    if (source === null) {
+      return { provider: null, enabled: false };
+    }
+
+    const provider =
+      source && 'provider' in source ? (source.provider ?? null) : existing.bookingProvider;
+    const enabled = source?.enabled ?? existing.bookingEnabled;
+
+    if (enabled && !provider) {
+      throw new BadRequestException('A booking widget needs a provider before it can be enabled.');
+    }
+
+    return { provider, enabled };
+  }
+
   private getExistingPrice(
     existing: TourEntity | undefined,
   ): TourSharedInput['price'] {
@@ -1083,6 +1107,10 @@ export class ToursService {
               basis: tour.priceBasis,
             }
           : null,
+      booking: {
+        provider: tour.bookingProvider,
+        enabled: tour.bookingEnabled,
+      },
       rating: tour.rating !== null ? Number(tour.rating) : null,
       reviewCount: tour.reviewCount,
       tourType: tour.tourType,
