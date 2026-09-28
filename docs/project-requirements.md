@@ -338,7 +338,7 @@ Exact route names, DTO shapes, and module boundaries are implementation details.
 - Tour public-availability validation must require the shared tour data to be valid and the locale to be `ready`, `published`, with all schema-required localized fields present and valid before that locale is publicly available.
 - Locale publish operations must be rejected when required localized fields are missing or invalid.
 - Tour locale publication validation must require `highlights`, `included`, and `notIncluded` to be present as ordered string lists before that locale can be published.
-- Tour pricing validation must require a single amount and currency for paid tours, and must require `tip_based` tours to omit a fixed price amount.
+- A fixed price is optional for every tour type except `tip_based`, which must omit it. When a tour has one, it must carry a single amount and currency. A tour without a price can still be published and reads as price on request.
 - Optional tour fields do not block publication when omitted, but if they are provided the backend must validate their declared type and shape.
 - Tour validation must enforce rating range, review count, itinerary variant rules, ordered single-path integrity for stop-based itineraries, tag membership against stored `Tag.key` records, and the allowed enums for tour type, cancellation type, and itinerary connection commute mode.
 - Stop-based itinerary validation must enforce that each stop has a localized title and description, while duration and coordinates remain optional.
