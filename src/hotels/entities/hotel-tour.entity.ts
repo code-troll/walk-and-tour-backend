@@ -44,7 +44,7 @@ export class HotelTourEntity {
   grantedAt!: Date;
 
   /**
-   * What this tour costs this partner, per person.
+   * What this tour costs this partner, on the tour's own price basis.
    *
    * Null is not "free" and not "unknown": it means the grant has no opinion and
    * the tour's own price applies. That is the difference between a default and

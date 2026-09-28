@@ -20,7 +20,7 @@ export class HotelTourGrantInputDto {
 
   @ApiPropertyOptional({
     description:
-      "Price per person for this partner, in the tour's own currency. Omit it, " +
+      "Price for this partner, in the tour's own currency and on its price basis. Omit it, " +
       "or send null, to charge the tour's own price — which is not the same as " +
       'copying that price, because the partner then follows it when the tour is ' +
       'repriced.',

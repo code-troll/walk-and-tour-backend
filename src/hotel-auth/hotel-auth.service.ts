@@ -54,6 +54,7 @@ export class HotelAuthService {
         tourName: grant.tour?.name ?? '',
         priceAmount: grant.priceAmount ?? grant.tour?.priceAmount ?? null,
         currency: resolveTourCurrency(grant.tour?.priceCurrency ?? null),
+        priceBasis: grant.tour?.priceBasis ?? 'per_person',
       })),
     };
   }

@@ -572,7 +572,7 @@ Patch request shape:
 - `name`
 - `slug`
 - `contentSchema`
-- `price?`
+- `price?`: `{ amount, currency, basis? }`, where `basis` is `per_person` or `per_group`. Omitting `basis` keeps the tour's current one; `null` removes the price and resets the basis to `per_person`.
 - `rating`
 - `reviewCount`
 - `tourType`

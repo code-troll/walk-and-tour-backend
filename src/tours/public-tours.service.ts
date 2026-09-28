@@ -231,6 +231,7 @@ export class PublicToursService {
           ? {
               amount: Number(tour.priceAmount),
               currency: tour.priceCurrency,
+              basis: tour.priceBasis,
             }
           : null,
       rating: Number(tour.rating),

@@ -12,7 +12,7 @@ import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface'
 import { LanguageEntity } from '../languages/language.entity';
 import { MediaAssetEntity } from '../media/media-asset.entity';
 import { getProviderConfig } from '../shared/config/provider.config';
-import { TOUR_TYPES } from '../shared/domain';
+import { TOUR_TYPES, TourPriceBasis } from '../shared/domain';
 import { TagEntity } from '../tags/tag.entity';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { AdminListToursDto } from './dto/list-tours.dto';
@@ -45,7 +45,7 @@ const TOUR_SORT_ORDER_CONSTRAINT = 'UQ_tours_sort_order';
 interface TourSharedInput {
   name: string;
   contentSchema: Record<string, unknown> | null;
-  price: { amount: number; currency: string } | null;
+  price: { amount: number; currency: string; basis: TourPriceBasis } | null;
   rating: number | null;
   reviewCount: number | null;
   tourType: string;
@@ -132,6 +132,7 @@ export class ToursService {
       contentSchema: null,
       priceAmount: null,
       priceCurrency: null,
+      priceBasis: 'per_person',
       rating: null,
       reviewCount: null,
       tourType: dto.tourType,
@@ -163,6 +164,9 @@ export class ToursService {
     existing.contentSchema = aggregate.contentSchema;
     existing.priceAmount = aggregate.price ? aggregate.price.amount.toFixed(2) : null;
     existing.priceCurrency = aggregate.price?.currency ?? null;
+    // A tour without a price has no basis to speak of, so it falls back to the
+    // default rather than keeping one a later price would silently inherit.
+    existing.priceBasis = aggregate.price?.basis ?? 'per_person';
     existing.rating = aggregate.rating !== null ? aggregate.rating.toFixed(2) : null;
     existing.reviewCount = aggregate.reviewCount;
     existing.tourType = aggregate.tourType;
@@ -490,7 +494,11 @@ export class ToursService {
         source.price === null
           ? null
           : source.price
-            ? source.price
+            ? {
+                amount: source.price.amount,
+                currency: source.price.currency,
+                basis: source.price.basis ?? existing?.priceBasis ?? 'per_person',
+              }
             : this.getExistingPrice(existing),
       rating:
         source.rating !== undefined
@@ -902,7 +910,7 @@ export class ToursService {
 
   private getExistingPrice(
     existing: TourEntity | undefined,
-  ): { amount: number; currency: string } | null {
+  ): TourSharedInput['price'] {
     if (!existing?.priceAmount || !existing.priceCurrency) {
       return null;
     }
@@ -910,6 +918,7 @@ export class ToursService {
     return {
       amount: Number(existing.priceAmount),
       currency: existing.priceCurrency,
+      basis: existing.priceBasis,
     };
   }
 
@@ -1071,6 +1080,7 @@ export class ToursService {
           ? {
               amount: Number(tour.priceAmount),
               currency: tour.priceCurrency,
+              basis: tour.priceBasis,
             }
           : null,
       rating: tour.rating !== null ? Number(tour.rating) : null,
@@ -1132,6 +1142,7 @@ export class ToursService {
       // show what the partner would pay by default, without a request per tour.
       priceAmount: tour.priceAmount,
       priceCurrency: tour.priceCurrency,
+      priceBasis: tour.priceBasis,
       translations,
       audit: {
         createdBy: tour.createdBy,

@@ -173,6 +173,7 @@ describe('HotelsService', () => {
           priceAmount: null,
           tourPriceAmount: null,
           currency: 'DKK',
+          priceBasis: 'per_person',
         },
       ]);
     });

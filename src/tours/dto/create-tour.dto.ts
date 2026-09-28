@@ -15,7 +15,7 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 
-import { TOUR_COMMUTE_MODES, TOUR_TYPES } from '../../shared/domain';
+import { TOUR_COMMUTE_MODES, TOUR_PRICE_BASES, TOUR_TYPES, TourPriceBasis } from '../../shared/domain';
 const STOP_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export class TourCoordinatesDto {
@@ -81,6 +81,16 @@ export class PriceDto {
   @IsString()
   @MaxLength(10)
   currency!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Whether the amount is charged per person or once for the whole group. When omitted, the tour keeps the basis it has, which is `per_person` for a tour that had no price.',
+    enum: TOUR_PRICE_BASES,
+    example: 'per_person',
+  })
+  @IsIn(TOUR_PRICE_BASES)
+  @IsOptional()
+  basis?: TourPriceBasis;
 }
 
 export class TourItineraryConnectionDto {

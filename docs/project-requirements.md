@@ -161,6 +161,7 @@ The implementation may refine naming, but the following domain concepts are requ
 - Temporary visibility control for hiding a published tour from public APIs
 - Price amount for paid tours
 - Currency for paid tours
+- Price basis for paid tours: `per_person` or `per_group`
 - Rating as a decimal value from 1.0 to 5.0
 - Number of reviews as an admin-managed count
 - Tour type such as private, group, tip-based, or company
@@ -371,7 +372,7 @@ The MVP requirements are met when the backend supports the following outcomes:
 - A tour can use a UUID as its canonical internal identifier while preserving human-readable slugs and any legacy source keys separately for import mapping.
 - A tour translation can optionally include a locale-specific `bookingReferenceId` without changing the localized payload contract.
 - A tour translation with `highlights`, `included`, and `notIncluded` populated can be published when its other locale requirements are satisfied.
-- A paid tour can define a single fixed amount and currency, while a `tip_based` tour can be created without a fixed price amount.
+- A paid tour can define a single fixed amount and currency, charged per person or once per group, while a `tip_based` tour can be created without a fixed price amount.
 - A tour rating and review count can be managed by admins without requiring an external reviews integration.
 - A tour locale is only exposed publicly when its translation is `ready`, `published`, and its payload satisfies the tour schema.
 - A tour locale cannot be published if any of `highlights`, `included`, or `notIncluded` is missing.

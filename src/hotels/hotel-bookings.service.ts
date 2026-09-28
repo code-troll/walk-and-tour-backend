@@ -79,6 +79,7 @@ export class HotelBookingsService {
       status: booking.status,
       currency: booking.currency,
       unitPriceAmount: booking.unitPriceAmount,
+      priceBasis: booking.priceBasis,
       totalAmount: booking.totalAmount,
       isEstimate: booking.invoicedAt === null,
       cancellationReason: booking.cancellationReason,
@@ -211,6 +212,7 @@ export class HotelBookingsService {
           // tour priced at 199 EUR produced a booking that said 199 DKK.
           currency: resolveTourCurrency(tour.priceCurrency),
           unitPriceAmount,
+          priceBasis: tour.priceBasis,
           totalAmount: null,
           createdByHotelUserId: actor.hotelUserId ?? null,
           createdByAdminUserId: actor.adminUserId ?? null,
@@ -220,12 +222,18 @@ export class HotelBookingsService {
       // The tour itself is a line item, so the total is the sum of the lines
       // under one rule. A tour with no price starts with no base line, and the
       // booking reads as "price on request" until an administrator adds one.
+      // A per-group price is the whole base line, whatever the group's size.
       if (unitPriceAmount !== null) {
+        const isPerGroup = tour.priceBasis === 'per_group';
         await manager.getRepository(HotelBookingLineItemEntity).insert({
           bookingId: booking.id,
           kind: 'base',
-          description: `${tour.name} × ${input.participantCount}`,
-          amount: multiplyAmount(unitPriceAmount, input.participantCount),
+          description: isPerGroup
+            ? `${tour.name} (group of ${input.participantCount})`
+            : `${tour.name} × ${input.participantCount}`,
+          amount: isPerGroup
+            ? unitPriceAmount
+            : multiplyAmount(unitPriceAmount, input.participantCount),
           orderIndex: 0,
           createdBy: actor.hotelUserId ?? actor.adminUserId ?? null,
         });

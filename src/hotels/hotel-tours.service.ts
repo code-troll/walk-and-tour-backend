@@ -2,7 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, Repository } from 'typeorm';
 
-import { resolveTourCurrency } from '../shared/domain';
+import { resolveTourCurrency, TourPriceBasis } from '../shared/domain';
 import { STORAGE_SERVICE, StorageService } from '../storage/storage-service.interface';
 import { TourEntity } from '../tours/entities/tour.entity';
 import { HotelTourEntity } from './entities/hotel-tour.entity';
@@ -27,9 +27,10 @@ export interface HotelTourStopView {
 export interface HotelTourDetailView {
   tourId: string;
   name: string;
-  /** What the guest is quoted, per person. Null when the tour has no price. */
+  /** What the guest is quoted, on `priceBasis`. Null when the tour has no price. */
   priceAmount: string | null;
   currency: string;
+  priceBasis: TourPriceBasis;
   durationMinutes: number | null;
   tourType: string | null;
   /** The locale the content below is actually written in — see findGranted. */
@@ -171,6 +172,7 @@ export class HotelToursService {
       name: tour.name,
       priceAmount: grantPriceAmount ?? tour.priceAmount,
       currency: resolveTourCurrency(tour.priceCurrency),
+      priceBasis: tour.priceBasis,
       durationMinutes: tour.durationMinutes ?? null,
       tourType: tour.tourType ?? null,
       locale,
