@@ -189,15 +189,22 @@
       "additionalProperties": false,
       "required": [
         "provider",
-        "enabled"
+        "enabled",
+        "settings"
       ],
       "properties": {
         "provider": {
           "type": ["string", "null"],
-          "enum": ["turitop", null]
+          "enum": ["turitop", "understory", null]
         },
         "enabled": {
           "type": "boolean"
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },

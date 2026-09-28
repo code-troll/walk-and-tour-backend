@@ -570,7 +570,7 @@ describe('ToursService', () => {
       await updateBooking({ bookingProvider: 'turitop', bookingEnabled: true }, null);
 
       expect(toursRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ bookingProvider: null, bookingEnabled: false }),
+        expect.objectContaining({ bookingProvider: null, bookingEnabled: false, bookingSettings: {} }),
       );
     });
 
@@ -593,7 +593,59 @@ describe('ToursService', () => {
       const result = await service.findOne('tour-1');
 
       expect(result).toEqual(
-        expect.objectContaining({ booking: { provider: 'turitop', enabled: false } }),
+        expect.objectContaining({ booking: { provider: 'turitop', enabled: false, settings: {} } }),
+      );
+    });
+
+    const understorySettings = { companyId: 'company-1', storefrontId: 'storefront-1' };
+
+    it('enables Understory with its account settings, trimmed', async () => {
+      await updateBooking({}, {
+        provider: 'understory',
+        enabled: true,
+        settings: { companyId: ' company-1 ', storefrontId: 'storefront-1' },
+      });
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bookingProvider: 'understory',
+          bookingEnabled: true,
+          bookingSettings: understorySettings,
+        }),
+      );
+    });
+
+    it('rejects enabling Understory without its storefront', async () => {
+      await expect(
+        updateBooking({}, { provider: 'understory', enabled: true, settings: { companyId: 'company-1' } }),
+      ).rejects.toThrow('The understory widget needs storefrontId before it can be enabled.');
+    });
+
+    it('rejects a setting the provider does not take', async () => {
+      await expect(
+        updateBooking({}, { provider: 'turitop', settings: { companyId: 'company-1' } }),
+      ).rejects.toThrow('Booking setting "companyId" does not apply to turitop.');
+    });
+
+    it('keeps the settings when the update leaves them out', async () => {
+      await updateBooking(
+        { bookingProvider: 'understory', bookingEnabled: true, bookingSettings: understorySettings },
+        { enabled: false },
+      );
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ bookingEnabled: false, bookingSettings: understorySettings }),
+      );
+    });
+
+    it('drops the settings when the provider changes', async () => {
+      await updateBooking(
+        { bookingProvider: 'understory', bookingEnabled: true, bookingSettings: understorySettings },
+        { provider: 'turitop' },
+      );
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ bookingProvider: 'turitop', bookingSettings: {} }),
       );
     });
   });
@@ -1000,6 +1052,7 @@ function createTourEntity(overrides: Partial<TourEntity> = {}): TourEntity {
     priceBasis: 'per_person',
     bookingProvider: null,
     bookingEnabled: false,
+    bookingSettings: {},
     rating: '4.80',
     reviewCount: 120,
     tourType: 'group',

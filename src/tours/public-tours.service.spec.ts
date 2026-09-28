@@ -323,7 +323,7 @@ describe('PublicToursService', () => {
       const result = await findWithBooking({ bookingProvider: 'turitop', bookingEnabled: true }, ' P7 ');
 
       expect(result).toEqual(
-        expect.objectContaining({ booking: { provider: 'turitop', productId: 'P7' } }),
+        expect.objectContaining({ booking: { provider: 'turitop', productId: 'P7', settings: {} } }),
       );
     });
 
@@ -331,6 +331,18 @@ describe('PublicToursService', () => {
       const result = await findWithBooking({ bookingProvider: 'turitop', bookingEnabled: false }, 'P7');
 
       expect(result).toEqual(expect.objectContaining({ booking: null }));
+    });
+
+    it('returns Understory without a product id, with its account settings', async () => {
+      const settings = { companyId: 'company-1', storefrontId: 'storefront-1' };
+      const result = await findWithBooking(
+        { bookingProvider: 'understory', bookingEnabled: true, bookingSettings: settings },
+        null,
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({ booking: { provider: 'understory', productId: null, settings } }),
+      );
     });
 
     it('returns no booking when the locale has no product id', async () => {
@@ -390,6 +402,7 @@ function createPublicTour(overrides: Partial<TourEntity> = {}): TourEntity {
     priceBasis: 'per_person',
     bookingProvider: null,
     bookingEnabled: false,
+    bookingSettings: {},
     rating: '4.8',
     reviewCount: 120,
     tourType: 'group',

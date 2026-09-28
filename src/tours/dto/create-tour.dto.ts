@@ -104,7 +104,7 @@ export class PriceDto {
 export class TourBookingDto {
   @ApiPropertyOptional({
     description:
-      'Booking widget the public page embeds. Each translation\'s `bookingReferenceId` is this provider\'s product id. Set `null` to remove it, which also requires `enabled` to be false. When omitted, the tour keeps its provider.',
+      'Booking widget the public page embeds. Each translation\'s `bookingReferenceId` is this provider\'s product id: required for `turitop`, optional for `understory`, where it names one experience. Set `null` to remove it, which also requires `enabled` to be false. When omitted, the tour keeps its provider.',
     enum: TOUR_BOOKING_PROVIDERS,
     example: 'turitop',
     nullable: true,
@@ -121,6 +121,17 @@ export class TourBookingDto {
   @IsBoolean()
   @IsOptional()
   enabled?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Provider settings, all strings. `turitop` takes none; `understory` takes `companyId` and `storefrontId`, both required once the widget is enabled. Replaces the stored settings. When omitted, the tour keeps them, unless the provider changes, which clears them.',
+    type: 'object',
+    additionalProperties: { type: 'string', maxLength: 100 },
+    example: { companyId: '4a0fbe7f6af34bffac943578ffbfa0e4', storefrontId: 'bd88f0cea152483c9a45b8b4437b85ca' },
+  })
+  @IsObject()
+  @IsOptional()
+  settings?: Record<string, string>;
 }
 
 export class TourItineraryConnectionDto {

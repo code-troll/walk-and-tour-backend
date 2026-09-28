@@ -18,6 +18,24 @@ describe('TourBookingDto', () => {
     expect(errors).toEqual([]);
   });
 
+  it('accepts Understory with its settings', async () => {
+    const errors = await validate(
+      plainToInstance(TourBookingDto, {
+        provider: 'understory',
+        enabled: true,
+        settings: { companyId: 'company-1', storefrontId: 'storefront-1' },
+      }),
+    );
+
+    expect(errors).toEqual([]);
+  });
+
+  it('rejects settings that are not an object', async () => {
+    const errors = await validate(plainToInstance(TourBookingDto, { settings: 'company-1' }));
+
+    expect(errors.map((error) => error.property)).toEqual(['settings']);
+  });
+
   it('rejects a provider it does not know', async () => {
     const errors = await validate(plainToInstance(TourBookingDto, { provider: 'bokun' }));
 

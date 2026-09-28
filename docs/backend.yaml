@@ -7427,14 +7427,24 @@ components:
           description: Booking widget to embed.
           enum:
             - turitop
+            - understory
           example: turitop
         productId:
           type: string
-          description: The provider's product id for the requested locale.
+          description: >-
+            The provider's product id for the requested locale. Always set for `turitop`; for `understory` it is an
+            optional experience id, null to show the whole storefront.
+          nullable: true
           example: P7
+        settings:
+          type: object
+          description: Provider settings the widget needs. `understory` has `companyId` and `storefrontId`; `turitop` has none.
+          additionalProperties:
+            type: string
+          example: {}
       required:
         - provider
-        - productId
+        - settings
     GeoCoordinatesDto:
       type: object
       properties:
@@ -7632,8 +7642,8 @@ components:
             - $ref: "#/components/schemas/PriceResponseDto"
         booking:
           description: >-
-            Booking widget to embed for this locale. `null` when the widget is disabled or the locale has no product id,
-            in which case the page offers the booking-request form.
+            Booking widget to embed for this locale. `null` when the widget is disabled or the locale lacks a product id
+            the provider requires, in which case the page offers the booking-request form.
           nullable: true
           allOf:
             - $ref: "#/components/schemas/PublicTourBookingResponseDto"
@@ -7803,14 +7813,24 @@ components:
           description: Booking widget the public page embeds. Kept while the widget is disabled.
           enum:
             - turitop
+            - understory
           nullable: true
           example: turitop
         enabled:
           type: boolean
           description: Whether the public page shows the widget.
           example: true
+        settings:
+          type: object
+          description: Provider settings. `understory` has `companyId` and `storefrontId`; `turitop` has none.
+          additionalProperties:
+            type: string
+          example:
+            companyId: 4a0fbe7f6af34bffac943578ffbfa0e4
+            storefrontId: bd88f0cea152483c9a45b8b4437b85ca
       required:
         - enabled
+        - settings
     TourAdminItineraryStopResponseDto:
       type: object
       properties:
@@ -8076,10 +8096,11 @@ components:
           type: string
           description: >-
             Booking widget the public page embeds. Each translation's `bookingReferenceId` is this provider's product
-            id. Set `null` to remove it, which also requires `enabled` to be false. When omitted, the tour keeps its
-            provider.
+            id: required for `turitop`, optional for `understory`, where it names one experience. Set `null` to remove
+            it, which also requires `enabled` to be false. When omitted, the tour keeps its provider.
           enum:
             - turitop
+            - understory
           example: turitop
           nullable: true
         enabled:
@@ -8088,6 +8109,18 @@ components:
             Whether the public page shows the widget. Enabling it requires a provider. Disabling it keeps the provider.
             When omitted, the tour keeps its current state.
           example: true
+        settings:
+          type: object
+          description: >-
+            Provider settings, all strings. `turitop` takes none; `understory` takes `companyId` and `storefrontId`,
+            both required once the widget is enabled. Replaces the stored settings. When omitted, the tour keeps them,
+            unless the provider changes, which clears them.
+          additionalProperties:
+            type: string
+            maxLength: 100
+          example:
+            companyId: 4a0fbe7f6af34bffac943578ffbfa0e4
+            storefrontId: bd88f0cea152483c9a45b8b4437b85ca
     TourCoordinatesDto:
       type: object
       properties:
@@ -9701,7 +9734,9 @@ components:
           example: true
         bookingReferenceId:
           type: string
-          description: The booking provider's product id for the locale, if any (a Turitop service code such as `P7`).
+          description: >-
+            The booking provider's product id for the locale, if any: a Turitop service code such as `P7`, or an
+            optional Understory experience id.
           nullable: true
           example: P7
         cancellationType:

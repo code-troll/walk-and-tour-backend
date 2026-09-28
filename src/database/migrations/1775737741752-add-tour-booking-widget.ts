@@ -8,8 +8,10 @@ export class AddTourBookingWidget1775737741752 implements MigrationInterface {
       ALTER TABLE "tours"
         ADD COLUMN "booking_provider" varchar(30) NULL,
         ADD COLUMN "booking_enabled" boolean NOT NULL DEFAULT false,
-        ADD CONSTRAINT "CHK_tours_booking_provider" CHECK ("booking_provider" IN ('turitop')),
-        ADD CONSTRAINT "CHK_tours_booking_enabled_provider" CHECK (NOT "booking_enabled" OR "booking_provider" IS NOT NULL)
+        ADD COLUMN "booking_settings" jsonb NOT NULL DEFAULT '{}',
+        ADD CONSTRAINT "CHK_tours_booking_provider" CHECK ("booking_provider" IN ('turitop', 'understory')),
+        ADD CONSTRAINT "CHK_tours_booking_enabled_provider" CHECK (NOT "booking_enabled" OR "booking_provider" IS NOT NULL),
+        ADD CONSTRAINT "CHK_tours_booking_settings" CHECK (jsonb_typeof("booking_settings") = 'object')
     `);
 
     await queryRunner.query(`
@@ -23,8 +25,13 @@ export class AddTourBookingWidget1775737741752 implements MigrationInterface {
     `);
 
     await queryRunner.query(`
+      COMMENT ON COLUMN "tours"."booking_settings" IS
+        'Provider-specific widget settings. Understory books against a partner''s account, so it needs companyId and storefrontId; Turitop needs none.'
+    `);
+
+    await queryRunner.query(`
       COMMENT ON COLUMN "tour_translations"."booking_reference_id" IS
-        'The booking provider''s product id for this locale, such as a Turitop service code (P7).'
+        'The booking provider''s product id for this locale: a Turitop service code (P7), or optionally an Understory experience id.'
     `);
 
     // Until now the frontend embedded Turitop for every translation with a
@@ -50,6 +57,7 @@ export class AddTourBookingWidget1775737741752 implements MigrationInterface {
     // Destructive: which tours had the widget switched off is lost.
     await queryRunner.query(`
       ALTER TABLE "tours"
+        DROP COLUMN "booking_settings",
         DROP COLUMN "booking_enabled",
         DROP COLUMN "booking_provider"
     `);

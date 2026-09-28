@@ -685,6 +685,14 @@ export class TourBookingResponseDto {
     example: true,
   })
   enabled!: boolean;
+
+  @ApiProperty({
+    description: 'Provider settings. `understory` has `companyId` and `storefrontId`; `turitop` has none.',
+    type: 'object',
+    additionalProperties: { type: 'string' },
+    example: { companyId: '4a0fbe7f6af34bffac943578ffbfa0e4', storefrontId: 'bd88f0cea152483c9a45b8b4437b85ca' },
+  })
+  settings!: Record<string, string>;
 }
 
 export class PublicTourBookingResponseDto {
@@ -695,11 +703,22 @@ export class PublicTourBookingResponseDto {
   })
   provider!: string;
 
-  @ApiProperty({
-    description: "The provider's product id for the requested locale.",
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      "The provider's product id for the requested locale. Always set for `turitop`; for `understory` it is an optional experience id, null to show the whole storefront.",
+    nullable: true,
     example: 'P7',
   })
-  productId!: string;
+  productId!: string | null;
+
+  @ApiProperty({
+    description: 'Provider settings the widget needs. `understory` has `companyId` and `storefrontId`; `turitop` has none.',
+    type: 'object',
+    additionalProperties: { type: 'string' },
+    example: {},
+  })
+  settings!: Record<string, string>;
 }
 
 export class TourNextConnectionResponseDto {
@@ -825,7 +844,7 @@ export class TourAdminTranslationResponseDto {
 
   @ApiPropertyOptional({
     type: String,
-    description: "The booking provider's product id for the locale, if any (a Turitop service code such as `P7`).",
+    description: "The booking provider's product id for the locale, if any: a Turitop service code such as `P7`, or an optional Understory experience id.",
     nullable: true,
     example: 'P7',
   })
@@ -1234,7 +1253,7 @@ export class PublicTourResponseDto {
 
   @ApiPropertyOptional({
     description:
-      'Booking widget to embed for this locale. `null` when the widget is disabled or the locale has no product id, in which case the page offers the booking-request form.',
+      'Booking widget to embed for this locale. `null` when the widget is disabled or the locale lacks a product id the provider requires, in which case the page offers the booking-request form.',
     type: () => PublicTourBookingResponseDto,
     nullable: true,
   })

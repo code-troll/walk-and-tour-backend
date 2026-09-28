@@ -62,6 +62,10 @@ export class TourEntity {
   @Column({ name: 'booking_enabled', type: 'boolean', default: false })
   bookingEnabled!: boolean;
 
+  /** Provider-specific settings, keyed as `TOUR_BOOKING_PROVIDER_RULES` lists them. */
+  @Column({ name: 'booking_settings', type: 'jsonb', default: () => "'{}'" })
+  bookingSettings!: Record<string, string>;
+
   @Column({ type: 'numeric', precision: 3, scale: 2, nullable: true })
   rating!: string | null;
 

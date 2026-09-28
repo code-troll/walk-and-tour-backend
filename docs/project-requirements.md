@@ -162,7 +162,7 @@ The implementation may refine naming, but the following domain concepts are requ
 - Price amount for paid tours
 - Currency for paid tours
 - Price basis for paid tours: `per_person` or `per_group`
-- Booking widget: an optional provider (`turitop`) and whether the public page shows it
+- Booking widget: an optional provider (`turitop` or `understory`), whether the public page shows it, and the provider's settings (a partner's Understory `companyId` and `storefrontId`)
 - Rating as a decimal value from 1.0 to 5.0
 - Number of reviews as an admin-managed count
 - Tour type such as private, group, tip-based, or company
