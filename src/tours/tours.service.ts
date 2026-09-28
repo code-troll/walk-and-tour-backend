@@ -12,7 +12,7 @@ import { AuthenticatedAdmin } from '../admin-auth/authenticated-admin.interface'
 import { LanguageEntity } from '../languages/language.entity';
 import { MediaAssetEntity } from '../media/media-asset.entity';
 import { getProviderConfig } from '../shared/config/provider.config';
-import { TOUR_TYPES, TourPriceBasis } from '../shared/domain';
+import { TOUR_BOOKING_PROVIDER_RULES, TOUR_TYPES, TourBookingProvider, TourPriceBasis } from '../shared/domain';
 import { TagEntity } from '../tags/tag.entity';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { AdminListToursDto } from './dto/list-tours.dto';
@@ -41,6 +41,7 @@ const REQUIRED_LOCALIZED_LIST_FIELDS = [
   'notIncluded',
 ] as const;
 const TOUR_SORT_ORDER_CONSTRAINT = 'UQ_tours_sort_order';
+const BOOKING_SETTING_MAX_LENGTH = 100;
 
 interface TourSharedInput {
   name: string;
@@ -133,6 +134,9 @@ export class ToursService {
       priceAmount: null,
       priceCurrency: null,
       priceBasis: 'per_person',
+      bookingProvider: null,
+      bookingEnabled: false,
+      bookingSettings: {},
       rating: null,
       reviewCount: null,
       tourType: dto.tourType,
@@ -159,6 +163,7 @@ export class ToursService {
 
     const aggregate = await this.buildSharedAggregate(dto, existing);
     const tags = await this.getTagsOrThrow(aggregate.tagKeys);
+    const booking = this.resolveBooking(dto.booking, existing);
 
     existing.name = aggregate.name;
     existing.contentSchema = aggregate.contentSchema;
@@ -167,6 +172,9 @@ export class ToursService {
     // A tour without a price has no basis to speak of, so it falls back to the
     // default rather than keeping one a later price would silently inherit.
     existing.priceBasis = aggregate.price?.basis ?? 'per_person';
+    existing.bookingProvider = booking.provider;
+    existing.bookingEnabled = booking.enabled;
+    existing.bookingSettings = booking.settings;
     existing.rating = aggregate.rating !== null ? aggregate.rating.toFixed(2) : null;
     existing.reviewCount = aggregate.reviewCount;
     existing.tourType = aggregate.tourType;
@@ -908,6 +916,62 @@ export class ToursService {
     };
   }
 
+  private resolveBooking(
+    source: UpdateTourDto['booking'],
+    existing: TourEntity,
+  ): { provider: TourBookingProvider | null; enabled: boolean; settings: Record<string, string> } {
+    if (source === null) {
+      return { provider: null, enabled: false, settings: {} };
+    }
+
+    const provider =
+      source && 'provider' in source ? (source.provider ?? null) : existing.bookingProvider;
+    const enabled = source?.enabled ?? existing.bookingEnabled;
+    // Settings belong to one provider's account, so switching provider drops them.
+    const settings =
+      source?.settings ?? (provider === existing.bookingProvider ? existing.bookingSettings : {});
+
+    if (enabled && !provider) {
+      throw new BadRequestException('A booking widget needs a provider before it can be enabled.');
+    }
+
+    return { provider, enabled, settings: this.validateBookingSettings(provider, enabled, settings) };
+  }
+
+  private validateBookingSettings(
+    provider: TourBookingProvider | null,
+    enabled: boolean,
+    settings: Record<string, unknown>,
+  ): Record<string, string> {
+    const settingKeys = provider ? TOUR_BOOKING_PROVIDER_RULES[provider].settingKeys : [];
+    const validated: Record<string, string> = {};
+
+    for (const [key, value] of Object.entries(settings)) {
+      if (!settingKeys.includes(key)) {
+        throw new BadRequestException(
+          `Booking setting "${key}" does not apply to ${provider ?? 'a tour without a booking provider'}.`,
+        );
+      }
+
+      if (typeof value !== 'string' || !value.trim() || value.trim().length > BOOKING_SETTING_MAX_LENGTH) {
+        throw new BadRequestException(
+          `Booking setting "${key}" must be a non-empty string of at most ${BOOKING_SETTING_MAX_LENGTH} characters.`,
+        );
+      }
+
+      validated[key] = value.trim();
+    }
+
+    const missingKeys = settingKeys.filter((key) => !validated[key]);
+    if (enabled && missingKeys.length > 0) {
+      throw new BadRequestException(
+        `The ${provider} widget needs ${missingKeys.join(' and ')} before it can be enabled.`,
+      );
+    }
+
+    return validated;
+  }
+
   private getExistingPrice(
     existing: TourEntity | undefined,
   ): TourSharedInput['price'] {
@@ -1083,6 +1147,11 @@ export class ToursService {
               basis: tour.priceBasis,
             }
           : null,
+      booking: {
+        provider: tour.bookingProvider,
+        enabled: tour.bookingEnabled,
+        settings: tour.bookingSettings,
+      },
       rating: tour.rating !== null ? Number(tour.rating) : null,
       reviewCount: tour.reviewCount,
       tourType: tour.tourType,

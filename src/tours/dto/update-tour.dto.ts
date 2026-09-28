@@ -16,7 +16,7 @@ import {
 } from 'class-validator';
 
 import { TOUR_TYPES } from '../../shared/domain';
-import { PriceDto, SharedPointDto, TourItineraryDto } from './create-tour.dto';
+import { PriceDto, SharedPointDto, TourBookingDto, TourItineraryDto } from './create-tour.dto';
 
 export class UpdateTourDto {
   @ApiPropertyOptional({
@@ -48,6 +48,17 @@ export class UpdateTourDto {
   @Type(() => PriceDto)
   @IsOptional()
   price?: PriceDto | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Updated booking widget. Omitted fields keep their value. Set `null` to remove the provider and disable the widget.',
+    type: () => TourBookingDto,
+    nullable: true,
+  })
+  @ValidateNested()
+  @Type(() => TourBookingDto)
+  @IsOptional()
+  booking?: TourBookingDto | null;
 
   @ApiPropertyOptional({
     description: 'Updated average rating.',

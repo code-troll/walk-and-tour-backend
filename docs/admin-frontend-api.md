@@ -573,6 +573,7 @@ Patch request shape:
 - `slug`
 - `contentSchema`
 - `price?`: `{ amount, currency, basis? }`, where `basis` is `per_person` or `per_group`. Omitting `basis` keeps the tour's current one; `null` removes the price and resets the basis to `per_person`.
+- `booking?`: `{ provider?, enabled?, settings? }`, where `provider` is `turitop`, `understory` or `null`. Omitted fields keep their value, disabling keeps the provider, and changing the provider clears `settings`. `settings` replaces the stored ones: `turitop` takes none, `understory` takes `companyId` and `storefrontId`, required to enable it. Enabling without a provider or its settings, or sending a setting the provider does not take, returns `400`. `null` removes the provider and its settings and disables the widget. The admin response always returns `booking: { provider, enabled, settings }`.
 - `rating`
 - `reviewCount`
 - `tourType`
@@ -854,6 +855,7 @@ Public tour response includes:
 - localized `translation`
 - localized `itinerary`
 - localized tag labels for the requested locale
+- `booking`: `{ provider, productId, settings }` for the widget to embed, or `null` when the tour's widget is disabled or its provider uses product ids and the locale has no `bookingReferenceId` (Turitop does; Understory ignores it and `productId` is null); the site then offers the booking-request form
 
 ### 7.2 Public Blog Posts
 

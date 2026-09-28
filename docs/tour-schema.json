@@ -43,6 +43,9 @@
     "price": {
       "$ref": "#/$defs/Price"
     },
+    "booking": {
+      "$ref": "#/$defs/Booking"
+    },
     "rating": {
       "type": "number",
       "minimum": 1,
@@ -178,6 +181,30 @@
         "basis": {
           "type": "string",
           "enum": ["per_person", "per_group"]
+        }
+      }
+    },
+    "Booking": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "enabled",
+        "settings"
+      ],
+      "properties": {
+        "provider": {
+          "type": ["string", "null"],
+          "enum": ["turitop", "understory", null]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },

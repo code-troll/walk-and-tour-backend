@@ -4,6 +4,7 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 
 import { LanguageEntity } from '../languages/language.entity';
 import { getProviderConfig } from '../shared/config/provider.config';
+import { TOUR_BOOKING_PROVIDER_RULES } from '../shared/domain';
 import { STORAGE_SERVICE, StorageService } from '../storage/storage-service.interface';
 import { TagEntity } from '../tags/tag.entity';
 import { PublicListToursDto } from './dto/list-tours.dto';
@@ -234,6 +235,7 @@ export class PublicToursService {
               basis: tour.priceBasis,
             }
           : null,
+      booking: this.toPublicBooking(tour, translation),
       rating: Number(tour.rating),
       reviewCount: tour.reviewCount,
       tourType: tour.tourType,
@@ -272,6 +274,27 @@ export class PublicToursService {
         payload,
       },
       itinerary,
+    };
+  }
+
+  // Null whenever the page should show the booking-request form instead: the
+  // widget is off, or its provider uses product ids and this locale has none.
+  private toPublicBooking(tour: TourEntity, translation: TourTranslationEntity) {
+    if (!tour.bookingEnabled || !tour.bookingProvider) {
+      return null;
+    }
+
+    const usesProductId = TOUR_BOOKING_PROVIDER_RULES[tour.bookingProvider].usesProductId;
+    const productId = usesProductId ? translation.bookingReferenceId?.trim() || null : null;
+
+    if (usesProductId && !productId) {
+      return null;
+    }
+
+    return {
+      provider: tour.bookingProvider,
+      productId,
+      settings: tour.bookingSettings,
     };
   }
 

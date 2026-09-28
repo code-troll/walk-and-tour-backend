@@ -13,6 +13,7 @@ import {
   HOTEL_BOOKING_STATUSES,
   NEWSLETTER_SUBSCRIPTION_STATUSES,
   SUPPORTED_LANGUAGE_CODES,
+  TOUR_BOOKING_PROVIDERS,
   TOUR_COMMUTE_MODES,
   TOUR_TYPES,
 } from '../shared/domain';
@@ -669,6 +670,57 @@ export class PriceResponseDto {
   basis!: string;
 }
 
+export class TourBookingResponseDto {
+  @ApiPropertyOptional({
+    type: String,
+    description: 'Booking widget the public page embeds. Kept while the widget is disabled.',
+    enum: TOUR_BOOKING_PROVIDERS,
+    nullable: true,
+    example: 'turitop',
+  })
+  provider!: string | null;
+
+  @ApiProperty({
+    description: 'Whether the public page shows the widget.',
+    example: true,
+  })
+  enabled!: boolean;
+
+  @ApiProperty({
+    description: 'Provider settings. `understory` has `companyId` and `storefrontId`; `turitop` has none.',
+    type: 'object',
+    additionalProperties: { type: 'string' },
+    example: { companyId: '4a0fbe7f6af34bffac943578ffbfa0e4', storefrontId: 'bd88f0cea152483c9a45b8b4437b85ca' },
+  })
+  settings!: Record<string, string>;
+}
+
+export class PublicTourBookingResponseDto {
+  @ApiProperty({
+    description: 'Booking widget to embed.',
+    enum: TOUR_BOOKING_PROVIDERS,
+    example: 'turitop',
+  })
+  provider!: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      "The provider's product id for the requested locale. Always set for `turitop`; always null for `understory`, which shows the partner's whole storefront.",
+    nullable: true,
+    example: 'P7',
+  })
+  productId!: string | null;
+
+  @ApiProperty({
+    description: 'Provider settings the widget needs. `understory` has `companyId` and `storefrontId`; `turitop` has none.',
+    type: 'object',
+    additionalProperties: { type: 'string' },
+    example: {},
+  })
+  settings!: Record<string, string>;
+}
+
 export class TourNextConnectionResponseDto {
   @ApiPropertyOptional({
     type: Number,
@@ -792,9 +844,9 @@ export class TourAdminTranslationResponseDto {
 
   @ApiPropertyOptional({
     type: String,
-    description: 'External booking reference for the locale, if any.',
+    description: "The booking provider's product id for the locale, if any: a Turitop service code such as `P7`. Understory ignores it.",
     nullable: true,
-    example: 'booking-ref-123',
+    example: 'P7',
   })
   bookingReferenceId!: string | null;
 
@@ -979,7 +1031,7 @@ export class PublicTourTranslationResponseDto {
 
   @ApiPropertyOptional({
     type: String,
-    description: 'External booking reference associated with the published locale.',
+    description: "The booking provider's product id for the locale. Prefer `booking`, which is null when the widget is disabled.",
     nullable: true,
   })
   bookingReferenceId!: string | null;
@@ -1067,6 +1119,12 @@ export class TourAdminResponseDto {
     nullable: true,
   })
   price!: PriceResponseDto | null;
+
+  @ApiProperty({
+    description: 'Booking widget configuration.',
+    type: () => TourBookingResponseDto,
+  })
+  booking!: TourBookingResponseDto;
 
   @ApiPropertyOptional({
     type: Number,
@@ -1192,6 +1250,14 @@ export class PublicTourResponseDto {
     nullable: true,
   })
   price!: PriceResponseDto | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Booking widget to embed for this locale. `null` when the widget is disabled or the locale lacks a product id the provider requires, in which case the page offers the booking-request form.',
+    type: () => PublicTourBookingResponseDto,
+    nullable: true,
+  })
+  booking!: PublicTourBookingResponseDto | null;
 
   @ApiProperty({
     description: 'Average rating normalized to a numeric value.',

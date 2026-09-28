@@ -7419,6 +7419,32 @@ components:
         - amount
         - currency
         - basis
+    PublicTourBookingResponseDto:
+      type: object
+      properties:
+        provider:
+          type: string
+          description: Booking widget to embed.
+          enum:
+            - turitop
+            - understory
+          example: turitop
+        productId:
+          type: string
+          description: >-
+            The provider's product id for the requested locale. Always set for `turitop`; always null for `understory`,
+            which shows the partner's whole storefront.
+          nullable: true
+          example: P7
+        settings:
+          type: object
+          description: Provider settings the widget needs. `understory` has `companyId` and `storefrontId`; `turitop` has none.
+          additionalProperties:
+            type: string
+          example: {}
+      required:
+        - provider
+        - settings
     GeoCoordinatesDto:
       type: object
       properties:
@@ -7465,7 +7491,9 @@ components:
           example: en
         bookingReferenceId:
           type: string
-          description: External booking reference associated with the published locale.
+          description: >-
+            The booking provider's product id for the locale. Prefer `booking`, which is null when the widget is
+            disabled.
           nullable: true
         cancellationType:
           type: string
@@ -7612,6 +7640,13 @@ components:
           nullable: true
           allOf:
             - $ref: "#/components/schemas/PriceResponseDto"
+        booking:
+          description: >-
+            Booking widget to embed for this locale. `null` when the widget is disabled or the locale lacks a product id
+            the provider requires, in which case the page offers the booking-request form.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/PublicTourBookingResponseDto"
         rating:
           type: number
           description: Average rating normalized to a numeric value.
@@ -7770,6 +7805,32 @@ components:
         - translations
         - audit
         - priceBasis
+    TourBookingResponseDto:
+      type: object
+      properties:
+        provider:
+          type: string
+          description: Booking widget the public page embeds. Kept while the widget is disabled.
+          enum:
+            - turitop
+            - understory
+          nullable: true
+          example: turitop
+        enabled:
+          type: boolean
+          description: Whether the public page shows the widget.
+          example: true
+        settings:
+          type: object
+          description: Provider settings. `understory` has `companyId` and `storefrontId`; `turitop` has none.
+          additionalProperties:
+            type: string
+          example:
+            companyId: 4a0fbe7f6af34bffac943578ffbfa0e4
+            storefrontId: bd88f0cea152483c9a45b8b4437b85ca
+      required:
+        - enabled
+        - settings
     TourAdminItineraryStopResponseDto:
       type: object
       properties:
@@ -7890,6 +7951,10 @@ components:
           nullable: true
           allOf:
             - $ref: "#/components/schemas/PriceResponseDto"
+        booking:
+          description: Booking widget configuration.
+          allOf:
+            - $ref: "#/components/schemas/TourBookingResponseDto"
         rating:
           type: number
           description: Average rating normalized to a numeric value.
@@ -7964,6 +8029,7 @@ components:
         - name
         - sortOrder
         - mediaItems
+        - booking
         - tourType
         - tagKeys
         - tags
@@ -8023,6 +8089,38 @@ components:
       required:
         - amount
         - currency
+    TourBookingDto:
+      type: object
+      properties:
+        provider:
+          type: string
+          description: >-
+            Booking widget the public page embeds. Each translation's `bookingReferenceId` is this provider's product
+            id: required for `turitop`; `understory` ignores it. Set `null` to remove it, which also requires `enabled`
+            to be false. When omitted, the tour keeps its provider.
+          enum:
+            - turitop
+            - understory
+          example: turitop
+          nullable: true
+        enabled:
+          type: boolean
+          description: >-
+            Whether the public page shows the widget. Enabling it requires a provider. Disabling it keeps the provider.
+            When omitted, the tour keeps its current state.
+          example: true
+        settings:
+          type: object
+          description: >-
+            Provider settings, all strings. `turitop` takes none; `understory` takes `companyId` and `storefrontId`,
+            both required once the widget is enabled. Replaces the stored settings. When omitted, the tour keeps them,
+            unless the provider changes, which clears them.
+          additionalProperties:
+            type: string
+            maxLength: 100
+          example:
+            companyId: 4a0fbe7f6af34bffac943578ffbfa0e4
+            storefrontId: bd88f0cea152483c9a45b8b4437b85ca
     TourCoordinatesDto:
       type: object
       properties:
@@ -8128,6 +8226,13 @@ components:
           nullable: true
           allOf:
             - $ref: "#/components/schemas/PriceDto"
+        booking:
+          description: >-
+            Updated booking widget. Omitted fields keep their value. Set `null` to remove the provider and disable the
+            widget.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/TourBookingDto"
         rating:
           type: number
           description: Updated average rating.
@@ -8258,8 +8363,10 @@ components:
           maxLength: 150
         bookingReferenceId:
           type: string
-          description: Optional external booking reference for this locale. Set `null` to clear it on update.
-          example: booking-ref-123
+          description: >-
+            Optional booking provider product id for this locale, such as a Turitop service code (`P7`). Set `null` to
+            clear it on update.
+          example: P7
           nullable: true
         payload:
           type: object
@@ -8297,8 +8404,8 @@ components:
           maxLength: 150
         bookingReferenceId:
           type: string
-          description: Updated external booking reference for this locale. Set `null` to clear it.
-          example: booking-ref-123
+          description: Updated booking provider product id for this locale. Set `null` to clear it.
+          example: P7
           nullable: true
         payload:
           type: object
@@ -8309,8 +8416,8 @@ components:
       properties:
         bookingReferenceId:
           type: string
-          description: Optional external booking reference override applied before publishing. Set `null` to clear it.
-          example: booking-ref-123
+          description: Optional booking provider product id override applied before publishing. Set `null` to clear it.
+          example: P7
           nullable: true
     CreateTeamMemberDto:
       type: object
@@ -9627,9 +9734,11 @@ components:
           example: true
         bookingReferenceId:
           type: string
-          description: External booking reference for the locale, if any.
+          description: >-
+            The booking provider's product id for the locale, if any: a Turitop service code such as `P7`. Understory
+            ignores it.
           nullable: true
-          example: booking-ref-123
+          example: P7
         cancellationType:
           type: string
           description: Localized cancellation policy text, or `null` when the translation is incomplete.

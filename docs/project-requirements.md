@@ -162,6 +162,7 @@ The implementation may refine naming, but the following domain concepts are requ
 - Price amount for paid tours
 - Currency for paid tours
 - Price basis for paid tours: `per_person` or `per_group`
+- Booking widget: an optional provider (`turitop` or `understory`), whether the public page shows it, and the provider's settings (a partner's Understory `companyId` and `storefrontId`)
 - Rating as a decimal value from 1.0 to 5.0
 - Number of reviews as an admin-managed count
 - Tour type such as private, group, tip-based, or company
@@ -188,7 +189,7 @@ The implementation may refine naming, but the following domain concepts are requ
 - Language reference
 - Translation status metadata with `draft` and `ready`
 - Translation publication state with `published` and `unpublished`
-- Optional `bookingReferenceId` string as translation-level metadata
+- Optional `bookingReferenceId` string as translation-level metadata: the booking provider's product id for this locale
 - Ordered localized string lists for `highlights`, `included`, and `notIncluded`
 - Localized payload data that must conform to the tour's JSON Schema
 - The localized payload must contain only translation-owned content such as title, body copy blocks, localized start and end point objects with labels and optional coordinates, descriptive itinerary text, localized `highlights`, `included`, and `notIncluded` lists, and localized stop titles and descriptions keyed to the shared ordered stop list

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import { TourSchemaPolicyService } from './tour-schema-policy.service';
 import { TourItineraryStopEntity } from './entities/tour-itinerary-stop.entity';
 import { TourMediaEntity } from './entities/tour-media.entity';
 import { TourTranslationEntity } from './entities/tour-translation.entity';
+import { UpdateTourDto } from './dto/update-tour.dto';
 import { TourEntity } from './entities/tour.entity';
 import { ToursService } from './tours.service';
 
@@ -523,6 +525,131 @@ describe('ToursService', () => {
     });
   });
 
+  describe('booking widget', () => {
+    const updateBooking = async (
+      existingOverrides: Partial<TourEntity>,
+      booking: UpdateTourDto['booking'],
+    ) => {
+      const existingTour = createTourEntity(existingOverrides);
+
+      toursRepository.findOne
+        .mockResolvedValueOnce(existingTour)
+        .mockResolvedValueOnce(existingTour)
+        .mockResolvedValueOnce(existingTour);
+      toursRepository.save.mockImplementation(async (value) => value as TourEntity);
+      stopsRepository.delete.mockResolvedValue({} as never);
+
+      await service.update('tour-1', { booking }, createAdmin());
+    };
+
+    it('enables a provider', async () => {
+      await updateBooking({}, { provider: 'turitop', enabled: true });
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ bookingProvider: 'turitop', bookingEnabled: true }),
+      );
+    });
+
+    it('keeps the provider when the widget is disabled', async () => {
+      await updateBooking({ bookingProvider: 'turitop', bookingEnabled: true }, { enabled: false });
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ bookingProvider: 'turitop', bookingEnabled: false }),
+      );
+    });
+
+    it('leaves the booking untouched when the update omits it', async () => {
+      await updateBooking({ bookingProvider: 'turitop', bookingEnabled: true }, undefined);
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ bookingProvider: 'turitop', bookingEnabled: true }),
+      );
+    });
+
+    it('removes the provider and disables the widget when booking is null', async () => {
+      await updateBooking({ bookingProvider: 'turitop', bookingEnabled: true }, null);
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ bookingProvider: null, bookingEnabled: false, bookingSettings: {} }),
+      );
+    });
+
+    it('rejects enabling the widget without a provider', async () => {
+      await expect(updateBooking({}, { enabled: true })).rejects.toThrow(BadRequestException);
+      expect(toursRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects removing the provider of an enabled widget', async () => {
+      await expect(
+        updateBooking({ bookingProvider: 'turitop', bookingEnabled: true }, { provider: null }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('returns the booking configuration', async () => {
+      toursRepository.findOne.mockResolvedValue(
+        createTourEntity({ bookingProvider: 'turitop', bookingEnabled: false }),
+      );
+
+      const result = await service.findOne('tour-1');
+
+      expect(result).toEqual(
+        expect.objectContaining({ booking: { provider: 'turitop', enabled: false, settings: {} } }),
+      );
+    });
+
+    const understorySettings = { companyId: 'company-1', storefrontId: 'storefront-1' };
+
+    it('enables Understory with its account settings, trimmed', async () => {
+      await updateBooking({}, {
+        provider: 'understory',
+        enabled: true,
+        settings: { companyId: ' company-1 ', storefrontId: 'storefront-1' },
+      });
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bookingProvider: 'understory',
+          bookingEnabled: true,
+          bookingSettings: understorySettings,
+        }),
+      );
+    });
+
+    it('rejects enabling Understory without its storefront', async () => {
+      await expect(
+        updateBooking({}, { provider: 'understory', enabled: true, settings: { companyId: 'company-1' } }),
+      ).rejects.toThrow('The understory widget needs storefrontId before it can be enabled.');
+    });
+
+    it('rejects a setting the provider does not take', async () => {
+      await expect(
+        updateBooking({}, { provider: 'turitop', settings: { companyId: 'company-1' } }),
+      ).rejects.toThrow('Booking setting "companyId" does not apply to turitop.');
+    });
+
+    it('keeps the settings when the update leaves them out', async () => {
+      await updateBooking(
+        { bookingProvider: 'understory', bookingEnabled: true, bookingSettings: understorySettings },
+        { enabled: false },
+      );
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ bookingEnabled: false, bookingSettings: understorySettings }),
+      );
+    });
+
+    it('drops the settings when the provider changes', async () => {
+      await updateBooking(
+        { bookingProvider: 'understory', bookingEnabled: true, bookingSettings: understorySettings },
+        { provider: 'turitop' },
+      );
+
+      expect(toursRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ bookingProvider: 'turitop', bookingSettings: {} }),
+      );
+    });
+  });
+
   it('moves a tour earlier when sortOrder is updated and shifts the displaced range', async () => {
     const existingTour = createTourEntity({
       id: 'tour-3',
@@ -923,6 +1050,9 @@ function createTourEntity(overrides: Partial<TourEntity> = {}): TourEntity {
     priceAmount: '25.00',
     priceCurrency: 'EUR',
     priceBasis: 'per_person',
+    bookingProvider: null,
+    bookingEnabled: false,
+    bookingSettings: {},
     rating: '4.80',
     reviewCount: 120,
     tourType: 'group',
